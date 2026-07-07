@@ -6,7 +6,7 @@ voice set changes; the app itself never calls Piper at runtime.
 Voice models are not checked in (large binary downloads, see .gitignore);
 fetch them once per machine:
     uv run python -m piper.download_voices --download-dir voices \\
-        de_DE-thorsten-medium de_DE-kerstin-low
+        de_DE-thorsten-medium
 
 Usage:
     uv run generate_tts.py
@@ -24,27 +24,25 @@ RECORDINGS_JSON = REPO_ROOT / "corpus-data" / "recordings.json"
 VOICES_DIR = TOOLS_DIR / "voices"
 OUTPUT_DIR = REPO_ROOT / "corpus-data" / "raw" / "de-DE"
 
-# voiceId -> Piper model file. Both are standard German (locale "de-DE");
-# dialect voices are not yet available in Piper (see ADR-0006, backlog M5).
+# voiceId -> Piper model file. Standard German (locale "de-DE").
+#
+# A second, female voice was deliberately left out for now: Piper's only
+# German single-speaker female models are "low"/"x_low" quality (kerstin,
+# ramona, eva_k). Testing kerstin-low showed it speaks isolated single
+# words noticeably rushed/compressed compared to full sentences (e.g.
+# "Ball" alone: ~0.24s vs. ~0.52s for the same word with thorsten-medium)
+# -- likely a quality-tier limitation, not fixable by prompt tricks alone.
+# See docs/adr/0006-audioquelle-tts.md and backlog M1 for the follow-up.
 VOICES = {
     "thorsten": VOICES_DIR / "de_DE-thorsten-medium.onnx",
-    "kerstin": VOICES_DIR / "de_DE-kerstin-low.onnx",
 }
 LOCALE = "de-DE"
 
 
-def generate(word_text: str, voice_id: str, model_path: Path, out_path: Path) -> None:
+def generate(word_text: str, model_path: Path, out_path: Path) -> None:
     out_path.parent.mkdir(parents=True, exist_ok=True)
     subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "piper",
-            "--model",
-            str(model_path),
-            "--output-file",
-            str(out_path),
-        ],
+        [sys.executable, "-m", "piper", "--model", str(model_path), "--output-file", str(out_path)],
         input=word_text,
         text=True,
         check=True,
@@ -66,7 +64,7 @@ def main() -> None:
     for word in words:
         for voice_id, model_path in VOICES.items():
             out_path = OUTPUT_DIR / f"{word['id']}__{voice_id}.wav"
-            generate(word["text"], voice_id, model_path, out_path)
+            generate(word["text"], model_path, out_path)
             print(f"  {out_path.relative_to(REPO_ROOT)}")
             recordings.append({
                 "id": f"{word['id']}__{voice_id}",

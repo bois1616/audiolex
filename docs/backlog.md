@@ -13,8 +13,9 @@ Stand 2026-07-07: initiales Backlog aus der Konzept-Roadmap abgeleitet, Meilenst
 ## M1 – Audio-Grundgerüst
 
 - [x] [P0] [KLÄRUNG] Audioquelle für Testkorpus entschieden. Hinweis: lokales TTS (Piper), 2–3 Hochdeutsch-Stimmen (männlich/weiblich) für M1; Dialekte als vorbereitetes `locale`-Feld, Befüllung später — siehe ADR-0006.
-- [x] [P1] [Korpus] `tools/generate_tts.py`: Piper via uv installiert, Stimmen `de_DE-thorsten-medium` (m) + `de_DE-kerstin-low` (w) heruntergeladen, Generierungsskript schreibt WAV + `recordings.json`. Hinweis: native Piper-Rate 22050 Hz statt der ursprünglich angenommenen 48 kHz — ADR-0003 entsprechend korrigiert.
-- [x] [P1] [Korpus] Minimaler Testkorpus 18 Wörter × 2 Piper-Stimmen (36 Aufnahmen) mit Metadaten (Silben, Kategorie, 2 Minimalpaare) in `corpus-data/words.json` + `recordings.json`. Hinweis: Audio selbst bleibt ungetrackt (`.gitignore`), nur Metadaten versioniert.
+- [x] [P1] [Korpus] `tools/generate_tts.py`: Piper via uv installiert, Generierungsskript schreibt WAV + `recordings.json`. Hinweis: native Piper-Rate 22050 Hz statt der ursprünglich angenommenen 48 kHz — ADR-0003 entsprechend korrigiert.
+- [x] [P1] [Korpus] Minimaler Testkorpus 18 Wörter (thorsten-medium, 18 Aufnahmen) mit Metadaten (Silben, Kategorie, 2 Minimalpaare) in `corpus-data/words.json` + `recordings.json`. Hinweis: Audio selbst bleibt ungetrackt (`.gitignore`), nur Metadaten versioniert.
+- [ ] [P1] [Korpus] [KLÄRUNG] Zweite (weibliche) Stimme fehlt noch. Hinweis: `kerstin-low` sprach isolierte Einzelwörter zu schnell/gestaucht (Bug vom Nutzer entdeckt: "Ball" klang unverständlich, voller Testsatz mit derselben Stimme war klar) — vermutlich Qualitätsstufen-Limit (Piper hat für deutsche Einzelsprecherinnen nur low/x_low, kein medium). Trägersatz-Workaround verworfen (unzuverlässiges Trimming). Optionen: bessere Piper-Stimme abwarten, andere TTS-Engine, oder echte Aufnahme — siehe ADR-0006.
 - [ ] [P1] [Audio] WAV-Loader (PCM16) in `:core` implementieren + Tests.
 - [ ] [P1] [Audio] Desktop-Sink verifizieren: hörbare Wiedergabe eines Testworts unter WSLg/PulseAudio (erste echte Hörprobe der generierten Piper-Dateien steht noch aus).
 - [ ] [P1] [Audio] Android-Sink auf Galaxy A53 verifizieren: AudioTrack-Lebenszyklus sauber (release nach Wiedergabe), Kanaltrennung real mit Hörgerät testen.
