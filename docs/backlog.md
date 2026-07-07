@@ -13,12 +13,12 @@ Stand 2026-07-07: initiales Backlog aus der Konzept-Roadmap abgeleitet, Meilenst
 ## M1 – Audio-Grundgerüst
 
 - [x] [P0] [KLÄRUNG] Audioquelle für Testkorpus entschieden. Hinweis: lokales TTS (Piper), 2–3 Hochdeutsch-Stimmen (männlich/weiblich) für M1; Dialekte als vorbereitetes `locale`-Feld, Befüllung später — siehe ADR-0006.
-- [ ] [P1] [Korpus] `tools/generate_tts.py` (o. ä.): Piper-Stimmen installieren, WAV-Generierungsskript für den Testkorpus.
+- [x] [P1] [Korpus] `tools/generate_tts.py`: Piper via uv installiert, Stimmen `de_DE-thorsten-medium` (m) + `de_DE-kerstin-low` (w) heruntergeladen, Generierungsskript schreibt WAV + `recordings.json`. Hinweis: native Piper-Rate 22050 Hz statt der ursprünglich angenommenen 48 kHz — ADR-0003 entsprechend korrigiert.
+- [x] [P1] [Korpus] Minimaler Testkorpus 18 Wörter × 2 Piper-Stimmen (36 Aufnahmen) mit Metadaten (Silben, Kategorie, 2 Minimalpaare) in `corpus-data/words.json` + `recordings.json`. Hinweis: Audio selbst bleibt ungetrackt (`.gitignore`), nur Metadaten versioniert.
 - [ ] [P1] [Audio] WAV-Loader (PCM16) in `:core` implementieren + Tests.
-- [ ] [P1] [Audio] Desktop-Sink verifizieren: hörbare Wiedergabe eines Testtons/-worts unter WSLg/PulseAudio.
+- [ ] [P1] [Audio] Desktop-Sink verifizieren: hörbare Wiedergabe eines Testworts unter WSLg/PulseAudio (erste echte Hörprobe der generierten Piper-Dateien steht noch aus).
 - [ ] [P1] [Audio] Android-Sink auf Galaxy A53 verifizieren: AudioTrack-Lebenszyklus sauber (release nach Wiedergabe), Kanaltrennung real mit Hörgerät testen.
 - [ ] [P1] [Audio] Kanalsteuerung links/rechts/beide + getrennte Pegel als Session-Parameter bis in die UI durchstechen.
-- [ ] [P1] [Korpus] Minimaler Testkorpus 10–20 Wörter (2–3 Piper-Stimmen je Wort) mit Metadaten (Silben, Kategorie) in `corpus-data/`.
 
 ## M2 – Lernmodus
 

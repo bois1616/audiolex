@@ -1,0 +1,254 @@
+[
+  {
+    "id": "ball__thorsten",
+    "wordId": "ball",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/ball__thorsten.wav"
+  },
+  {
+    "id": "ball__kerstin",
+    "wordId": "ball",
+    "voiceId": "kerstin",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/ball__kerstin.wav"
+  },
+  {
+    "id": "haus__thorsten",
+    "wordId": "haus",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/haus__thorsten.wav"
+  },
+  {
+    "id": "haus__kerstin",
+    "wordId": "haus",
+    "voiceId": "kerstin",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/haus__kerstin.wav"
+  },
+  {
+    "id": "brot__thorsten",
+    "wordId": "brot",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/brot__thorsten.wav"
+  },
+  {
+    "id": "brot__kerstin",
+    "wordId": "brot",
+    "voiceId": "kerstin",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/brot__kerstin.wav"
+  },
+  {
+    "id": "wasser__thorsten",
+    "wordId": "wasser",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/wasser__thorsten.wav"
+  },
+  {
+    "id": "wasser__kerstin",
+    "wordId": "wasser",
+    "voiceId": "kerstin",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/wasser__kerstin.wav"
+  },
+  {
+    "id": "tisch__thorsten",
+    "wordId": "tisch",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/tisch__thorsten.wav"
+  },
+  {
+    "id": "tisch__kerstin",
+    "wordId": "tisch",
+    "voiceId": "kerstin",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/tisch__kerstin.wav"
+  },
+  {
+    "id": "fenster__thorsten",
+    "wordId": "fenster",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/fenster__thorsten.wav"
+  },
+  {
+    "id": "fenster__kerstin",
+    "wordId": "fenster",
+    "voiceId": "kerstin",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/fenster__kerstin.wav"
+  },
+  {
+    "id": "garten__thorsten",
+    "wordId": "garten",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/garten__thorsten.wav"
+  },
+  {
+    "id": "garten__kerstin",
+    "wordId": "garten",
+    "voiceId": "kerstin",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/garten__kerstin.wav"
+  },
+  {
+    "id": "telefon__thorsten",
+    "wordId": "telefon",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/telefon__thorsten.wav"
+  },
+  {
+    "id": "telefon__kerstin",
+    "wordId": "telefon",
+    "voiceId": "kerstin",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/telefon__kerstin.wav"
+  },
+  {
+    "id": "computer__thorsten",
+    "wordId": "computer",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/computer__thorsten.wav"
+  },
+  {
+    "id": "computer__kerstin",
+    "wordId": "computer",
+    "voiceId": "kerstin",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/computer__kerstin.wav"
+  },
+  {
+    "id": "kaffee__thorsten",
+    "wordId": "kaffee",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/kaffee__thorsten.wav"
+  },
+  {
+    "id": "kaffee__kerstin",
+    "wordId": "kaffee",
+    "voiceId": "kerstin",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/kaffee__kerstin.wav"
+  },
+  {
+    "id": "restaurant__thorsten",
+    "wordId": "restaurant",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/restaurant__thorsten.wav"
+  },
+  {
+    "id": "restaurant__kerstin",
+    "wordId": "restaurant",
+    "voiceId": "kerstin",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/restaurant__kerstin.wav"
+  },
+  {
+    "id": "spiegel__thorsten",
+    "wordId": "spiegel",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/spiegel__thorsten.wav"
+  },
+  {
+    "id": "spiegel__kerstin",
+    "wordId": "spiegel",
+    "voiceId": "kerstin",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/spiegel__kerstin.wav"
+  },
+  {
+    "id": "gnu__thorsten",
+    "wordId": "gnu",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/gnu__thorsten.wav"
+  },
+  {
+    "id": "gnu__kerstin",
+    "wordId": "gnu",
+    "voiceId": "kerstin",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/gnu__kerstin.wav"
+  },
+  {
+    "id": "kuh__thorsten",
+    "wordId": "kuh",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/kuh__thorsten.wav"
+  },
+  {
+    "id": "kuh__kerstin",
+    "wordId": "kuh",
+    "voiceId": "kerstin",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/kuh__kerstin.wav"
+  },
+  {
+    "id": "panther__thorsten",
+    "wordId": "panther",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/panther__thorsten.wav"
+  },
+  {
+    "id": "panther__kerstin",
+    "wordId": "panther",
+    "voiceId": "kerstin",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/panther__kerstin.wav"
+  },
+  {
+    "id": "otter__thorsten",
+    "wordId": "otter",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/otter__thorsten.wav"
+  },
+  {
+    "id": "otter__kerstin",
+    "wordId": "otter",
+    "voiceId": "kerstin",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/otter__kerstin.wav"
+  },
+  {
+    "id": "regenschirm__thorsten",
+    "wordId": "regenschirm",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/regenschirm__thorsten.wav"
+  },
+  {
+    "id": "regenschirm__kerstin",
+    "wordId": "regenschirm",
+    "voiceId": "kerstin",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/regenschirm__kerstin.wav"
+  },
+  {
+    "id": "schmetterling__thorsten",
+    "wordId": "schmetterling",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/schmetterling__thorsten.wav"
+  },
+  {
+    "id": "schmetterling__kerstin",
+    "wordId": "schmetterling",
+    "voiceId": "kerstin",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/schmetterling__kerstin.wav"
+  }
+]

@@ -11,7 +11,7 @@ Kernanforderungen: kanalgetrennte Ansteuerung (links/rechts/beide) mit getrennte
 
 1. **Mixing in Common-Kotlin:** Kanal-Gain (`StereoGain`), Störgeräusch-Mischung und SNR-Berechnung (`noiseGainForSnr` über RMS) arbeiten auf `PcmBuffer` (interleaved PCM16) in `commonMain` — vollständig JVM-unit-testbar.
 2. **Ausgabe als schmales expect/actual-Interface `AudioSink`:** Android → `AudioTrack`, Desktop → `javax.sound.sampled`, iOS später → `AVAudioEngine`. Der Sink bekommt fertig gemischtes Stereo-PCM; keine Plattformlogik oberhalb des Sinks.
-3. **Korpus-Audioformat MVP: WAV (PCM16, 48 kHz, mono):** kein Decoder nötig, ein selbstgeschriebener WAV-Loader läuft identisch auf allen Targets. Störgeräusch-Loops als WAV stereo.
+3. **Korpus-Audioformat MVP: WAV (PCM16, 22050 Hz, mono):** kein Decoder nötig, ein selbstgeschriebener WAV-Loader läuft identisch auf allen Targets. 22050 Hz ist die native Ausgaberate der gewählten Piper-Stimmen (ADR-0006) — kein Resampling-Schritt, keine Qualitätsverluste. Mixer und `AudioSink` sind sample-rate-agnostisch (übernehmen die Rate aus dem `PcmBuffer`); Störgeräusch-Loops müssen dieselbe Rate wie die jeweilige Sprachaufnahme haben, sonst schlägt `mixWithNoise` fehl (Rate-Check). Sollten später hochwertigere Quellen (eigene Aufnahmen, andere TTS) mit abweichender Rate hinzukommen, ist ein Resampling-Schritt beim Korpus-Import nötig — nicht in der Kernlogik.
 
 ## Alternativen
 

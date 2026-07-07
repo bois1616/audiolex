@@ -1,0 +1,20 @@
+[
+  { "id": "ball", "text": "Ball", "language": "de-DE", "syllableCount": 1, "category": "EVERYDAY" },
+  { "id": "haus", "text": "Haus", "language": "de-DE", "syllableCount": 1, "category": "EVERYDAY" },
+  { "id": "brot", "text": "Brot", "language": "de-DE", "syllableCount": 1, "category": "EVERYDAY" },
+  { "id": "wasser", "text": "Wasser", "language": "de-DE", "syllableCount": 2, "category": "EVERYDAY" },
+  { "id": "tisch", "text": "Tisch", "language": "de-DE", "syllableCount": 1, "category": "EVERYDAY" },
+  { "id": "fenster", "text": "Fenster", "language": "de-DE", "syllableCount": 2, "category": "EVERYDAY" },
+  { "id": "garten", "text": "Garten", "language": "de-DE", "syllableCount": 2, "category": "EVERYDAY" },
+  { "id": "telefon", "text": "Telefon", "language": "de-DE", "syllableCount": 3, "category": "LOANWORD" },
+  { "id": "computer", "text": "Computer", "language": "de-DE", "syllableCount": 3, "category": "LOANWORD" },
+  { "id": "kaffee", "text": "Kaffee", "language": "de-DE", "syllableCount": 2, "category": "LOANWORD" },
+  { "id": "restaurant", "text": "Restaurant", "language": "de-DE", "syllableCount": 3, "category": "LOANWORD" },
+  { "id": "spiegel", "text": "Spiegel", "language": "de-DE", "syllableCount": 2, "category": "EVERYDAY" },
+  { "id": "gnu", "text": "Gnu", "language": "de-DE", "syllableCount": 1, "category": "EVERYDAY", "phoneticGroup": "gnu-kuh" },
+  { "id": "kuh", "text": "Kuh", "language": "de-DE", "syllableCount": 1, "category": "EVERYDAY", "phoneticGroup": "gnu-kuh" },
+  { "id": "panther", "text": "Panther", "language": "de-DE", "syllableCount": 2, "category": "EVERYDAY", "phoneticGroup": "panther-otter" },
+  { "id": "otter", "text": "Otter", "language": "de-DE", "syllableCount": 2, "category": "EVERYDAY", "phoneticGroup": "panther-otter" },
+  { "id": "regenschirm", "text": "Regenschirm", "language": "de-DE", "syllableCount": 3, "category": "EVERYDAY" },
+  { "id": "schmetterling", "text": "Schmetterling", "language": "de-DE", "syllableCount": 3, "category": "EVERYDAY" }
+]

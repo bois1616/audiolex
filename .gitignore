@@ -19,7 +19,10 @@ corpus-data/**/*.wav
 corpus-data/**/*.mp3
 corpus-data/**/*.ogg
 
-# Python-Tooling (falls später unter tools/ genutzt)
+# Python-Tooling (tools/, TTS-Generierung u.ä.)
 __pycache__/
 *.py[oc]
 .venv/
+
+# TTS-Stimmodelle (großer Download, per Skript reproduzierbar, siehe tools/generate_tts.py)
+tools/voices/
