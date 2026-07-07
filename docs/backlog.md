@@ -12,6 +12,8 @@ Stand 2026-07-07: initiales Backlog aus der Konzept-Roadmap abgeleitet, Meilenst
 
 ## M1 – Audio-Grundgerüst
 
+- [ ] [P0] [Review] Opus-Review vom 2026-07-07 abarbeiten: `docs/reviews/2026-07-07-m1-audio-review.md` — **vor weiterer Audio-/StereoGain-Arbeit**. Kernpunkte: (1) `swapStereoChannels`-Evidenz ist kontaminiert (Ursprungsbeobachtung physikalisch unmöglich, System-Balance rechts=0 nie zurückgesetzt, BT-Mono-Mix macht Swap unfalsifizierbar) → sauberes Re-Test-Protokoll, dann Fix behalten/entfernen/zum Setting machen; (2) Kanaltrennung über einzelnes BT-Hörgerät geht konzeptionell nicht → Referenz-Trainings-Setup als [KLÄRUNG] mit dem Autor; dazu kleinere Punkte (Log-Daten, Clone-Bootstrap, M2-Anforderungen).
+
 - [x] [P0] [KLÄRUNG] Audioquelle für Testkorpus entschieden. Hinweis: lokales TTS (Piper), 2–3 Hochdeutsch-Stimmen (männlich/weiblich) für M1; Dialekte als vorbereitetes `locale`-Feld, Befüllung später — siehe ADR-0006.
 - [x] [P1] [Korpus] `tools/generate_tts.py`: Piper via uv installiert, Generierungsskript schreibt WAV + `recordings.json`. Hinweis: native Piper-Rate 22050 Hz statt der ursprünglich angenommenen 48 kHz — ADR-0003 entsprechend korrigiert.
 - [x] [P1] [Korpus] Minimaler Testkorpus 18 Wörter (thorsten-medium, 18 Aufnahmen) mit Metadaten (Silben, Kategorie, 2 Minimalpaare) in `words.json` + `recordings.json`. Hinweis: Audio selbst bleibt ungetrackt (`.gitignore`), nur Metadaten versioniert; Korpus liegt jetzt unter `composeApp/src/commonMain/composeResources/files/corpus/` statt Top-Level `corpus-data/` (Zugriff per `Res.readBytes(...)` auf jedem Target, auch Android ohne Repo-Dateisystempfad).

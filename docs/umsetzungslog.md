@@ -1,5 +1,9 @@
 # Umsetzungs-Log (Neueste Einträge zuerst)
 
+## 2026-07-09 (Abend)
+
+- **Opus-Review des M1-Stands eingeholt und abgelegt**: Auf Wunsch des Autors hat ein Opus-Klasse-Modell Umsetzungslog, Backlog und Commits querbewertet. Zwei P0-Befunde: (1) der `swapStereoChannels`-Fix aus `67ea1e2` steht auf kontaminierter Evidenz (Details und Re-Test-Protokoll im Review); (2) Kanaltrennung über ein einzelnes BT-Hörgerät ist konzeptionell wirkungslos — das Kernfeature braucht ein geklärtes Referenz-Trainings-Setup. Review mit Aufgabenliste unter `docs/reviews/2026-07-07-m1-audio-review.md`, als P0-Item im Backlog verankert; Abarbeitung in der nächsten Sitzung vor weiterer Audio-Arbeit.
+
 ## 2026-07-09
 
 - **Android-Sink verifiziert; L/R-Kanalvertauschung auf dem Galaxy A53 gefunden und behoben**: adb-Verbindung war abgelaufen, neu über Drahtlos-Debugging verbunden (neuer Port, kein neues Pairing nötig). Erster Testlauf: Wortklick löste hörbares Audio-Ducking aus, aber kein Ton — Systemmetriken (`dumpsys audio`, `mediametrics_audiotrackdeviceusage_reported`) zeigten durchgehend sauberen Durchlauf (Routing korrekt auf `hearing_aid_out`, volle Lautstärke, `xruns:0`); Ursache war letztlich eine getrennte Bluetooth-Hörgerät-Lautstärkeeinstellung, kein Code-Fehler.
