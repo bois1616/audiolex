@@ -1,5 +1,13 @@
 # Umsetzungs-Log (Neueste Einträge zuerst)
 
+## 2026-07-09
+
+- **Android-Sink verifiziert; L/R-Kanalvertauschung auf dem Galaxy A53 gefunden und behoben**: adb-Verbindung war abgelaufen, neu über Drahtlos-Debugging verbunden (neuer Port, kein neues Pairing nötig). Erster Testlauf: Wortklick löste hörbares Audio-Ducking aus, aber kein Ton — Systemmetriken (`dumpsys audio`, `mediametrics_audiotrackdeviceusage_reported`) zeigten durchgehend sauberen Durchlauf (Routing korrekt auf `hearing_aid_out`, volle Lautstärke, `xruns:0`); Ursache war letztlich eine getrennte Bluetooth-Hörgerät-Lautstärkeeinstellung, kein Code-Fehler.
+
+  Danach Kanaltrennung mit zwei unterschiedlichen Wörtern (statt gleichem Wort lauter/leiser, da mit einem einzelnen Hörgerät „welches Wort" ein klareres Signal ist als „lauter/leiser") getestet: „Ball links" lieferte „Haus", also vertauscht. Nutzer schaltete testweise die System-Kanal-Lautstärke rechts auf 0 und schloss zusätzlich einen kabelgebundenen USB-C-Kopfhörer an (überschreibt BT sofort) — auch dort dieselbe Seitenvertauschung, unabhängig vom Ausgabeweg. Damit als Geräte-/OEM-Audiostack-Eigenheit eingeordnet, nicht als BT-Hörgerät-spezifisches Problem. Fix: `swapStereoChannels()` in `AudioSink.android.kt`, mit 3 Unit-Tests unter neu eingerichtetem `androidUnitTest`-Source-Set. Eine Zwischenbeobachtung („Beide" lieferte am Kopfhörer keine hörbare Überlagerung) blieb ungeklärt — Android-Metriken zeigten dabei durchgehend sauberes Stereo (`channelMask=0x3`), vermutlich ein Wahrnehmungseffekt bei zwei kurzen, gleichzeitigen Wörtern; bewusst nicht weiterverfolgt, da kein objektiver Beleg für einen Software-Fehler vorlag und der Aufwand für einen präziseren Test (z. B. unterscheidbare Sinustöne) in keinem Verhältnis zum Nutzen stand.
+
+  Diagnose-Testcode (Logging im Sink, 3-Sekunden-Dauerton-Button, manueller Test-Swap) nach Gebrauch wieder entfernt; die dauerhafte Kanaltest-UI (zwei Wörter links/rechts/beide) bleibt als App.kt-Smoke-Test bestehen.
+
 ## 2026-07-08 (Fortsetzung 2)
 
 - **Desktop-Sink end-to-end verifiziert; Korpus in `composeResources` verschoben**: Playback-Smoke-Test in `App.kt` — lädt `words.json`/`recordings.json` (neu: `kotlinx.serialization`) und spielt per Klick eine echte Korpus-Aufnahme über `WavFile.decode` + `AudioSink`. Dabei musste `corpus-data/` von einem Top-Level-Ordner nach `composeApp/src/commonMain/composeResources/files/corpus/` verschoben werden (Compose-Resources verlangen physische Dateien unter diesem Pfad; ein Top-Level-Duplikat hätte zwei synchron zu haltende Kopien bedeutet, und Android hat ohnehin keinen repo-relativen Dateisystempfad). `tools/generate_tts.py` schreibt jetzt direkt dorthin.

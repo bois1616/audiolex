@@ -2,6 +2,7 @@ package de.hexenwoche.audiolex
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -22,6 +23,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import de.hexenwoche.audiolex.core.audio.AudioSink
+import de.hexenwoche.audiolex.core.audio.PcmBuffer
+import de.hexenwoche.audiolex.core.audio.StereoGain
 import de.hexenwoche.audiolex.core.audio.WavFile
 import de.hexenwoche.audiolex.core.audio.createAudioSink
 import de.hexenwoche.audiolex.core.corpus.AudioRecording
@@ -83,6 +86,42 @@ private fun WordPlaybackList() {
         return
     }
 
+    // Channel-separation smoke test (backlog M1): plays two *different*
+    // words, one per ear, so the test doesn't rely on judging the same
+    // word's loudness -- with a single hearing aid on one ear, hearing
+    // "which word" is a much clearer signal than "louder/quieter".
+    // Not the learning-mode UI (that's M2's session/settings work).
+    val leftWordRecording = recordings.firstOrNull { it.wordId == currentWords.getOrNull(0)?.id }
+    val rightWordRecording = recordings.firstOrNull { it.wordId == currentWords.getOrNull(1)?.id }
+    val leftWordText = currentWords.getOrNull(0)?.text ?: "?"
+    val rightWordText = currentWords.getOrNull(1)?.text ?: "?"
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        for ((label, gain) in listOf(
+            "Nur „$leftWordText“ links" to StereoGain.LEFT_ONLY,
+            "Beide" to StereoGain.BOTH,
+            "Nur „$rightWordText“ rechts" to StereoGain.RIGHT_ONLY,
+        )) {
+            Button(
+                enabled = leftWordRecording != null && rightWordRecording != null,
+                onClick = {
+                    val left = leftWordRecording ?: return@Button
+                    val right = rightWordRecording ?: return@Button
+                    scope.launch {
+                        status = "Kanaltest: $label…"
+                        try {
+                            playTwoWordsPerEar(sink, left.fileRef, right.fileRef, gain)
+                            status = "Bereit"
+                        } catch (e: Exception) {
+                            status = "Fehler: ${e.message}"
+                        }
+                    }
+                },
+            ) {
+                Text(label)
+            }
+        }
+    }
+
     LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         items(currentWords) { word ->
             val recording = recordings.firstOrNull { it.wordId == word.id }
@@ -92,8 +131,12 @@ private fun WordPlaybackList() {
                     val rec = recording ?: return@Button
                     scope.launch {
                         status = "Spiele „${word.text}“ (${rec.voiceId})…"
-                        playRecording(sink, rec.fileRef)
-                        status = "Bereit"
+                        try {
+                            playRecording(sink, rec.fileRef)
+                            status = "Bereit"
+                        } catch (e: Exception) {
+                            status = "Fehler: ${e.message}"
+                        }
                     }
                 },
             ) {
@@ -108,5 +151,35 @@ private suspend fun playRecording(sink: AudioSink, fileRef: String) {
         val bytes = Res.readBytes("files/corpus/$fileRef")
         val buffer = WavFile.decode(bytes)
         sink.play(buffer)
+    }
+}
+
+/**
+ * Plays [leftFileRef] panned to the left ear and [rightFileRef] panned to
+ * the right ear at the same time, then applies [gain] on top (so e.g.
+ * LEFT_ONLY silences the right word entirely, proving the ear that hears
+ * something is the ear StereoGain intended).
+ */
+private suspend fun playTwoWordsPerEar(
+    sink: AudioSink,
+    leftFileRef: String,
+    rightFileRef: String,
+    gain: StereoGain,
+) {
+    withContext(Dispatchers.Default) {
+        val left = WavFile.decode(Res.readBytes("files/corpus/$leftFileRef"))
+        val right = WavFile.decode(Res.readBytes("files/corpus/$rightFileRef"))
+        require(left.sampleRate == right.sampleRate) { "sample rates differ" }
+        require(left.channels == 1 && right.channels == 1) { "expected mono corpus recordings" }
+
+        val frameCount = maxOf(left.frameCount, right.frameCount)
+        val stereo = ShortArray(frameCount * 2)
+        for (frame in 0 until frameCount) {
+            val leftSample = left.samples.getOrElse(frame) { 0 }
+            val rightSample = right.samples.getOrElse(frame) { 0 }
+            stereo[frame * 2] = (leftSample * gain.left).toInt().toShort()
+            stereo[frame * 2 + 1] = (rightSample * gain.right).toInt().toShort()
+        }
+        sink.play(PcmBuffer(stereo, left.sampleRate, channels = 2))
     }
 }
