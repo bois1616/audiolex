@@ -57,7 +57,7 @@ Alles oberhalb des Sinks ist deterministisch und unit-getestet; der Sink erhält
 | Entität | Kern-Felder | Zweck |
 | --- | --- | --- |
 | `Word` | id, text, language, syllableCount, category, phoneticGroup? | generischer Korpus-Eintrag, nicht hörverlust-spezifisch |
-| `AudioRecording` | id, wordId, speaker, fileRef | n Aufnahmen pro Wort (mehrere Sprecher) |
+| `AudioRecording` | id, wordId, voiceId, locale, fileRef | n Aufnahmen pro Wort (mehrere Sprecher/Stimmlagen); `locale` trägt Standard/Region/Dialekt (ADR-0006), unabhängig von `Word.language` filterbar |
 | `ReviewCard` | wordId, dueAt, lastRating, repetitions | SRS-Zustand, getrennt vom Wort |
 | `Session` | id, mode, parameterSnapshot, results[] | Nachvollziehbarkeit einer Trainingseinheit |
 | `SettingsProfile` | name, Kanal/Pegel/SNR/Szenario/Wortfilter | benannte Presets (Einfach/Schwierig/Fortgeschritten) |

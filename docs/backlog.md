@@ -12,12 +12,13 @@ Stand 2026-07-07: initiales Backlog aus der Konzept-Roadmap abgeleitet, Meilenst
 
 ## M1 – Audio-Grundgerüst
 
-- [ ] [P0] [KLÄRUNG] Audioquelle für Testkorpus: TTS-Start (schnell, z. B. lokale Piper-Stimmen) vs. eigene Aufnahmen (mehrere Sprecher, natürliches Tempo). Empfehlung: TTS für M1, echte Aufnahmen parallel aufbauen.
+- [x] [P0] [KLÄRUNG] Audioquelle für Testkorpus entschieden. Hinweis: lokales TTS (Piper), 2–3 Hochdeutsch-Stimmen (männlich/weiblich) für M1; Dialekte als vorbereitetes `locale`-Feld, Befüllung später — siehe ADR-0006.
+- [ ] [P1] [Korpus] `tools/generate_tts.py` (o. ä.): Piper-Stimmen installieren, WAV-Generierungsskript für den Testkorpus.
 - [ ] [P1] [Audio] WAV-Loader (PCM16) in `:core` implementieren + Tests.
 - [ ] [P1] [Audio] Desktop-Sink verifizieren: hörbare Wiedergabe eines Testtons/-worts unter WSLg/PulseAudio.
 - [ ] [P1] [Audio] Android-Sink auf Galaxy A53 verifizieren: AudioTrack-Lebenszyklus sauber (release nach Wiedergabe), Kanaltrennung real mit Hörgerät testen.
 - [ ] [P1] [Audio] Kanalsteuerung links/rechts/beide + getrennte Pegel als Session-Parameter bis in die UI durchstechen.
-- [ ] [P1] [Korpus] Minimaler Testkorpus 10–20 Wörter mit Metadaten (Silben, Kategorie) in `corpus-data/`.
+- [ ] [P1] [Korpus] Minimaler Testkorpus 10–20 Wörter (2–3 Piper-Stimmen je Wort) mit Metadaten (Silben, Kategorie) in `corpus-data/`.
 
 ## M2 – Lernmodus
 
@@ -40,6 +41,7 @@ Stand 2026-07-07: initiales Backlog aus der Konzept-Roadmap abgeleitet, Meilenst
 
 - [ ] [P2] [Korpus] Silbenzahl-Filter + Kategorien (Alltag/Fremdwort/fremdsprachig).
 - [ ] [P2] [KLÄRUNG] Phonetische Gruppierung: manuell kuratierte Minimalpaare (präzise, Pflegeaufwand) vs. algorithmische Distanz (z. B. Kölner Phonetik). Empfehlung: manuell kuratiert starten, Algorithmus als [PROP].
+- [ ] [P2] [Korpus] Dialekt-Aufnahmen für Fortgeschritten-Modus beschaffen (`AudioRecording.locale` ist vorbereitet, ADR-0006): Quelle klären — dialektfähige TTS finden oder eigene Aufnahmen; ohne Dialekt-Pool bleibt der Fortgeschritten-Filter auf Hochdeutsch beschränkt.
 
 ## Später / Vorschläge
 

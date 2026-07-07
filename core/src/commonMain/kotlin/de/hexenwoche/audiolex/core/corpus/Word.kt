@@ -21,7 +21,14 @@ enum class WordCategory { EVERYDAY, LOANWORD, FOREIGN }
 data class AudioRecording(
     val id: String,
     val wordId: String,
-    val speaker: String,
+    val voiceId: String,
+    /**
+     * BCP-47 tag of the recording's regional variant, e.g. "de-DE" (standard),
+     * "de-AT", "de-CH", or a dialect subtag once available (e.g. "de-DE-bar").
+     * Separate from [Word.language] so a word's dialect pool can be filtered
+     * independently of its base language (ADR-0006).
+     */
+    val locale: String,
     /** Path relative to the corpus data root. */
     val fileRef: String,
 )
