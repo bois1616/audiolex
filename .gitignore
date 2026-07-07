@@ -1,10 +1,25 @@
-# Python-generated files
+# Gradle
+.gradle/
+build/
+local.properties
+
+# Kotlin / IDE
+.kotlin/
+.idea/
+*.iml
+captures/
+.cxx/
+
+# Umgebung / Secrets
+.env
+.envrc
+
+# Audiodaten (Versionierungsstrategie offen, siehe Backlog [PROP] Git-LFS)
+corpus-data/**/*.wav
+corpus-data/**/*.mp3
+corpus-data/**/*.ogg
+
+# Python-Tooling (falls später unter tools/ genutzt)
 __pycache__/
 *.py[oc]
-build/
-dist/
-wheels/
-*.egg-info
-
-# Virtual environments
-.venv
+.venv/
