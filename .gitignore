@@ -18,6 +18,9 @@ captures/
 corpus-data/**/*.wav
 corpus-data/**/*.mp3
 corpus-data/**/*.ogg
+# Ausnahme: core/src/jvmTest/resources/*.wav ist eine winzige, bewusst
+# eingecheckte Loader-Testfixture, kein Korpus-Inhalt.
+!core/src/jvmTest/resources/*.wav
 
 # Python-Tooling (tools/, TTS-Generierung u.ä.)
 __pycache__/
