@@ -15,9 +15,9 @@ captures/
 .envrc
 
 # Audiodaten (Versionierungsstrategie offen, siehe Backlog [PROP] Git-LFS)
-corpus-data/**/*.wav
-corpus-data/**/*.mp3
-corpus-data/**/*.ogg
+composeApp/src/commonMain/composeResources/files/corpus/**/*.wav
+composeApp/src/commonMain/composeResources/files/corpus/**/*.mp3
+composeApp/src/commonMain/composeResources/files/corpus/**/*.ogg
 # Ausnahme: core/src/jvmTest/resources/*.wav ist eine winzige, bewusst
 # eingecheckte Loader-Testfixture, kein Korpus-Inhalt.
 !core/src/jvmTest/resources/*.wav

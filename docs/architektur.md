@@ -13,19 +13,22 @@ audiolex/
 ├── composeApp/                  # Compose-Multiplatform-UI
 │   └── src/
 │       ├── commonMain/          # Screens, Navigation, ViewModel-Schicht
+│       │   └── composeResources/files/corpus/  # Wortkorpus (Metadaten
+│       │                         #   versioniert, Audio nicht, s. .gitignore) —
+│       │                         #   als Compose-Resource, damit Android per
+│       │                         #   Res.readBytes(...) genauso zugreift wie Desktop
 │       ├── androidMain/         # MainActivity, Manifest
 │       └── desktopMain/         # main() für das Dev-Target
 ├── core/                        # KMP-Bibliothek: plattformfreie Fachlogik
 │   └── src/
 │       ├── commonMain/kotlin/de/hexenwoche/audiolex/core/
 │       │   ├── srs/             # ReviewRating, ReviewCard, ReviewScheduler
-│       │   ├── audio/           # PcmBuffer, Mixer, AudioSink (expect)
+│       │   ├── audio/           # PcmBuffer, Mixer, AudioSink (expect), WavFile
 │       │   ├── corpus/          # Word, AudioRecording, Kategorien
 │       │   └── session/         # (ab M2) Sitzungssteuerung
 │       ├── commonTest/          # Unit-Tests (laufen als jvmTest)
 │       ├── androidMain/         # actual: AudioTrack-Sink
 │       └── jvmMain/             # actual: javax.sound-Sink
-├── corpus-data/                 # Wortkorpus: Metadaten versioniert, Audio nicht (s. .gitignore)
 └── docs/                        # Konzept, ADRs, Backlog, Umsetzungslog
 ```
 

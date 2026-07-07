@@ -1,4 +1,4 @@
-"""Generates the corpus WAV files from corpus-data/words.json via Piper TTS.
+"""Generates the corpus WAV files from the corpus words.json via Piper TTS.
 
 Offline, one-shot tooling (ADR-0006): run manually whenever the word list or
 voice set changes; the app itself never calls Piper at runtime.
@@ -19,10 +19,14 @@ from pathlib import Path
 
 TOOLS_DIR = Path(__file__).parent
 REPO_ROOT = TOOLS_DIR.parent
-WORDS_JSON = REPO_ROOT / "corpus-data" / "words.json"
-RECORDINGS_JSON = REPO_ROOT / "corpus-data" / "recordings.json"
+# Corpus lives inside composeApp's Compose Resources, not a top-level dir:
+# it's read at runtime via Res.readBytes on every target (incl. Android,
+# which has no repo-relative filesystem access) -- see ADR-0003/architektur.md.
+CORPUS_DIR = REPO_ROOT / "composeApp" / "src" / "commonMain" / "composeResources" / "files" / "corpus"
+WORDS_JSON = CORPUS_DIR / "words.json"
+RECORDINGS_JSON = CORPUS_DIR / "recordings.json"
 VOICES_DIR = TOOLS_DIR / "voices"
-OUTPUT_DIR = REPO_ROOT / "corpus-data" / "raw" / "de-DE"
+OUTPUT_DIR = CORPUS_DIR / "raw" / "de-DE"
 
 # voiceId -> Piper model file. Standard German (locale "de-DE").
 #
@@ -71,7 +75,7 @@ def main() -> None:
                 "wordId": word["id"],
                 "voiceId": voice_id,
                 "locale": LOCALE,
-                "fileRef": str(out_path.relative_to(REPO_ROOT / "corpus-data")),
+                "fileRef": str(out_path.relative_to(CORPUS_DIR)),
             })
 
     RECORDINGS_JSON.write_text(

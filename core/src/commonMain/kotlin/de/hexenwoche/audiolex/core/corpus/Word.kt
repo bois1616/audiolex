@@ -1,9 +1,12 @@
 package de.hexenwoche.audiolex.core.corpus
 
+import kotlinx.serialization.Serializable
+
 /**
  * Generic corpus entry — nothing hearing-loss specific is wired in here,
  * so the corpus can later serve plain vocabulary training (concept 3.4).
  */
+@Serializable
 data class Word(
     val id: String,
     val text: String,
@@ -15,9 +18,11 @@ data class Word(
     val phoneticGroup: String? = null,
 )
 
+@Serializable
 enum class WordCategory { EVERYDAY, LOANWORD, FOREIGN }
 
 /** One recorded rendition of a word; a word can have several speakers. */
+@Serializable
 data class AudioRecording(
     val id: String,
     val wordId: String,
