@@ -19,6 +19,9 @@ AudioLex ist eine Hörtrainings-App (Android zuerst, iOS-Option offen) zum Wiede
 | Was | Wo |
 | --- | --- |
 | Konzept/Vision | `docs/konzept/AudioLex-Konzept.md` |
+| Haltung & Tonalität | `SOUL.md` |
+| UI/UX-Konzeption | `DESIGN.md` |
+| Szenario-Katalog (SDD, Quelle der UI-ACs) | `docs/szenarien.md` |
 | Architektur | `docs/architektur.md` |
 | Entscheidungen | `docs/adr/` |
 | Aufgaben & Prioritäten | `docs/backlog.md` |
