@@ -11,7 +11,7 @@ Das Opus-Review (Befund 2, P0, `docs/reviews/2026-07-07-m1-audio-review.md`) hat
 
 Entscheid des Autors vom 2026-07-08:
 
-1. **Referenz-Trainings-Setup ist das BT-Hörgerät am linken (trainierten) Ohr.** Abspielgerät ist das Smartphone; das Galaxy A53 ist Testgerät, die App wird aber **nicht an dieses konkrete Gerät gebunden** (keine weiteren gerätespezifischen Verdrahtungen; der bestehende `swapStereoChannels`-Fix steht ohnehin unter Re-Test-Vorbehalt, Review Befund 1).
+1. **Referenz-Trainings-Setup ist das BT-Hörgerät am linken (trainierten) Ohr.** Abspielgerät ist das Smartphone; das Galaxy A53 ist Testgerät, die App wird aber **nicht an dieses konkrete Gerät gebunden** (keine weiteren gerätespezifischen Verdrahtungen). Nachtrag: Der ursprünglich vermutete `swapStereoChannels`-Fix wurde per Re-Test-Protokoll widerlegt (Review Befund 1, ADR-0003) — das Gerät war nie fehlerhaft, der Fix selbst war der Bug und ist zurückgebaut.
 2. **Kanaltrennung wird vom Kernfeature zur Setup-Option** für Alternativ-Hardware (z. B. Kabel-Kopfhörer): `StereoGain` bleibt im Mixer erhalten und getestet, wird aber nicht mehr als primäres UI-Feature nach M1/M2 durchgestochen, sondern als Einstellung geführt (M4).
 
 ## Alternativen

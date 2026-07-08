@@ -5,10 +5,11 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
 /**
- * Verified fix (backlog M1): on a Galaxy A53, standard L/R-interleaved
- * stereo PCM played out of the wrong ear, confirmed independently over
- * both a Bluetooth hearing aid and a wired USB-C headset. swapStereoChannels
- * corrects this before AudioTrack playback (see AudioSink.android.kt).
+ * swapStereoChannels itself is not applied by default (see AudioSink.android.kt
+ * doc: the earlier "fix" was based on contaminated evidence and the Galaxy
+ * A53 was re-tested as correct without it). These tests just cover the
+ * function's own swap arithmetic, kept as groundwork for a possible future
+ * "Kanäle tauschen" setting.
  */
 class AudioSinkAndroidTest {
 

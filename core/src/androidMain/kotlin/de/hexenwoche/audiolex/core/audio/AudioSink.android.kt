@@ -7,23 +7,18 @@ import android.media.AudioTrack
 actual fun createAudioSink(): AudioSink = AndroidAudioSink()
 
 /**
- * Minimal AudioTrack sink (static mode, fine for single-word playback).
- *
- * Verified on a Galaxy A53 (backlog M1): standard L/R-interleaved stereo
- * PCM played out of the *wrong* ear, confirmed independently over both a
- * Bluetooth hearing aid and a wired USB-C headset (two different words,
- * one per ear -- "left" consistently came out the right side and vice
- * versa on both output paths). [swapStereoChannels] corrects this before
- * handing PCM to AudioTrack. Since it reproduces across two unrelated
- * output paths on this device, it's treated as a device/OEM audio-stack
- * quirk rather than something specific to one accessory; the upstream PCM
- * (from [toStereoWithGain]) already uses the documented standard layout.
- * If this doesn't reproduce on other Android devices, revisit rather than
- * assume it's universal.
+ * Same sink with an explicit L/R-swap override -- groundwork for the
+ * "Kanäle tauschen" user setting (Opus-Review 2026-07-07, Befund 1), not
+ * currently wired into app code. [swapChannels] should be `false` for the
+ * verified-correct Galaxy A53 default; see [swapStereoChannels] doc.
  */
-private class AndroidAudioSink : AudioSink {
+fun createAudioSinkWithSwapOverride(swapChannels: Boolean): AudioSink =
+    AndroidAudioSink(swapChannels)
+
+/** Minimal AudioTrack sink (static mode, fine for single-word playback). */
+private class AndroidAudioSink(private val swapChannels: Boolean = false) : AudioSink {
     override fun play(buffer: PcmBuffer) {
-        val playable = if (buffer.channels == 2) buffer.swapStereoChannels() else buffer
+        val playable = if (buffer.channels == 2 && swapChannels) buffer.swapStereoChannels() else buffer
 
         val channelMask = if (playable.channels == 1) {
             AudioFormat.CHANNEL_OUT_MONO
@@ -62,7 +57,22 @@ private class AndroidAudioSink : AudioSink {
     override fun close() = Unit
 }
 
-/** Swaps L/R in interleaved stereo PCM; see [AndroidAudioSink] doc for why. */
+/**
+ * Swaps L/R in interleaved stereo PCM.
+ *
+ * Not applied by default. An earlier fix (backlog M1, commit `67ea1e2`)
+ * assumed the Galaxy A53 played standard L/R-interleaved stereo out of the
+ * wrong ear and swapped it here to compensate. The Opus-Review 2026-07-07
+ * (Befund 1) found that evidence contaminated (silent channel by test
+ * construction, an unreset system balance override, and a BT mono-mix that
+ * made the "confirmation" unfalsifiable) and called for a clean re-test.
+ * Re-tested 2026-07-08 with the balance confirmed centered, a wired USB-C
+ * headset, and a known-state toggle: with swap OFF, "left" and "right"
+ * playback each came out of the correct physical ear, with silence on the
+ * other -- i.e. the device was never broken, and this function was the bug.
+ * Kept only as groundwork for a possible future "Kanäle tauschen"
+ * accessibility setting; not wired into [createAudioSink] anymore.
+ */
 internal fun PcmBuffer.swapStereoChannels(): PcmBuffer {
     require(channels == 2) { "expected stereo, got $channels channels" }
     val swapped = ShortArray(samples.size)

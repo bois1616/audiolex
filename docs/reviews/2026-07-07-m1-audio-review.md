@@ -21,13 +21,14 @@ Priori-Überlegung: Ein geräteweiter L/R-Tausch im Samsung-Audiostack würde je
 
 ### Aufgaben
 
-- [ ] **Sauberes Re-Test-Protokoll durchführen** (mit dem Autor):
+- [x] **Sauberes Re-Test-Protokoll durchführen** (mit dem Autor):
   1. Klangbalance nachweislich auf Mitte (Einstellungen → Eingabehilfe → Hörverbesserungen), Screenshot/Bestätigung.
   2. Kabel-Kopfhörer (USB-C), kein BT.
   3. Ein Build mit **bekanntem** Swap-Zustand (dokumentieren, ob `swapStereoChannels` aktiv ist).
   4. Test: beide Ohrhörer **nacheinander physisch ans gesunde Ohr halten** — das umgeht die Einseitigkeit des Gehörs vollständig und macht „welche Muschel spielt welches Wort" objektiv prüfbar.
-- [ ] **Konsequenz ziehen:** Reproduziert der Swap nicht → `swapStereoChannels` entfernen (inkl. Test, ADR-0003-Eintrag korrigieren, Log-Eintrag mit Richtigstellung). Reproduziert er doch → Befund hier dokumentiert widerlegen.
-- [ ] **Unabhängig vom Ausgang:** „Kanäle tauschen" als **Nutzer-Setting** vorsehen (statt hart verdrahtetem Gerätefix) — für Hörgeräteträger eine legitime Barrierefreiheits-Option, und die Annahme bleibt revidierbar, ohne neu zu bauen. Als Backlog-Item (M4 Settings) einplanen, nicht sofort umsetzen.
+  → *Durchgeführt 2026-07-08: „Lautstärke getrennt anpassen" deaktiviert (gemeinsame Lautstärke statt möglicherweise verstelltem rechtem Kanal), USB-C-Kabel-Kopfhörer verbunden, Debug-Build mit einem Swap-Toggle im Dev-Screen (`createAudioSinkForSwapDiagnosis`, seitdem wieder entfernt) installiert. Ohrmuschel-Test mit Swap AN und AUS durchgeführt.*
+- [x] **Konsequenz ziehen:** Reproduziert der Swap nicht → `swapStereoChannels` entfernen (inkl. Test, ADR-0003-Eintrag korrigieren, Log-Eintrag mit Richtigstellung). Reproduziert er doch → Befund hier dokumentiert widerlegen. → *Ergebnis: Swap AUS → „links"/„rechts" kommen korrekt aus der jeweiligen Muschel, sauber getrennt (kein Übersprechen). Swap AN → seitenvertauscht, wie erwartet, wenn eine funktionierende Kette künstlich vertauscht wird. Damit ist bestätigt: Befund 1 hatte recht, das Gerät war nie fehlerhaft. `swapStereoChannels` als Default entfernt (`AndroidAudioSink.swapChannels` jetzt `false`), Funktion selbst bleibt als Grundlage für ein künftiges Setting (siehe unten). ADR-0003 und Umsetzungslog korrigiert.*
+- [x] **Unabhängig vom Ausgang:** „Kanäle tauschen" als **Nutzer-Setting** vorsehen (statt hart verdrahtetem Gerätefix) — für Hörgeräteträger eine legitime Barrierefreiheits-Option, und die Annahme bleibt revidierbar, ohne neu zu bauen. Als Backlog-Item (M4 Settings) einplanen, nicht sofort umsetzen. → *Erledigt: `createAudioSinkWithSwapOverride(Boolean)` als Grundgerüst in `AudioSink.android.kt` belassen, nicht in `createAudioSink()` verdrahtet; Backlog-Item M4 verweist darauf.*
 
 ---
 
