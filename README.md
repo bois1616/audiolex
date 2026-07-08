@@ -25,6 +25,16 @@ Kotlin Multiplatform + Compose Multiplatform (siehe [ADR-0001](docs/adr/0001-tec
 
 Voraussetzungen: JDK 21, Android SDK (Pfad in `local.properties`).
 
+**Nach frischem Klon:** Der Wortkorpus (`words.json`, `recordings.json`) ist versioniert, die zugehörigen Audiodateien nicht (siehe `.gitignore`, Versionierungsstrategie offen). Ohne sie startet die App, aber jede Wortwiedergabe schlägt fehl. Einmalig generieren:
+
+```bash
+cd tools
+uv run python -m piper.download_voices --download-dir voices de_DE-thorsten-medium
+uv run generate_tts.py
+```
+
+Details: [tools/generate_tts.py](tools/generate_tts.py), [ADR-0006](docs/adr/0006-audioquelle-tts.md).
+
 ## Projektnavigation
 
 - Verbindlicher Arbeitsmodus: [AGENTS.md](AGENTS.md)
