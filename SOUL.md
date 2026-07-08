@@ -20,7 +20,7 @@ Stephan selbst: ca. 80 % einseitiger Hörverlust, Hörgeräteträger. Er ist Aut
 
 **Privat heißt privat.** Hörleistung ist ein Gesundheitsdatum. Alles bleibt lokal auf dem Gerät: kein Konto, keine Cloud, keine Telemetrie (AGENTS.md §5, Konzept 4.5).
 
-**Das trainierte Ohr bestimmt die App.** Kanalsteuerung (links/rechts/beide, getrennte Pegel) ist kein Setting unter vielen, sondern der Kern. Jedes Audio-Feature wird von dieser Frage aus gedacht: Kommt das Signal auf dem richtigen Ohr mit dem richtigen Pegel an?
+**Das trainierte Ohr bestimmt die App.** Referenz-Setup ist das BT-Hörgerät am linken Ohr (ADR-0007). Jedes Audio-Feature wird von dieser Frage aus gedacht: Kommt das Signal dort verständlich und mit dem richtigen Pegel an? Kanaltrennung (links/rechts/beide) bleibt als Werkzeug für Alternativ-Setups erhalten, gibt aber nicht den Takt vor.
 
 ## Tonalität der UI-Texte
 

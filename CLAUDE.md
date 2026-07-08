@@ -25,7 +25,7 @@ adb install -r composeApp/build/outputs/apk/debug/composeApp-debug.apk
 ## Domänenwissen
 
 - **SRS-Skala (MVP, feste Intervalle, ADR-0005):** Sofort 1 min · Bald 10 min · Später 1 Tag · Gut 1 Woche · Perfekt 1 Monat. Implementiert in `FixedIntervalScheduler`; UI-Labels Deutsch, Code-Enum `ReviewRating` (AGAIN/SOON/LATER/GOOD/PERFECT).
-- **Kanalsteuerung ist Kernfeature** (einseitiger Hörverlust): links/rechts/beide mit getrennten Pegeln — bei jedem Audio-Feature mitdenken (`StereoGain`).
+- **Referenz-Trainings-Setup: BT-Hörgerät, linkes Ohr** (ADR-0007) — Stereo wird dort mono summiert; maßgeblich sind Pegel und Verständlichkeit am trainierten Ohr. Kanaltrennung links/rechts/beide (`StereoGain`) bleibt als Option für Alternativ-Setups (Kabel-Kopfhörer), ist über BT wirkungslos — die UI darf sie dort nicht als wirksam zeigen.
 - **Wortkorpus generisch**: `Word` getrennt von `AudioRecording` (mehrere Sprecher pro Wort) und von `ReviewCard` (SRS-Zustand). Nichts Hörverlust-spezifisches ins Modell verdrahten.
 - Störgeräusch-Overlay: vorproduzierte Loops, Mischung über SNR (dB) — `noiseGainForSnr` im Mixer.
 

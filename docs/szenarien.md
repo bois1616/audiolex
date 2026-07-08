@@ -41,13 +41,13 @@ Vor jeder Trainings-UI-Story prüfen, welche dieser Verlaufsklassen zutreffen �
 - **S4 · Nichts fällig** (M3, Leer-Zustand)
   Als Trainierender möchte ich bei leerer Review-Queue sehen, wann die nächste Karte fällig ist und was ich stattdessen tun kann (Lernmodus), sodass die App nie in einer Sackgasse endet.
 
-- **S5 · Sitzung unterbrechen** (M2/M3, Unterbrechung) — *Verhalten noch zu entscheiden, siehe S-OFFEN-3*
-  Als Trainierender möchte ich eine Sitzung jederzeit verlassen können (Anruf, Alltag), sodass beim Wiedereinstieg ein definierter, nachvollziehbarer Zustand herrscht — bereits abgegebene Bewertungen gehen nicht verloren.
+- **S5 · Sitzung verlassen** (M2/M3, Unterbrechung)
+  Als Trainierender möchte ich eine Sitzung jederzeit verlassen können (Anruf, Alltag), sodass sie **sauber endet**: bereits abgegebene Bewertungen sind persistiert, die Sitzung ist als abgeschlossen protokolliert, es gibt keinen Pause-/Fortsetzen-Zustand — der nächste Start ist eine neue Sitzung. (Entscheid des Autors 2026-07-08.)
 
 ### Audio-Setup
 
-- **S6 · Trainiertes Ohr ansteuern** (M1→M2, Kernfeature)
-  Als Trainierender mit einseitigem Hörverlust möchte ich vor der Sitzung Kanal (links/rechts/beide) und Pegel je Ohr einstellen und die aktive Wahl während des Trainings sehen, sodass das Signal nachweislich auf dem trainierten Ohr ankommt. (Abhängig von der Klärung des Referenz-Setups, S-OFFEN-1.)
+- **S6 · Trainiertes Ohr erreichen** (M1→M2, Kernanliegen)
+  Als Trainierender möchte ich, dass das Training im Referenz-Setup (BT-Hörgerät, linkes Ohr — ADR-0007) verständlich und mit richtigem Pegel ankommt, sodass ich mich auf die Erkennung konzentriere statt auf die Technik. Kanalwahl links/rechts/beide (`StereoGain`) bleibt als Option für Alternativ-Setups (Kabel-Kopfhörer), ist über BT aber wirkungslos (Mono-Summierung) — die UI darf sie dort nicht als wirksam darstellen (M4).
 
 - **S7 · Keine hörbare Ausgabe** (M1→M2, Audio gestört)
   Als Trainierender möchte ich bei fehlgeschlagener oder stummer Wiedergabe (Sink-Fehler, Hörgerät getrennt, Geräte-Lautstärke) eine verständliche Meldung mit nächstem Schritt bekommen, sodass ich nicht rätsle, ob App, Gerät oder Ohr die Ursache ist. (Reale Erfahrung aus M1: „kein Ton" war eine getrennte BT-Lautstärkeeinstellung.)
@@ -66,10 +66,15 @@ Vor jeder Trainings-UI-Story prüfen, welche dieser Verlaufsklassen zutreffen �
 - **S11 · Wortauswahl eingrenzen** (M5)
   Als Trainierender möchte ich den Wortpool nach Silbenzahl, Kategorie und phonetischer Ähnlichkeit (Minimalpaare) filtern, sodass ich gezielt an meiner aktuellen Schwierigkeitsgrenze trainiere.
 
-## Offene Szenarien (nicht spezifizierbar ohne Entscheid)
+- **S12 · Sitzungshistorie einsehen** (M3)
+  Als Trainierender möchte ich abgeschlossene Sitzungen als Liste mit Datum und Uhrzeit sehen (auch mehrere pro Tag), je Sitzung mit Modus und Kennzahlen (Wörter, Bewertungsverteilung), sodass ich meinen Trainingsverlauf nachvollziehen kann. (Entscheid des Autors 2026-07-08; fachliche Basis ist die `Session`-Entität mit `parameterSnapshot` und `results[]`.)
 
-| Nr. | Lücke | Blockiert durch |
-| --- | --- | --- |
-| S-OFFEN-1 | **Referenz-Trainings-Setup**: Über welche Hardware (einzelnes BT-Hörgerät? Kopfhörer?) wird Kanaltrennung real trainiert? Bestimmt S6 und die Defaults in S10. | P0-Item Opus-Review, `docs/reviews/2026-07-07-m1-audio-review.md` [KLÄRUNG] |
-| S-OFFEN-2 | **Fortschritt einsehen**: Ob und wie der Nutzer Trainingsverlauf/Statistik sieht, ist im Konzept nicht ausgeführt. | Entscheid des Autors (Umfang Statistik) |
-| S-OFFEN-3 | **Unterbrechungsverhalten** (S5): Sitzung pausieren und fortsetzen vs. sauber beenden und neu starten? | Entscheid des Autors vor M2-Umsetzung |
+## Geklärte Szenario-Fragen
+
+Alle ursprünglich offenen Fragen (S-OFFEN-1…3) hat der Autor am 2026-07-08 entschieden:
+
+| Frage | Entscheid |
+| --- | --- |
+| Referenz-Trainings-Setup | BT-Hörgerät, linkes Ohr; Abspielgerät Smartphone, nicht ans A53 gebunden — **ADR-0007**. Kanaltrennung wird Option statt Kern (→ S6). |
+| Fortschritt/Statistik | Sitzungsbasiert: Liste mit Datum/Uhrzeit, mehrere Sitzungen pro Tag möglich (→ S12). |
+| Unterbrechungsverhalten | Sauber beenden, kein Pause/Resume (→ S5). |

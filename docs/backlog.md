@@ -13,7 +13,7 @@ Stand 2026-07-07: initiales Backlog aus der Konzept-Roadmap abgeleitet, Meilenst
 
 ## M1 – Audio-Grundgerüst
 
-- [ ] [P0] [Review] Opus-Review vom 2026-07-07 abarbeiten: `docs/reviews/2026-07-07-m1-audio-review.md` — **vor weiterer Audio-/StereoGain-Arbeit**. Kernpunkte: (1) `swapStereoChannels`-Evidenz ist kontaminiert (Ursprungsbeobachtung physikalisch unmöglich, System-Balance rechts=0 nie zurückgesetzt, BT-Mono-Mix macht Swap unfalsifizierbar) → sauberes Re-Test-Protokoll, dann Fix behalten/entfernen/zum Setting machen; (2) Kanaltrennung über einzelnes BT-Hörgerät geht konzeptionell nicht → Referenz-Trainings-Setup als [KLÄRUNG] mit dem Autor; dazu kleinere Punkte (Log-Daten, Clone-Bootstrap, M2-Anforderungen).
+- [ ] [P0] [Review] Opus-Review vom 2026-07-07 abarbeiten: `docs/reviews/2026-07-07-m1-audio-review.md` — **vor weiterer Audio-/StereoGain-Arbeit**. Kernpunkte: (1) `swapStereoChannels`-Evidenz ist kontaminiert (Ursprungsbeobachtung physikalisch unmöglich, System-Balance rechts=0 nie zurückgesetzt, BT-Mono-Mix macht Swap unfalsifizierbar) → sauberes Re-Test-Protokoll, dann Fix behalten/entfernen/zum Setting machen; (2) Kanaltrennung über einzelnes BT-Hörgerät geht konzeptionell nicht → Referenz-Trainings-Setup als [KLÄRUNG] mit dem Autor; dazu kleinere Punkte (Log-Daten, Clone-Bootstrap, M2-Anforderungen). Hinweis (Update 2026-07-08): Befund 2 geklärt — Referenz-Setup ist BT-Hörgerät links, ADR-0007; ebenfalls erledigt: Playback-Queue als M2-Anforderung notiert, Backlog-Überschneidung Kanalsteuerung aufgelöst (nach M4 verschoben). Offen: Re-Test-Protokoll (Befund 1), Log-Daten, Clone-Bootstrap, App.kt-Trennung, zweite Stimme-Optionen, DoD-Drift.
 
 - [x] [P0] [KLÄRUNG] Audioquelle für Testkorpus entschieden. Hinweis: lokales TTS (Piper), 2–3 Hochdeutsch-Stimmen (männlich/weiblich) für M1; Dialekte als vorbereitetes `locale`-Feld, Befüllung später — siehe ADR-0006.
 - [x] [P1] [Korpus] `tools/generate_tts.py`: Piper via uv installiert, Generierungsskript schreibt WAV + `recordings.json`. Hinweis: native Piper-Rate 22050 Hz statt der ursprünglich angenommenen 48 kHz — ADR-0003 entsprechend korrigiert.
@@ -22,11 +22,10 @@ Stand 2026-07-07: initiales Backlog aus der Konzept-Roadmap abgeleitet, Meilenst
 - [x] [P1] [Audio] WAV-Loader (PCM16) in `:core` implementieren + Tests. Hinweis: `WavFile.decode` (chunk-walking, robust gegen Zusatz-Chunks wie `LIST`), 8 Tests (synthetische Fixtures + eine echte Piper-Datei als committtete Testressource `core/src/jvmTest/resources/`).
 - [x] [P1] [Audio] Desktop-Sink verifizieren: hörbare Wiedergabe eines Testworts unter WSLg/PulseAudio. Hinweis: Java Sound (ALSA) findet unter WSL2 keine Line — Sink nutzt jetzt `paplay` als externen Prozess (javax.sound-Fallback bleibt für andere Umgebungen); Wiedergabe von "Ball" (thorsten) real bestätigt, klar verständlich.
 - [x] [P1] [Audio] Android-Sink auf Galaxy A53 verifizieren: AudioTrack-Lebenszyklus sauber (release nach Wiedergabe), Kanaltrennung real mit Hörgerät testen. Hinweis: Wiedergabe funktioniert (erstes „nichts zu hören" war eine getrennte BT-Hörgerät-Lautstärkeeinstellung, kein Code-Fehler); dabei eine echte L/R-Kanalvertauschung auf diesem Gerät gefunden und behoben (`swapStereoChannels` in `AudioSink.android.kt`), bestätigt über zwei unabhängige Ausgabewege (BT-Hörgerät und Kabel-Kopfhörer, je mit zwei unterschiedlichen Wörtern pro Ohr getestet).
-- [ ] [P1] [Audio] Kanalsteuerung links/rechts/beide + getrennte Pegel als Session-Parameter bis in die UI durchstechen.
 
 ## M2 – Lernmodus
 
-- [ ] [P1] [Session] Sitzungssteuerung (Wortliste, Fortschritt, Wiederholungszahl vor Identifikation) als Paket `session` in `:core`.
+- [ ] [P1] [Session] Sitzungssteuerung (Wortliste, Fortschritt, Wiederholungszahl vor Identifikation) als Paket `session` in `:core`. Hinweis: Verlassen beendet die Sitzung sauber — kein Pause/Resume (Entscheid des Autors 2026-07-08, Szenario S5); braucht Playback-Queue mit Cancel-Semantik statt paralleler Coroutinen (Review-Hinweis, `Thread.sleep` im Sink ersetzen).
 - [ ] [P1] [UI] Lernmodus-Screen: Audio + Text simultan, Weiter/Wiederholen-Navigation.
 
 ## M3 – Prüfmodus + SRS
@@ -34,12 +33,14 @@ Stand 2026-07-07: initiales Backlog aus der Konzept-Roadmap abgeleitet, Meilenst
 - [ ] [P1] [ADR] Persistenz-Entscheid bestätigen und umsetzen (ADR-0004: Room KMP vs. SQLDelight).
 - [ ] [P1] [UI] Prüfmodus: verdeckte Karte, Aufdecken, 5-stufige Bewertung (Sofort/Bald/Später/Gut/Perfekt).
 - [ ] [P1] [SRS] Fälligkeits-Persistenz + Review-Queue; `FixedIntervalScheduler` anbinden.
+- [ ] [P2] [UI] Sitzungshistorie: Liste abgeschlossener Sitzungen mit Datum/Uhrzeit (mehrere pro Tag), je Sitzung Modus + Kennzahlen. Hinweis: Entscheid des Autors 2026-07-08 (sitzungsbasierte Statistik, Szenario S12); braucht Session-Persistenz.
 
 ## M4 – Störgeräusche & Szenarien
 
 - [ ] [P2] [KLÄRUNG] Störgeräusch-Quellen: selbst aufnehmen vs. freie Quellen (Lizenz auch bei nicht-kommerzieller Nutzung sauber dokumentieren).
 - [ ] [P2] [Audio] Störgeräusch-Overlay mit SNR-Regler, mindestens 1 Szenario (Mixer ist vorbereitet: `noiseGainForSnr`).
 - [ ] [P2] [Settings] Szenario-Presets Einfach/Schwierig/Fortgeschritten (`SettingsProfile`), Parameter-Persistenz.
+- [ ] [P2] [Settings] Kanalwahl links/rechts/beide + getrennte Pegel als Setup-Option für Alternativ-Hardware (Kabel-Kopfhörer); bei BT-Ausgabe als wirkungslos kennzeichnen. Hinweis: per ADR-0007 herabgestuft (vormals M1/P1 „bis in die UI durchstechen") — Referenz-Setup ist BT-Hörgerät links, dort mono summiert; löst die Review-Anmerkung zur Backlog-Überschneidung.
 
 ## M5 – Wortkomplexität & Phonetik
 

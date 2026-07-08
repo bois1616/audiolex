@@ -37,8 +37,8 @@ Wichtiger als Befund 1: BT-Audio erreicht **nur das Hörgerät** (linkes Ohr). D
 
 ### Aufgaben
 
-- [ ] Als eigenes `[KLÄRUNG]`-Item ins Backlog: **Was ist das Referenz-Trainings-Setup?** Optionen mit dem Autor klären: Kabel-Kopfhörer (über/unter dem Hörgerät getragen?), Lautsprecher, je Szenario unterschiedlich. Entscheidung beeinflusst M2 (Session-Parameter) und M4 (Presets, ggf. Warnhinweis in der App bei aktiver BT-Ausgabe).
-- [ ] Ergebnis als ADR oder ADR-Ergänzung festhalten (betrifft Audio-Pipeline und Produktkern).
+- [x] Als eigenes `[KLÄRUNG]`-Item ins Backlog: **Was ist das Referenz-Trainings-Setup?** Optionen mit dem Autor klären: Kabel-Kopfhörer (über/unter dem Hörgerät getragen?), Lautsprecher, je Szenario unterschiedlich. Entscheidung beeinflusst M2 (Session-Parameter) und M4 (Presets, ggf. Warnhinweis in der App bei aktiver BT-Ausgabe). → *Erledigt 2026-07-08: Entscheid direkt mit dem Autor eingeholt (ohne Backlog-Umweg): Referenz-Setup ist das BT-Hörgerät am linken Ohr, Abspielgerät Smartphone (nicht ans A53 gebunden). Kanaltrennung wird Setup-Option für Alternativ-Hardware statt Kernfeature.*
+- [x] Ergebnis als ADR oder ADR-Ergänzung festhalten (betrifft Audio-Pipeline und Produktkern). → *Erledigt: ADR-0007; SOUL.md/CLAUDE.md/DESIGN.md/Szenario-Katalog entsprechend angepasst.*
 
 ---
 
@@ -46,9 +46,9 @@ Wichtiger als Befund 1: BT-Audio erreicht **nur das Hörgerät** (linkes Ohr). D
 
 - [ ] **Journal-Daten korrigieren:** Log-Einträge sagen 2026-07-08/07-09, alle Commits sind vom 07-07 (Abendsitzungen). Entweder Datumsangaben berichtigen oder als „Sitzung 2/3" führen — aktuell leidet die Nachvollziehbarkeit.
 - [ ] **Frischer Clone ist nicht lauffähig:** WAVs sind gitignored; die App startet, aber jede Wiedergabe schlägt fehl. Entweder Bootstrap-Schritt („nach Klon: `cd tools && uv run generate_tts.py`") prominent in die README, oder die 18 Test-WAVs (~0,5 MB) einfach committen — bei der Größe billiger als die Piper-Pipeline vorauszusetzen.
-- [ ] **Playback-Nebenläufigkeit als M2-Anforderung notieren:** Schnelle Doppelklicks starten parallele Coroutinen → überlappende AudioTracks; `Thread.sleep` blockiert Default-Dispatcher-Threads. Für M2 (Session) braucht es eine Playback-Queue mit Cancel-Semantik — ins M2-Backlog-Item schreiben, nicht jetzt bauen.
+- [x] **Playback-Nebenläufigkeit als M2-Anforderung notieren:** Schnelle Doppelklicks starten parallele Coroutinen → überlappende AudioTracks; `Thread.sleep` blockiert Default-Dispatcher-Threads. Für M2 (Session) braucht es eine Playback-Queue mit Cancel-Semantik — ins M2-Backlog-Item schreiben, nicht jetzt bauen. → *Erledigt 2026-07-08: im M2-Session-Item notiert.*
 - [ ] **`App.kt` wächst zum Dev-Screen:** Vor M2 die Diagnose-UI (Kanaltest) vom künftigen Lernmodus-Screen trennen, sonst wird der Smoke-Test zum Fundament.
-- [ ] **Backlog-Überschneidung auflösen:** „Kanalsteuerung bis in die UI durchstechen" (M1) ist faktisch M2-Session-Parameter + M4-Settings. Zusammenführen, sonst wird es doppelt getrackt oder doppelt gebaut.
+- [x] **Backlog-Überschneidung auflösen:** „Kanalsteuerung bis in die UI durchstechen" (M1) ist faktisch M2-Session-Parameter + M4-Settings. Zusammenführen, sonst wird es doppelt getrackt oder doppelt gebaut. → *Erledigt 2026-07-08: M1-Item entfällt; als ein M4-Settings-Item weitergeführt (per ADR-0007 ohnehin Option statt Kern).*
 - [ ] **Zweite Stimme — Optionsliste ins bestehende [KLÄRUNG]-Item:** `de_DE-thorsten_emotional-medium` (8 Sprechvarianten, medium-Qualität, gleicher Sprecher) als Zwischenlösung für Varianz; alternativ andere Offline-TTS-Engines prüfen.
 - [ ] **DoD-Drift:** AGENTS.md verlangt `./gradlew build`, gelaufen sind immer nur Teiltasks. Entweder einmal `build` durchlaufen lassen (deckt Lint-/Release-Pfade auf) oder die DoD ehrlich auf die Teiltasks anpassen.
 
