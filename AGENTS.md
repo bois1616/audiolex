@@ -48,8 +48,9 @@ AudioLex ist eine Hörtrainings-App (Android zuerst, iOS-Option offen) zum Wiede
 
 ## 6) Modellzuteilung (Richtwert)
 
-- **Opus-Klasse**: Architektur, mehrdeutige Designfragen, ADR-Entwürfe, Prozess-Reflexion.
+- **Opus-Klasse**: Architektur, mehrdeutige Designfragen, ADR-Entwürfe, Prozess-Reflexion, Backlog-Schärfung.
 - **Sonnet-Klasse**: klar spezifizierte Implementierung, Tests, Refactoring.
+- **Je offenem Backlog-Item als Tag vermerkt**: `[→Sonnet]`, `[→Opus]` oder `[→Opus→Sonnet]` (erst schärfen, dann umsetzen); Items ohne Tag brauchen den Autor. Entscheidend ist der Spezifikationsgrad, nicht die Item-Größe: ein Item ohne Akzeptanzkriterien und Nicht-Ziele ist nie Sonnet-reif — Sonnet-Sessions setzen nur `[→Sonnet]`-Items um und schärfen nicht selbst nach.
 
 ## 7) Umgebung
 
