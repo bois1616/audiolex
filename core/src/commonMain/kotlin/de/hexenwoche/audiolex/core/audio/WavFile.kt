@@ -24,9 +24,13 @@ object WavFile {
             val chunkId = bytes.readAscii(offset, 4)
             val chunkSize = bytes.readLeInt(offset + 4)
             val chunkDataStart = offset + 8
+            require(chunkSize >= 0 && chunkDataStart + chunkSize <= bytes.size) {
+                "corrupt WAV: chunk '$chunkId' size $chunkSize exceeds file bounds"
+            }
 
             when (chunkId) {
                 "fmt " -> {
+                    require(chunkSize >= 16) { "corrupt WAV: fmt chunk too small ($chunkSize bytes)" }
                     val audioFormat = bytes.readLeShort(chunkDataStart)
                     require(audioFormat == 1) { "only uncompressed PCM is supported, got format $audioFormat" }
                     channels = bytes.readLeShort(chunkDataStart + 2)

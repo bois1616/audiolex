@@ -121,4 +121,50 @@ class WavFileTest {
     fun rejectsTruncatedFile() {
         assertFailsWith<IllegalArgumentException> { WavFile.decode(ByteArray(4)) }
     }
+
+    @Test
+    fun rejectsChunkSizeExceedingFileBounds() {
+        val wav = buildWav(sampleRate = 22050, channels = 1, bitsPerSample = 16, samples = shortArrayOf(1, 2))
+        // Corrupt the "data" chunk's size field (last 4 bytes before the payload)
+        // to claim far more data than the file actually contains.
+        val dataSizeOffset = wav.size - 4 - 4
+        wav[dataSizeOffset] = 0xFF.toByte()
+        wav[dataSizeOffset + 1] = 0xFF.toByte()
+        wav[dataSizeOffset + 2] = 0x7F.toByte()
+        wav[dataSizeOffset + 3] = 0x00.toByte()
+
+        assertFailsWith<IllegalArgumentException> { WavFile.decode(wav) }
+    }
+
+    @Test
+    fun rejectsNegativeChunkSize() {
+        val wav = buildWav(sampleRate = 22050, channels = 1, bitsPerSample = 16, samples = shortArrayOf(1, 2))
+        val dataSizeOffset = wav.size - 4 - 4
+        wav[dataSizeOffset] = 0xFF.toByte()
+        wav[dataSizeOffset + 1] = 0xFF.toByte()
+        wav[dataSizeOffset + 2] = 0xFF.toByte()
+        wav[dataSizeOffset + 3] = 0xFF.toByte()
+
+        assertFailsWith<IllegalArgumentException> { WavFile.decode(wav) }
+    }
+
+    @Test
+    fun rejectsTruncatedFmtChunk() {
+        val bytes = ArrayList<Byte>()
+        fun ascii(s: String) = s.forEach { bytes.add(it.code.toByte()) }
+        fun le32(v: Int) {
+            bytes.add((v and 0xFF).toByte())
+            bytes.add(((v shr 8) and 0xFF).toByte())
+            bytes.add(((v shr 16) and 0xFF).toByte())
+            bytes.add(((v shr 24) and 0xFF).toByte())
+        }
+        ascii("RIFF")
+        le32(0)
+        ascii("WAVE")
+        ascii("fmt ")
+        le32(4) // too small: real fmt chunk needs at least 16 bytes
+        bytes.add(1); bytes.add(0); bytes.add(1); bytes.add(0)
+
+        assertFailsWith<IllegalArgumentException> { WavFile.decode(bytes.toByteArray()) }
+    }
 }
