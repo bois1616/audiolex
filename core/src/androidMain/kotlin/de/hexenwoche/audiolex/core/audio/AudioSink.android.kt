@@ -3,6 +3,7 @@ package de.hexenwoche.audiolex.core.audio
 import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
+import kotlinx.coroutines.delay
 
 actual fun createAudioSink(): AudioSink = AndroidAudioSink()
 
@@ -17,7 +18,7 @@ fun createAudioSinkWithSwapOverride(swapChannels: Boolean): AudioSink =
 
 /** Minimal AudioTrack sink (static mode, fine for single-word playback). */
 private class AndroidAudioSink(private val swapChannels: Boolean = false) : AudioSink {
-    override fun play(buffer: PcmBuffer) {
+    override suspend fun play(buffer: PcmBuffer) {
         val playable = if (buffer.channels == 2 && swapChannels) buffer.swapStereoChannels() else buffer
 
         val channelMask = if (playable.channels == 1) {
@@ -45,11 +46,15 @@ private class AndroidAudioSink(private val swapChannels: Boolean = false) : Audi
         try {
             track.write(playable.samples, 0, playable.samples.size)
             track.play()
-            // Static mode plays asynchronously; block until done so the
-            // interface contract (blocking play) holds.
+            // Static mode plays asynchronously; wait until done so the
+            // interface contract (suspends until playback finished) holds.
+            // delay() (not Thread.sleep) is a cancellation point: if the
+            // caller cancels, the `finally` below stops the track
+            // immediately instead of letting it play out in the background.
             val durationMillis = playable.frameCount * 1000L / playable.sampleRate
-            Thread.sleep(durationMillis + 50)
+            delay(durationMillis + 50)
         } finally {
+            track.stop()
             track.release()
         }
     }

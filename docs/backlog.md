@@ -31,8 +31,8 @@ Stand 2026-07-07: initiales Backlog aus der Konzept-Roadmap abgeleitet, Meilenst
 
 ## M2 – Lernmodus
 
-- [ ] [P1] [Session] Sitzungssteuerung (Wortliste, Fortschritt, Wiederholungszahl vor Identifikation) als Paket `session` in `:core`. Hinweis: Verlassen beendet die Sitzung sauber — kein Pause/Resume (Entscheid des Autors 2026-07-08, Szenario S5); braucht Playback-Queue mit Cancel-Semantik statt paralleler Coroutinen (Review-Hinweis, `Thread.sleep` im Sink ersetzen).
-- [ ] [P1] [UI] Lernmodus-Screen: Audio + Text simultan, Weiter/Wiederholen-Navigation.
+- [x] [P1] [Session] Sitzungssteuerung (Wortliste, Fortschritt, Wiederholungszahl vor Identifikation) als Paket `session` in `:core`. Hinweis: `LearningSession` (linearer Fortschritt, Repeat/Advance, Szenario S1/S2) + `PlaybackQueue` (neuer `play()` bricht den vorigen ab) implementiert und getestet. Dabei echten Abbruch-Bug in `AudioSink` gefunden und behoben: `play()` ist jetzt `suspend fun`, Android/Desktop reagieren kooperativ auf Cancellation statt die Wiedergabe im Hintergrund zu Ende laufen zu lassen (`Thread.sleep`/`paplay-waitFor` waren nicht abbrechbar) — siehe ADR-0003 und Umsetzungslog 2026-07-09. Verlassen beendet die Sitzung sauber, kein Pause/Resume (Entscheid des Autors 2026-07-08, Szenario S5).
+- [ ] [P1] [UI] Lernmodus-Screen: Audio + Text simultan, Weiter/Wiederholen-Navigation. Hinweis: kann jetzt auf `LearningSession` + `PlaybackQueue` aufsetzen (siehe Item oben).
 
 ## M3 – Prüfmodus + SRS
 

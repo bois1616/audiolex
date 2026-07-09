@@ -5,8 +5,14 @@ package de.hexenwoche.audiolex.core.audio
  * No business logic below this interface.
  */
 interface AudioSink : AutoCloseable {
-    /** Plays the buffer, blocking until playback finished. */
-    fun play(buffer: PcmBuffer)
+    /**
+     * Plays the buffer, suspending until playback finished. Cooperatively
+     * cancellable: cancelling the calling coroutine must stop the actual
+     * audio promptly (not just abandon the suspension point), so a fast
+     * double-tap or leaving mid-session (Szenario S5) is heard to cut off
+     * immediately rather than finishing in the background.
+     */
+    suspend fun play(buffer: PcmBuffer)
 
     override fun close()
 }

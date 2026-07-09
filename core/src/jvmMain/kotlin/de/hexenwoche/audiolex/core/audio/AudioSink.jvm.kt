@@ -4,6 +4,7 @@ import java.io.File
 import java.io.RandomAccessFile
 import javax.sound.sampled.AudioFormat
 import javax.sound.sampled.AudioSystem
+import kotlinx.coroutines.runInterruptible
 
 actual fun createAudioSink(): AudioSink = JavaSoundAudioSink()
 
@@ -20,7 +21,7 @@ actual fun createAudioSink(): AudioSink = JavaSoundAudioSink()
  * desktop with a working ALSA setup).
  */
 private class JavaSoundAudioSink : AudioSink {
-    override fun play(buffer: PcmBuffer) {
+    override suspend fun play(buffer: PcmBuffer) {
         if (paplayAvailable) {
             playViaPaplay(buffer)
         } else {
@@ -28,22 +29,32 @@ private class JavaSoundAudioSink : AudioSink {
         }
     }
 
-    private fun playViaPaplay(buffer: PcmBuffer) {
+    private suspend fun playViaPaplay(buffer: PcmBuffer) {
         val tempFile = File.createTempFile("audiolex-", ".wav")
-        try {
+        val process = try {
             writeWavFile(buffer, tempFile)
-            val exitCode = ProcessBuilder("paplay", tempFile.absolutePath)
+            ProcessBuilder("paplay", tempFile.absolutePath)
                 .redirectOutput(ProcessBuilder.Redirect.DISCARD)
                 .redirectError(ProcessBuilder.Redirect.DISCARD)
                 .start()
-                .waitFor()
+        } catch (e: Exception) {
+            tempFile.delete()
+            throw e
+        }
+        try {
+            // runInterruptible moves the blocking waitFor() onto a thread
+            // that reacts to coroutine cancellation; destroy() below then
+            // actually kills the external process instead of leaving it to
+            // finish playing in the background after we've "cancelled".
+            val exitCode = runInterruptible { process.waitFor() }
             check(exitCode == 0) { "paplay exited with code $exitCode" }
         } finally {
+            process.destroy()
             tempFile.delete()
         }
     }
 
-    private fun playViaJavaSound(buffer: PcmBuffer) {
+    private suspend fun playViaJavaSound(buffer: PcmBuffer) {
         val format = AudioFormat(buffer.sampleRate.toFloat(), 16, buffer.channels, true, false)
         val bytes = ByteArray(buffer.samples.size * 2)
         buffer.samples.forEachIndexed { i, sample ->
@@ -54,8 +65,12 @@ private class JavaSoundAudioSink : AudioSink {
         try {
             line.open(format)
             line.start()
-            line.write(bytes, 0, bytes.size)
-            line.drain()
+            // runInterruptible so cancelling the caller stops the line
+            // below instead of waiting for drain() to finish on its own.
+            runInterruptible {
+                line.write(bytes, 0, bytes.size)
+                line.drain()
+            }
         } finally {
             line.close()
         }
