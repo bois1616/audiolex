@@ -2,6 +2,7 @@ package de.hexenwoche.audiolex.core.session
 
 import de.hexenwoche.audiolex.core.audio.AudioSink
 import de.hexenwoche.audiolex.core.audio.PcmBuffer
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -15,16 +16,31 @@ import kotlinx.coroutines.launch
  * rather than blocks), so cancelling the previous job actually stops that
  * playback's sound instead of merely abandoning the caller's wait for it.
  *
+ * [play] launches on [scope] and returns immediately, so a failing [sink]
+ * (device disconnected, decode error) can't throw back to the caller --
+ * [onError] is the only way callers learn about it (Szenario S7: a message
+ * instead of a silent failure or crash).
+ *
  * Not thread-safe across scopes; intended for one UI-bound [CoroutineScope].
  */
-class PlaybackQueue(private val sink: AudioSink, private val scope: CoroutineScope) {
+class PlaybackQueue(
+    private val sink: AudioSink,
+    private val scope: CoroutineScope,
+    private val onError: (Throwable) -> Unit = {},
+) {
     private var currentJob: Job? = null
 
     /** Cancels any in-flight playback and starts [buffer] on [scope]. */
     fun play(buffer: PcmBuffer) {
         currentJob?.cancel()
         currentJob = scope.launch {
-            sink.play(buffer)
+            try {
+                sink.play(buffer)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                onError(e)
+            }
         }
     }
 

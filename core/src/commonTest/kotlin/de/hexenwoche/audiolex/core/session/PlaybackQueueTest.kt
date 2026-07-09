@@ -82,4 +82,36 @@ class PlaybackQueueTest {
 
         assertEquals(listOf(1), sink.completed)
     }
+
+    private class FailingSink(private val error: Throwable) : AudioSink {
+        override suspend fun play(buffer: PcmBuffer) = throw error
+        override fun close() = Unit
+    }
+
+    @Test
+    fun sinkFailureIsReportedViaOnErrorNotThrown() = runTest {
+        val error = IllegalStateException("device disconnected")
+        val errors = mutableListOf<Throwable>()
+        val queue = PlaybackQueue(FailingSink(error), this, onError = { errors += it })
+
+        queue.play(bufferTagged(1))
+        advanceUntilIdle()
+
+        assertEquals(listOf<Throwable>(error), errors)
+    }
+
+    @Test
+    fun cancellingForNextPlayDoesNotReportAsError() = runTest {
+        val sink = GatedSink()
+        val errors = mutableListOf<Throwable>()
+        val queue = PlaybackQueue(sink, this, onError = { errors += it })
+
+        queue.play(bufferTagged(1))
+        runCurrent()
+        sink.gateFor(2).complete(Unit)
+        queue.play(bufferTagged(2))
+        advanceUntilIdle()
+
+        assertEquals(emptyList(), errors, "cancellation for the cutover is not a playback failure")
+    }
 }
