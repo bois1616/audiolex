@@ -1,5 +1,11 @@
 # Umsetzungs-Log (Neueste Einträge zuerst)
 
+## 2026-07-10 (Erste Desktop-Sichtprobe durch den Autor, zwei Befunde)
+
+- **Autor hat `:composeApp:run` erstmals selbst ausgeführt** — anders als in der Sandbox-Session lief WSLg bei ihm tatsächlich mit Display, die App startete sichtbar. Zwei Befunde aus dem Lernmodus-Durchlauf, beide als eigene Backlog-Items geschärft statt sofort blind gefixt: (1) Das erste Wort der Sitzung („Ball") wird zweimal abgespielt, alle folgenden Wörter nur einmal — Root Cause noch unklar (Kandidaten: doppelter `LaunchedEffect(Unit)`-Lauf beim ersten Compose-Layout-Pass, oder ein Job-Handling-Sonderfall beim allerersten `PlaybackQueue.play()`-Aufruf); braucht Reproduktion mit Logging vor einem Fix, da ein blindes Dedupe ein echtes zweimaliges Abspielen verdecken könnte, falls das doch beabsichtigt wäre. Vermutlich auch im Prüfmodus vorhanden (gleiche Zwei-`LaunchedEffect`-Struktur). (2) Zielwort-Schrift (`displayLarge`) und der „Antippen zum Aufdecken"-Text sind zu groß für die konstante Kartenfläche, ein längeres Wort würde vermutlich abgeschnitten statt umgebrochen — möglicherweise nur ein Desktop-Skalierungsartefakt, auf dem A53 noch gegenzuprüfen. Gehört inhaltlich zum bestehenden „Visuelle Prinzipien"-Item, aber eigenständig genug fürs Schärfen.
+
+  Kein Code in diesem Turn geändert — nur Backlog-Einträge ergänzt, damit beide Befunde nicht verloren gehen, bevor der nächste Opus-Loop sie schärft.
+
 ## 2026-07-10 (Zeitquelle eingebaut, SRS-Fälligkeit repariert)
 
 - **`[→Sonnet]`-Reparatur-Item aus ADR-0008 umgesetzt: injizierbares `Clock`-Interface, Bug behoben.** Neues Paket `core/commonMain/.../core/time`: `interface Clock { fun nowEpochMillis(): Long }` + `expect fun systemClock(): Clock`, mit trivialen `actual`-Implementierungen in `core/jvmMain` und `core/androidMain` (beide `System.currentTimeMillis()`), analog zur bestehenden `AudioSink`-expect/actual-Struktur. `FakeClock(var now: Long)` in `commonTest` für deterministische Tests.
