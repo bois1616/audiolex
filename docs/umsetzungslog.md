@@ -1,5 +1,17 @@
 # Umsetzungs-Log (Neueste Einträge zuerst)
 
+## 2026-07-10 (Zeitquelle eingebaut, SRS-Fälligkeit repariert)
+
+- **`[→Sonnet]`-Reparatur-Item aus ADR-0008 umgesetzt: injizierbares `Clock`-Interface, Bug behoben.** Neues Paket `core/commonMain/.../core/time`: `interface Clock { fun nowEpochMillis(): Long }` + `expect fun systemClock(): Clock`, mit trivialen `actual`-Implementierungen in `core/jvmMain` und `core/androidMain` (beide `System.currentTimeMillis()`), analog zur bestehenden `AudioSink`-expect/actual-Struktur. `FakeClock(var now: Long)` in `commonTest` für deterministische Tests.
+
+  Die `Clock`-Instanz wird — wie `AudioLexDatabase` — einmalig am App-Einstieg erzeugt (`main()` bzw. `MainActivity.onCreate`, je `systemClock()`) und über einen neuen `clock`-Parameter durch `App(database, clock)` bis zum `PruefmodusScreen` gereicht. Im Screen selbst beide hartcodierten `nowEpochMillis = 0L` durch `clock.nowEpochMillis()` ersetzt: einmal beim Laden (`ReviewQueue.due(cards, now)`), einmal bei der Bewertung (`session.rate(rating, now, scheduler)`) — damit ist der eigentliche Bug (jede bewertete Karte landete auf eine Fälligkeit in 1970 und wurde nie wieder fällig) behoben. `describeNextDue` interpretierte den gespeicherten Absolutwert bisher fälschlich direkt als Restzeit; rechnet jetzt korrekt die Differenz `dueAt - now`.
+
+  Regressionstest `ClockRegressionTest` (`core/commonTest/.../srs`, gegen `ExamSession`/`ReviewQueue`/`FixedIntervalScheduler` mit `FakeClock`, kein UI-Test nötig) fängt genau das ab: Karte bewerten, Uhr **nicht** vorrücken → `ReviewQueue.due` liefert sie nicht; Uhr um das Rating-Intervall vorgerückt → `due` liefert sie wieder. Damit ist die Regression, die der Opus-Review fand, jetzt automatisiert abgesichert.
+
+  Nebenbefund aus demselben Review (Doppel-Tap auf die Bewertungstasten erhöhte `ratedCount` potenziell doppelt) im selben Zug behoben: ein `isRating`-Flag sperrt die `RatingBar` synchron ab dem ersten Tap, noch bevor der `scope.launch` mit dem Persistieren/State-Wechsel überhaupt startet, und wird erst nach dessen Abschluss wieder freigegeben.
+
+  Verifiziert: kompletter `./gradlew build` grün (`:core:jvmTest` inkl. neuem Regressionstest, `:composeApp:assembleDebug`, Lint), `:core:jvmTest --rerun` erzwungen, um zu bestätigen, dass der neue Test tatsächlich lief und nicht nur gecacht war. `:core`-SRS-Logik unverändert (kein Umbau von `ReviewScheduler`/`ReviewQueue`/`ExamSession`), keine neue Dependency, keine Zeitzonenlogik — wie im Item als Nicht-Ziele festgehalten. Damit ist die M3-Kette inklusive des vom Opus-Review gefundenen Bugs vollständig abgeschlossen; der Gerätetest (A53 + Desktop, braucht den Autor) kann das Prüfmodus-Wiederholverhalten jetzt erstmals ehrlich prüfen.
+
 ## 2026-07-10 (Opus-Review der M3-Sonnet-Session)
 
 - **Opus-Review der vier M3-Umsetzungen (Commits `1fa48aa`…`22f711b`)**: Handwerklich sauber — Architekturgrenzen halten (`:core` bleibt Room-frei, Mapper an der Paketgrenze, Context-freier DB-Builder in `:composeApp` wie `AudioSink`), die `TypeConverter`-Name-statt-Ordinal-Entscheidung ist richtig begründet, `allOrSeed` ist korrekt (kein Doppel-Seed beim zweiten Start), die 23 neuen Tests sind aussagekräftig, und die `:core`-Logikklassen (`ExamSession`, `ReviewQueue`) sind einwandfrei und mit sinnvollen `now`-Werten getestet.

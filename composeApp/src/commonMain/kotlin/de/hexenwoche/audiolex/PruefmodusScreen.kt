@@ -35,6 +35,7 @@ import de.hexenwoche.audiolex.core.session.PlaybackQueue
 import de.hexenwoche.audiolex.core.srs.FixedIntervalScheduler
 import de.hexenwoche.audiolex.core.srs.ReviewQueue
 import de.hexenwoche.audiolex.core.srs.ReviewRating
+import de.hexenwoche.audiolex.core.time.Clock
 import de.hexenwoche.audiolex.generated.resources.Res
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -59,7 +60,12 @@ private sealed interface PruefmodusState {
  * Playback goes exclusively through [PlaybackQueue], same as [LernmodusScreen].
  */
 @Composable
-fun PruefmodusScreen(repository: ReviewCardRepository, onBeenden: () -> Unit, onZumLernmodus: () -> Unit) {
+fun PruefmodusScreen(
+    repository: ReviewCardRepository,
+    clock: Clock,
+    onBeenden: () -> Unit,
+    onZumLernmodus: () -> Unit,
+) {
     val scope = rememberCoroutineScope()
     val sink = remember { createAudioSink() }
     var state by remember { mutableStateOf<PruefmodusState>(PruefmodusState.Loading) }
@@ -71,6 +77,7 @@ fun PruefmodusScreen(repository: ReviewCardRepository, onBeenden: () -> Unit, on
     var words by remember { mutableStateOf<List<Word>>(emptyList()) }
     var recordings by remember { mutableStateOf<List<AudioRecording>>(emptyList()) }
     var ratedCount by remember { mutableStateOf(0) }
+    var isRating by remember { mutableStateOf(false) }
 
     DisposableEffect(Unit) {
         onDispose { queue.stop() }
@@ -84,7 +91,7 @@ fun PruefmodusScreen(repository: ReviewCardRepository, onBeenden: () -> Unit, on
             recordings = json.decodeFromString<List<AudioRecording>>(recordingsJson)
 
             val cards = repository.allOrSeed(words.map { it.id })
-            val due = ReviewQueue.due(cards, nowEpochMillis = 0L)
+            val due = ReviewQueue.due(cards, clock.nowEpochMillis())
             state = if (due.isEmpty()) {
                 PruefmodusState.NothingDue(cards.minOfOrNull { it.dueAtEpochMillis })
             } else {
@@ -114,7 +121,10 @@ fun PruefmodusScreen(repository: ReviewCardRepository, onBeenden: () -> Unit, on
 
             is PruefmodusState.NothingDue -> {
                 Text("Nichts fällig.", style = MaterialTheme.typography.headlineSmall)
-                Text(describeNextDue(current.nextDueAtEpochMillis), style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    describeNextDue(current.nextDueAtEpochMillis, clock.nowEpochMillis()),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
                 Button(onClick = onZumLernmodus) { Text("Stattdessen Lernmodus") }
                 Button(onClick = onBeenden) { Text("Zurück zum Start") }
             }
@@ -159,22 +169,33 @@ fun PruefmodusScreen(repository: ReviewCardRepository, onBeenden: () -> Unit, on
                 }
 
                 if (session.revealed) {
-                    RatingBar(onRate = { rating ->
-                        val result = session.rate(rating, nowEpochMillis = 0L, scheduler)
-                        val nextSession = result.nextSession
-                        scope.launch {
-                            // Persisted before the state switch (Szenario S5:
-                            // an already-submitted rating must survive
-                            // leaving the session, not just live in memory).
-                            repository.save(result.ratedCard)
-                            ratedCount += 1
-                            state = if (nextSession == null) {
-                                PruefmodusState.Finished(ratedCount)
-                            } else {
-                                PruefmodusState.Running(nextSession)
+                    RatingBar(
+                        enabled = !isRating,
+                        onRate = { rating ->
+                            // Locks synchronously on the first tap (before
+                            // the launch below even starts), so a fast
+                            // double-tap can't trigger rate()/save() twice
+                            // for the same card while the state switch is
+                            // still pending.
+                            isRating = true
+                            val result = session.rate(rating, clock.nowEpochMillis(), scheduler)
+                            val nextSession = result.nextSession
+                            scope.launch {
+                                // Persisted before the state switch (Szenario
+                                // S5: an already-submitted rating must
+                                // survive leaving the session, not just live
+                                // in memory).
+                                repository.save(result.ratedCard)
+                                ratedCount += 1
+                                isRating = false
+                                state = if (nextSession == null) {
+                                    PruefmodusState.Finished(ratedCount)
+                                } else {
+                                    PruefmodusState.Running(nextSession)
+                                }
                             }
-                        }
-                    })
+                        },
+                    )
                 }
 
                 Button(onClick = {
@@ -217,10 +238,10 @@ private fun RevealCard(text: String?, revealed: Boolean, onClick: () -> Unit) {
  * the scale steers repetition, it doesn't grade -- no traffic-light colors).
  */
 @Composable
-private fun RatingBar(onRate: (ReviewRating) -> Unit) {
+private fun RatingBar(enabled: Boolean, onRate: (ReviewRating) -> Unit) {
     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         for (rating in ReviewRating.entries) {
-            Button(onClick = { onRate(rating) }) {
+            Button(enabled = enabled, onClick = { onRate(rating) }) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(germanRatingLabel(rating))
                     Text(germanIntervalHint(rating), style = MaterialTheme.typography.labelSmall)
@@ -246,9 +267,9 @@ private fun germanIntervalHint(rating: ReviewRating): String = when (rating) {
     ReviewRating.PERFECT -> "1 Monat"
 }
 
-private fun describeNextDue(nextDueAtEpochMillis: Long?): String {
+private fun describeNextDue(nextDueAtEpochMillis: Long?, nowEpochMillis: Long): String {
     if (nextDueAtEpochMillis == null) return "Kein Wort im Korpus vorhanden."
-    val remainingMillis = nextDueAtEpochMillis
+    val remainingMillis = nextDueAtEpochMillis - nowEpochMillis
     if (remainingMillis <= 0) return "Die nächste Karte ist bereits fällig."
     val minutes = remainingMillis / 60_000
     return when {

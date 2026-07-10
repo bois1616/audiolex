@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import de.hexenwoche.audiolex.core.persistence.AudioLexDatabase
 import de.hexenwoche.audiolex.core.persistence.RoomReviewCardRepository
+import de.hexenwoche.audiolex.core.time.Clock
 
 /**
  * Flat navigation (DESIGN.md "Screenstruktur"): Start is the hub, training
@@ -32,11 +33,11 @@ private sealed interface Screen {
 }
 
 // Entry point and navigation host (Start/Lernmodus/Prüfmodus, see DESIGN.md).
-// [database] is created once per process by the platform entry point
-// (MainActivity/main) and handed down, so the SQLite file isn't reopened
-// on every screen visit.
+// [database] and [clock] are created once per process by the platform entry
+// point (MainActivity/main) and handed down -- the SQLite file isn't reopened
+// on every screen visit, and the time source stays injectable (ADR-0008).
 @Composable
-fun App(database: AudioLexDatabase) {
+fun App(database: AudioLexDatabase, clock: Clock) {
     MaterialTheme {
         Surface(modifier = Modifier.fillMaxSize()) {
             var screen by remember { mutableStateOf<Screen>(Screen.Start) }
@@ -50,6 +51,7 @@ fun App(database: AudioLexDatabase) {
                 is Screen.Lernmodus -> LernmodusScreen(onBeenden = { screen = Screen.Start })
                 is Screen.Pruefmodus -> PruefmodusScreen(
                     repository = remember(database) { RoomReviewCardRepository(database.reviewCardDao()) },
+                    clock = clock,
                     onBeenden = { screen = Screen.Start },
                     onZumLernmodus = { screen = Screen.Lernmodus },
                 )

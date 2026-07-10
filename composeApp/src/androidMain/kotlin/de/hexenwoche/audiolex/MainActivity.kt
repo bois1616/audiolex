@@ -5,14 +5,16 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import de.hexenwoche.audiolex.core.persistence.createAudioLexDatabase
+import de.hexenwoche.audiolex.core.time.systemClock
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val database = createAudioLexDatabase(getDatabaseBuilder(applicationContext))
+        val clock = systemClock()
         setContent {
-            App(database)
+            App(database, clock)
         }
     }
 }
