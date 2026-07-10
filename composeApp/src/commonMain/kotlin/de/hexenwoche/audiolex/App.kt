@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 private sealed interface Screen {
     data object Start : Screen
     data object Lernmodus : Screen
+    data object Pruefmodus : Screen
     data object DevKanaltest : Screen
 }
 
@@ -38,9 +39,14 @@ fun App() {
             when (val current = screen) {
                 is Screen.Start -> StartScreen(
                     onStartLernmodus = { screen = Screen.Lernmodus },
+                    onStartPruefmodus = { screen = Screen.Pruefmodus },
                     onOpenDevKanaltest = { screen = Screen.DevKanaltest },
                 )
                 is Screen.Lernmodus -> LernmodusScreen(onBeenden = { screen = Screen.Start })
+                is Screen.Pruefmodus -> PruefmodusScreen(
+                    onBeenden = { screen = Screen.Start },
+                    onZumLernmodus = { screen = Screen.Lernmodus },
+                )
                 is Screen.DevKanaltest -> DevKanaltestScreen(onBeenden = { screen = Screen.Start })
             }
         }
@@ -48,7 +54,11 @@ fun App() {
 }
 
 @Composable
-private fun StartScreen(onStartLernmodus: () -> Unit, onOpenDevKanaltest: () -> Unit) {
+private fun StartScreen(
+    onStartLernmodus: () -> Unit,
+    onStartPruefmodus: () -> Unit,
+    onOpenDevKanaltest: () -> Unit,
+) {
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -61,6 +71,9 @@ private fun StartScreen(onStartLernmodus: () -> Unit, onOpenDevKanaltest: () -> 
         )
         Button(onClick = onStartLernmodus) {
             Text("Lernmodus starten")
+        }
+        Button(onClick = onStartPruefmodus) {
+            Text("Prüfmodus starten")
         }
         Button(onClick = onOpenDevKanaltest) {
             Text("Kanaltest (Dev)")
