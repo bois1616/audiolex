@@ -5,11 +5,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -23,7 +27,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import de.hexenwoche.audiolex.core.audio.WavFile
 import de.hexenwoche.audiolex.core.audio.createAudioSink
 import de.hexenwoche.audiolex.core.corpus.AudioRecording
@@ -103,9 +109,15 @@ fun PruefmodusScreen(
     }
 
     // Plays the current card's word once whenever the session moves to a new
-    // (unrevealed) card -- heard-only until reveal (S3).
-    LaunchedEffect(state) {
+    // (unrevealed) card -- heard-only until reveal (S3). Keyed on the card's
+    // own word id, not on `state` as a whole -- keying on `state` re-fired
+    // this effect on every structural change to it, including reveal()
+    // (which produces a new Running(revealed = true) state), replaying the
+    // word just from tapping the card to uncover it.
+    val runningCardWordId = (state as? PruefmodusState.Running)?.session?.currentCard?.wordId
+    LaunchedEffect(runningCardWordId) {
         val running = state as? PruefmodusState.Running ?: return@LaunchedEffect
+        if (words.isEmpty() || recordings.isEmpty()) return@LaunchedEffect
         playCurrentCard(running.session, words, recordings, queue) { message ->
             state = PruefmodusState.Error(message)
         }
@@ -213,6 +225,12 @@ fun PruefmodusScreen(
  * Constant-size card whose silhouette doesn't give away the word's length
  * (DESIGN.md): shows nothing until [revealed], then the word. A large tap
  * area doubles as the reveal gesture.
+ *
+ * The revealed word stays on one line and shrinks to fit (DESIGN.md: the
+ * word is "groß und ruhig ... positionsstabil" -- it must not wrap or move,
+ * only scale down for longer words). The "tap to reveal" hint is secondary
+ * text, not the target word, so it's set smaller instead of competing with
+ * it at displayLarge (DESIGN.md: secondary content recedes).
  */
 @Composable
 private fun RevealCard(text: String?, revealed: Boolean, onClick: () -> Unit) {
@@ -225,10 +243,24 @@ private fun RevealCard(text: String?, revealed: Boolean, onClick: () -> Unit) {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(
-                if (revealed) (text ?: "?") else "Antippen zum Aufdecken",
-                style = MaterialTheme.typography.displayLarge,
-            )
+            if (revealed) {
+                val displayLarge = MaterialTheme.typography.displayLarge
+                BasicText(
+                    text = text ?: "?",
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                    style = displayLarge.copy(
+                        color = LocalContentColor.current,
+                        textAlign = TextAlign.Center,
+                    ),
+                    maxLines = 1,
+                    autoSize = TextAutoSize.StepBased(
+                        minFontSize = 24.sp,
+                        maxFontSize = displayLarge.fontSize,
+                    ),
+                )
+            } else {
+                Text("Antippen zum Aufdecken", style = MaterialTheme.typography.titleMedium)
+            }
         }
     }
 }

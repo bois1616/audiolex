@@ -3,9 +3,13 @@ package de.hexenwoche.audiolex
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,7 +22,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import de.hexenwoche.audiolex.core.audio.WavFile
 import de.hexenwoche.audiolex.core.audio.createAudioSink
 import de.hexenwoche.audiolex.core.corpus.AudioRecording
@@ -79,8 +85,14 @@ fun LernmodusScreen(onBeenden: () -> Unit) {
 
     // Plays the current word once whenever the session moves to a new word
     // (S1: happy path). Repeats (S2) are triggered explicitly by the button.
-    LaunchedEffect(state) {
+    // Keyed on the word's own index, not on `state` as a whole -- keying on
+    // `state` re-triggered this effect for every structural change to it
+    // (e.g. the two state writes LaunchedEffect(Unit) above makes while
+    // loading), which played the first word twice.
+    val runningWordIndex = (state as? LernmodusState.Running)?.session?.currentIndex
+    LaunchedEffect(runningWordIndex) {
         val running = state as? LernmodusState.Running ?: return@LaunchedEffect
+        if (recordings.isEmpty()) return@LaunchedEffect
         playCurrentWord(running.session, recordings, queue) { message ->
             state = LernmodusState.Error(message)
         }
@@ -118,7 +130,24 @@ fun LernmodusScreen(onBeenden: () -> Unit) {
                     "${session.progress} / ${session.total}",
                     style = MaterialTheme.typography.bodyMedium,
                 )
-                Text(session.currentWord.text, style = MaterialTheme.typography.displayLarge)
+                // Stays on one line and shrinks to fit instead of wrapping or
+                // clipping a longer word (DESIGN.md: the target word is
+                // "groß und ruhig ... positionsstabil" -- position and line
+                // count must not change, only the font size for overlength).
+                val displayLarge = MaterialTheme.typography.displayLarge
+                BasicText(
+                    text = session.currentWord.text,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                    style = displayLarge.copy(
+                        color = LocalContentColor.current,
+                        textAlign = TextAlign.Center,
+                    ),
+                    maxLines = 1,
+                    autoSize = TextAutoSize.StepBased(
+                        minFontSize = 24.sp,
+                        maxFontSize = displayLarge.fontSize,
+                    ),
+                )
 
                 Button(onClick = {
                     scope.launch {

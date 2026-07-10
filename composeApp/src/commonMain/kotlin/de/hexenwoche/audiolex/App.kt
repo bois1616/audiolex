@@ -29,6 +29,7 @@ private sealed interface Screen {
     data object Start : Screen
     data object Lernmodus : Screen
     data object Pruefmodus : Screen
+    data object Einstellungen : Screen
     data object DevKanaltest : Screen
 }
 
@@ -46,6 +47,7 @@ fun App(database: AudioLexDatabase, clock: Clock) {
                 is Screen.Start -> StartScreen(
                     onStartLernmodus = { screen = Screen.Lernmodus },
                     onStartPruefmodus = { screen = Screen.Pruefmodus },
+                    onOpenEinstellungen = { screen = Screen.Einstellungen },
                     onOpenDevKanaltest = { screen = Screen.DevKanaltest },
                 )
                 is Screen.Lernmodus -> LernmodusScreen(onBeenden = { screen = Screen.Start })
@@ -55,6 +57,7 @@ fun App(database: AudioLexDatabase, clock: Clock) {
                     onBeenden = { screen = Screen.Start },
                     onZumLernmodus = { screen = Screen.Lernmodus },
                 )
+                is Screen.Einstellungen -> EinstellungenScreen(onBeenden = { screen = Screen.Start })
                 is Screen.DevKanaltest -> DevKanaltestScreen(onBeenden = { screen = Screen.Start })
             }
         }
@@ -65,6 +68,7 @@ fun App(database: AudioLexDatabase, clock: Clock) {
 private fun StartScreen(
     onStartLernmodus: () -> Unit,
     onStartPruefmodus: () -> Unit,
+    onOpenEinstellungen: () -> Unit,
     onOpenDevKanaltest: () -> Unit,
 ) {
     Column(
@@ -83,8 +87,32 @@ private fun StartScreen(
         Button(onClick = onStartPruefmodus) {
             Text("Prüfmodus starten")
         }
+        Button(onClick = onOpenEinstellungen) {
+            Text("Einstellungen")
+        }
         Button(onClick = onOpenDevKanaltest) {
             Text("Kanaltest (Dev)")
+        }
+    }
+}
+
+/**
+ * Placeholder frame for the future settings screen (DESIGN.md
+ * "Screenstruktur"): a reachable dead end with no controls yet -- channel
+ * selection, presets and noise settings are separate, not-yet-scoped items
+ * that will fill this in later.
+ */
+@Composable
+private fun EinstellungenScreen(onBeenden: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text("Einstellungen", style = MaterialTheme.typography.headlineLarge)
+        Text("Noch keine Einstellungen verfügbar.", style = MaterialTheme.typography.bodyLarge)
+        Button(onClick = onBeenden) {
+            Text("Zurück")
         }
     }
 }
