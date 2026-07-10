@@ -22,6 +22,7 @@ kotlin {
             implementation(compose.ui)
             implementation(compose.components.resources)
             implementation(libs.kotlinx.serialization.json)
+            implementation(libs.androidx.room.runtime)
         }
         androidMain.dependencies {
             implementation(libs.androidx.activity.compose)

@@ -16,6 +16,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import de.hexenwoche.audiolex.core.persistence.AudioLexDatabase
+import de.hexenwoche.audiolex.core.persistence.RoomReviewCardRepository
 
 /**
  * Flat navigation (DESIGN.md "Screenstruktur"): Start is the hub, training
@@ -30,8 +32,11 @@ private sealed interface Screen {
 }
 
 // Entry point and navigation host (Start/Lernmodus/Prüfmodus, see DESIGN.md).
+// [database] is created once per process by the platform entry point
+// (MainActivity/main) and handed down, so the SQLite file isn't reopened
+// on every screen visit.
 @Composable
-fun App() {
+fun App(database: AudioLexDatabase) {
     MaterialTheme {
         Surface(modifier = Modifier.fillMaxSize()) {
             var screen by remember { mutableStateOf<Screen>(Screen.Start) }
@@ -44,6 +49,7 @@ fun App() {
                 )
                 is Screen.Lernmodus -> LernmodusScreen(onBeenden = { screen = Screen.Start })
                 is Screen.Pruefmodus -> PruefmodusScreen(
+                    repository = remember(database) { RoomReviewCardRepository(database.reviewCardDao()) },
                     onBeenden = { screen = Screen.Start },
                     onZumLernmodus = { screen = Screen.Lernmodus },
                 )

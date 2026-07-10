@@ -28,10 +28,11 @@ import de.hexenwoche.audiolex.core.audio.WavFile
 import de.hexenwoche.audiolex.core.audio.createAudioSink
 import de.hexenwoche.audiolex.core.corpus.AudioRecording
 import de.hexenwoche.audiolex.core.corpus.Word
+import de.hexenwoche.audiolex.core.persistence.ReviewCardRepository
+import de.hexenwoche.audiolex.core.persistence.allOrSeed
 import de.hexenwoche.audiolex.core.session.ExamSession
 import de.hexenwoche.audiolex.core.session.PlaybackQueue
 import de.hexenwoche.audiolex.core.srs.FixedIntervalScheduler
-import de.hexenwoche.audiolex.core.srs.ReviewCard
 import de.hexenwoche.audiolex.core.srs.ReviewQueue
 import de.hexenwoche.audiolex.core.srs.ReviewRating
 import de.hexenwoche.audiolex.generated.resources.Res
@@ -51,14 +52,14 @@ private sealed interface PruefmodusState {
 
 /**
  * Prüfmodus (Szenarien S3, S4, S5, S7; Gestalt: DESIGN.md "Trainings-Screens
- * im Detail", Komponenten RevealCard/RatingBar). Cards are in-memory only in
- * this iteration -- no persistence yet, every corpus word is treated as
- * immediately due (`dueAtEpochMillis = 0`) so the session is playable before
- * the SRS persistence item lands. Playback goes exclusively through
- * [PlaybackQueue], same as [LernmodusScreen].
+ * im Detail", Komponenten RevealCard/RatingBar). Fälligkeiten are persisted
+ * via [repository] (ADR-0004): a corpus word without a stored card yet is
+ * seeded as immediately due (Szenario S10, see [allOrSeed]), and every
+ * rating is saved right away so it survives leaving the session (S5).
+ * Playback goes exclusively through [PlaybackQueue], same as [LernmodusScreen].
  */
 @Composable
-fun PruefmodusScreen(onBeenden: () -> Unit, onZumLernmodus: () -> Unit) {
+fun PruefmodusScreen(repository: ReviewCardRepository, onBeenden: () -> Unit, onZumLernmodus: () -> Unit) {
     val scope = rememberCoroutineScope()
     val sink = remember { createAudioSink() }
     var state by remember { mutableStateOf<PruefmodusState>(PruefmodusState.Loading) }
@@ -82,9 +83,7 @@ fun PruefmodusScreen(onBeenden: () -> Unit, onZumLernmodus: () -> Unit) {
             words = json.decodeFromString<List<Word>>(wordsJson)
             recordings = json.decodeFromString<List<AudioRecording>>(recordingsJson)
 
-            // No persistence yet (separate backlog item): every word starts
-            // immediately due so the session is playable end-to-end.
-            val cards = words.map { ReviewCard(wordId = it.id, dueAtEpochMillis = 0L) }
+            val cards = repository.allOrSeed(words.map { it.id })
             val due = ReviewQueue.due(cards, nowEpochMillis = 0L)
             state = if (due.isEmpty()) {
                 PruefmodusState.NothingDue(cards.minOfOrNull { it.dueAtEpochMillis })
@@ -163,11 +162,17 @@ fun PruefmodusScreen(onBeenden: () -> Unit, onZumLernmodus: () -> Unit) {
                     RatingBar(onRate = { rating ->
                         val result = session.rate(rating, nowEpochMillis = 0L, scheduler)
                         val nextSession = result.nextSession
-                        ratedCount += 1
-                        state = if (nextSession == null) {
-                            PruefmodusState.Finished(ratedCount)
-                        } else {
-                            PruefmodusState.Running(nextSession)
+                        scope.launch {
+                            // Persisted before the state switch (Szenario S5:
+                            // an already-submitted rating must survive
+                            // leaving the session, not just live in memory).
+                            repository.save(result.ratedCard)
+                            ratedCount += 1
+                            state = if (nextSession == null) {
+                                PruefmodusState.Finished(ratedCount)
+                            } else {
+                                PruefmodusState.Running(nextSession)
+                            }
                         }
                     })
                 }
