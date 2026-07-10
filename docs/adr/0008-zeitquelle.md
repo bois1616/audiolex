@@ -1,6 +1,6 @@
 # ADR-0008: Zeitquelle für SRS-Fälligkeiten — injizierbares `Clock`-Interface
 
-- **Status:** vorgeschlagen (Entscheid des Autors vor Umsetzung)
+- **Status:** akzeptiert (Autor-Entscheid 2026-07-10)
 - **Datum:** 2026-07-10
 
 ## Kontext
@@ -30,11 +30,11 @@ Kernpunkt: **Das `Clock`-*Interface* ist die injizierbare Abstraktion, `systemCl
 
 - **Reine `expect fun nowEpochMillis(): Long`** (ohne Interface): minimal, führt die `createAudioSink`-Form fort, aber nicht injizierbar — Tests der Aufrufstelle müssten die Zeit weiterhin über einen Umweg fälschen. Verworfen, weil die fehlende Testbarkeit die eigentliche Ursache des Bugs war.
 - **`kotlinx-datetime`** (`Clock.System.now().toEpochMilliseconds()`): gut gepflegt, KMP-nativ, bringt aber eine Fremd-Dependency und ein `Clock`-Konzept, das für den MVP-Bedarf (ein `Long`) überdimensioniert ist. Bleibt Kandidat, falls später echte Datums-/Zeitzonenlogik (Sitzungshistorie mit lokalem Datum, S12) hinzukommt — dann kann `systemClock()`s `actual` intern darauf umgestellt werden, ohne die Aufrufer zu ändern.
-- **`kotlin.time.Clock`** (stdlib): bei Kotlin 2.1.21 noch experimentell (stabil erst 2.2.0), bräuchte projektweites OptIn. Verschoben, bis das Projekt auf 2.2.x geht; die eigene `Clock`-Abstraktion lässt sich dann trivial dahinter umstellen.
+- **`kotlin.time.Clock`** (stdlib): bei Kotlin 2.1.21 experimentell, **stabil erst ab Kotlin 2.3** (nicht 2.2.x — Recherche 2026-07-10, KT-80778). Ein Kotlin-Bump als Mittel zur Zeitquelle lohnt nicht: Er zieht KSP (Version = Kotlin-Version), Compose-Compiler und Compose Multiplatform synchron mit (reales Regressionsrisiko, besonders Skiko unter WSL2) und brächte die *stabile* `Clock` ohnehin erst mit 2.3. Der Versionssprung ist als eigenes `[PROP]`-Backlog-Item festgehalten, entkoppelt von diesem ADR. Sobald das Projekt auf 2.3 geht, wird `systemClock()`s `actual` intern auf `kotlin.time.Clock.System` umgestellt — die Aufrufer merken nichts, genau dafür ist die eigene Abstraktion da.
 
 ## Konsequenzen
 
 - Die SRS-Aufrufstelle wird testbar: ein Integrationstest mit `FakeClock` sichert die Regression ab, die dieser Bug war — das war vorher unmöglich.
 - Zwei triviale `actual`-Dateien mehr (jvm + android), konsistent mit der bestehenden `AudioSink`-Struktur; kein neues Gradle-Modul, keine Fremd-Dependency.
 - `:core` bleibt datumsbibliotheksfrei; die Umstellung auf `kotlinx-datetime` oder `kotlin.time.Clock` ist später ein reiner Austausch hinter `systemClock()`, ohne die Aufrufer anzufassen.
-- Bewusste Schuld: `Clock` liefert nur Millis, keine Zeitzonen/Kalenderlogik. Für die Sitzungshistorie (S12, lokales Datum/Uhrzeit) wird das nicht reichen — dort ist der Punkt, an dem `kotlinx-datetime` neu zu bewerten ist (im dortigen Item vermerken).
+- `Clock` liefert bewusst nur UTC-Epoch-Millis, keine Zeitzonen-/Kalenderlogik — und das ist für die SRS-Fälligkeit ausreichend, weil dort nur **Zeitdifferenzen** zählen (wie lange seit dem letzten Zeigen der Karte), nicht absolute Genauigkeit oder lokale Kalenderdaten (Autor-Entscheid 2026-07-10). Für späteres **Reporting** (Sitzungshistorie S12, lokales Datum/Uhrzeit) ist der saubere Weg, beim Speichern eines Sitzungs-Timestamps die Zeitzone als Zusatzfeld mitzuschreiben und erst bei der Anzeige umzurechnen — die zonenlose Millis-Rechnung bleibt davon unberührt. Das ist Sache des Sitzungshistorie-Items (dort vermerkt), nicht dieser Zeitquelle; `kotlinx-datetime` wird dort neu bewertet, falls die Umrechnung mehr als triviale Formatierung braucht.
