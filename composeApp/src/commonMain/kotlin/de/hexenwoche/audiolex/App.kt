@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import de.hexenwoche.audiolex.core.persistence.AudioLexDatabase
 import de.hexenwoche.audiolex.core.persistence.RoomReviewCardRepository
+import de.hexenwoche.audiolex.core.persistence.RoomSessionRepository
 import de.hexenwoche.audiolex.core.time.Clock
 
 /**
@@ -30,6 +31,7 @@ private sealed interface Screen {
     data object Lernmodus : Screen
     data object Pruefmodus : Screen
     data object Einstellungen : Screen
+    data object Sitzungshistorie : Screen
     data object DevKanaltest : Screen
 }
 
@@ -39,7 +41,7 @@ private sealed interface Screen {
 // on every screen visit, and the time source stays injectable (ADR-0008).
 @Composable
 fun App(database: AudioLexDatabase, clock: Clock) {
-    MaterialTheme {
+    AudioLexTheme {
         Surface(modifier = Modifier.fillMaxSize()) {
             var screen by remember { mutableStateOf<Screen>(Screen.Start) }
 
@@ -48,16 +50,22 @@ fun App(database: AudioLexDatabase, clock: Clock) {
                     onStartLernmodus = { screen = Screen.Lernmodus },
                     onStartPruefmodus = { screen = Screen.Pruefmodus },
                     onOpenEinstellungen = { screen = Screen.Einstellungen },
+                    onOpenSitzungshistorie = { screen = Screen.Sitzungshistorie },
                     onOpenDevKanaltest = { screen = Screen.DevKanaltest },
                 )
                 is Screen.Lernmodus -> LernmodusScreen(onBeenden = { screen = Screen.Start })
                 is Screen.Pruefmodus -> PruefmodusScreen(
                     repository = remember(database) { RoomReviewCardRepository(database.reviewCardDao()) },
+                    sessionRepository = remember(database) { RoomSessionRepository(database.sessionDao()) },
                     clock = clock,
                     onBeenden = { screen = Screen.Start },
                     onZumLernmodus = { screen = Screen.Lernmodus },
                 )
                 is Screen.Einstellungen -> EinstellungenScreen(onBeenden = { screen = Screen.Start })
+                is Screen.Sitzungshistorie -> SitzungshistorieScreen(
+                    repository = remember(database) { RoomSessionRepository(database.sessionDao()) },
+                    onBeenden = { screen = Screen.Start },
+                )
                 is Screen.DevKanaltest -> DevKanaltestScreen(onBeenden = { screen = Screen.Start })
             }
         }
@@ -69,6 +77,7 @@ private fun StartScreen(
     onStartLernmodus: () -> Unit,
     onStartPruefmodus: () -> Unit,
     onOpenEinstellungen: () -> Unit,
+    onOpenSitzungshistorie: () -> Unit,
     onOpenDevKanaltest: () -> Unit,
 ) {
     Column(
@@ -86,6 +95,9 @@ private fun StartScreen(
         }
         Button(onClick = onStartPruefmodus) {
             Text("Prüfmodus starten")
+        }
+        Button(onClick = onOpenSitzungshistorie) {
+            Text("Sitzungshistorie")
         }
         Button(onClick = onOpenEinstellungen) {
             Text("Einstellungen")

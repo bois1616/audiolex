@@ -9,7 +9,6 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -128,18 +127,21 @@ fun LernmodusScreen(onBeenden: () -> Unit) {
                 val session = current.session
                 Text(
                     "${session.progress} / ${session.total}",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 // Stays on one line and shrinks to fit instead of wrapping or
                 // clipping a longer word (DESIGN.md: the target word is
                 // "groß und ruhig ... positionsstabil" -- position and line
                 // count must not change, only the font size for overlength).
+                // Explicitly neutral (onSurface), never the accent color --
+                // the accent is reserved for active elements (DESIGN.md).
                 val displayLarge = MaterialTheme.typography.displayLarge
                 BasicText(
                     text = session.currentWord.text,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                     style = displayLarge.copy(
-                        color = LocalContentColor.current,
+                        color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Center,
                     ),
                     maxLines = 1,

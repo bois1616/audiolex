@@ -13,7 +13,6 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -35,9 +34,11 @@ import de.hexenwoche.audiolex.core.audio.createAudioSink
 import de.hexenwoche.audiolex.core.corpus.AudioRecording
 import de.hexenwoche.audiolex.core.corpus.Word
 import de.hexenwoche.audiolex.core.persistence.ReviewCardRepository
+import de.hexenwoche.audiolex.core.persistence.SessionRepository
 import de.hexenwoche.audiolex.core.persistence.allOrSeed
 import de.hexenwoche.audiolex.core.session.ExamSession
 import de.hexenwoche.audiolex.core.session.PlaybackQueue
+import de.hexenwoche.audiolex.core.session.Session
 import de.hexenwoche.audiolex.core.srs.FixedIntervalScheduler
 import de.hexenwoche.audiolex.core.srs.ReviewQueue
 import de.hexenwoche.audiolex.core.srs.ReviewRating
@@ -68,6 +69,7 @@ private sealed interface PruefmodusState {
 @Composable
 fun PruefmodusScreen(
     repository: ReviewCardRepository,
+    sessionRepository: SessionRepository,
     clock: Clock,
     onBeenden: () -> Unit,
     onZumLernmodus: () -> Unit,
@@ -84,6 +86,28 @@ fun PruefmodusScreen(
     var recordings by remember { mutableStateOf<List<AudioRecording>>(emptyList()) }
     var ratedCount by remember { mutableStateOf(0) }
     var isRating by remember { mutableStateOf(false) }
+    // Distribution and session start (Szenario S12, Sitzungshistorie) -- only
+    // set once the session actually starts running, and only ever written
+    // to, never used for SRS due-date math (that stays clock.nowEpochMillis()
+    // read fresh at rate() time above).
+    var startedAtEpochMillis by remember { mutableStateOf<Long?>(null) }
+    val ratingCounts = remember { mutableStateOf(emptyMap<ReviewRating, Int>()) }
+    var sessionLogged by remember { mutableStateOf(false) }
+
+    suspend fun logSessionIfAnyRatings() {
+        val startedAt = startedAtEpochMillis
+        if (sessionLogged || startedAt == null || ratedCount == 0) return
+        sessionLogged = true
+        sessionRepository.save(
+            Session(
+                startedAtEpochMillis = startedAt,
+                zoneId = clock.zoneId(),
+                mode = "PRUEFMODUS",
+                ratedCount = ratedCount,
+                ratingCounts = ratingCounts.value,
+            )
+        )
+    }
 
     DisposableEffect(Unit) {
         onDispose { queue.stop() }
@@ -101,6 +125,7 @@ fun PruefmodusScreen(
             state = if (due.isEmpty()) {
                 PruefmodusState.NothingDue(cards.minOfOrNull { it.dueAtEpochMillis })
             } else {
+                startedAtEpochMillis = clock.nowEpochMillis()
                 PruefmodusState.Running(ExamSession(due))
             }
         } catch (e: Exception) {
@@ -156,7 +181,8 @@ fun PruefmodusScreen(
                 val session = current.session
                 Text(
                     "${session.progress} / ${session.total}",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
                 val word = words.firstOrNull { it.id == session.currentCard.wordId }
@@ -199,11 +225,15 @@ fun PruefmodusScreen(
                                 // in memory).
                                 repository.save(result.ratedCard)
                                 ratedCount += 1
+                                ratingCounts.value = ratingCounts.value.toMutableMap().apply {
+                                    this[rating] = (this[rating] ?: 0) + 1
+                                }
                                 isRating = false
-                                state = if (nextSession == null) {
-                                    PruefmodusState.Finished(ratedCount)
+                                if (nextSession == null) {
+                                    logSessionIfAnyRatings()
+                                    state = PruefmodusState.Finished(ratedCount)
                                 } else {
-                                    PruefmodusState.Running(nextSession)
+                                    state = PruefmodusState.Running(nextSession)
                                 }
                             }
                         },
@@ -212,7 +242,13 @@ fun PruefmodusScreen(
 
                 Button(onClick = {
                     queue.stop()
-                    onBeenden()
+                    scope.launch {
+                        // Szenario S5: leaving mid-session still counts as a
+                        // completed session for the history, provided at
+                        // least one card was actually rated.
+                        logSessionIfAnyRatings()
+                        onBeenden()
+                    }
                 }) {
                     Text("Beenden")
                 }
@@ -244,12 +280,14 @@ private fun RevealCard(text: String?, revealed: Boolean, onClick: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             if (revealed) {
+                // Explicitly neutral (onSurface), never the accent color --
+                // the accent is reserved for active elements (DESIGN.md).
                 val displayLarge = MaterialTheme.typography.displayLarge
                 BasicText(
                     text = text ?: "?",
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                     style = displayLarge.copy(
-                        color = LocalContentColor.current,
+                        color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Center,
                     ),
                     maxLines = 1,
@@ -283,7 +321,7 @@ private fun RatingBar(enabled: Boolean, onRate: (ReviewRating) -> Unit) {
     }
 }
 
-private fun germanRatingLabel(rating: ReviewRating): String = when (rating) {
+internal fun germanRatingLabel(rating: ReviewRating): String = when (rating) {
     ReviewRating.AGAIN -> "Sofort"
     ReviewRating.SOON -> "Bald"
     ReviewRating.LATER -> "Später"

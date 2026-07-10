@@ -8,13 +8,13 @@ import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 
 /**
  * The app's persistence root (ADR-0004, Backlog M3 "Fälligkeits-Persistenz").
- * Scoped to ReviewCard fälligkeiten for now; session history and settings
- * are separate schemas/items, not entities here.
+ * Settings remain a separate, not-yet-scoped schema.
  */
-@Database(entities = [ReviewCardEntity::class], version = 1, exportSchema = false)
+@Database(entities = [ReviewCardEntity::class, SessionEntity::class], version = 2, exportSchema = false)
 @ConstructedBy(AudioLexDatabaseConstructor::class)
 abstract class AudioLexDatabase : RoomDatabase() {
     abstract fun reviewCardDao(): ReviewCardDao
+    abstract fun sessionDao(): SessionDao
 }
 
 // The Room KSP compiler generates the actual implementation per target --
@@ -28,6 +28,11 @@ expect object AudioLexDatabaseConstructor : RoomDatabaseConstructor<AudioLexData
  * Builds the real database from a platform-supplied [RoomDatabase.Builder]
  * (Context-based on Android, file-path-based on jvm) -- :core stays
  * Context-free, the platform-specific builder is created in :composeApp.
+ *
+ * Uses a destructive fallback across schema versions instead of writing a
+ * real migration: there are no real user installs yet (pre-release MVP), so
+ * wiping and recreating on a version bump is acceptable and far simpler than
+ * migration code that would only ever run against empty/test databases.
  */
 fun createAudioLexDatabase(builder: RoomDatabase.Builder<AudioLexDatabase>): AudioLexDatabase =
-    builder.setDriver(BundledSQLiteDriver()).build()
+    builder.setDriver(BundledSQLiteDriver()).fallbackToDestructiveMigration(true).build()
