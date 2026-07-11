@@ -1,5 +1,15 @@
 # Umsetzungs-Log (Neueste Einträge zuerst)
 
+## 2026-07-10 (Neuer Bug in der Desktop-Sichtprobe diagnostiziert: PulseAudio-Sink-Input überlebt Prozess-Abbruch)
+
+- **Autor meldet nach der Sitzungshistorie/Theme-Runde: „Ball" spielt weiterhin mehrfach** (2x, teils eskalierend bis 4x bei schnellem Wiederholen), nicht deterministisch. Auf den ersten Blick ein Rückfall des zuvor gefixten Compose-Key-Bugs — bei genauerem Hinsehen aber ein **anderer** Bug auf einer tieferen Ebene, der zufällig dasselbe Symptom erzeugt.
+
+  Root Cause isoliert reproduziert, außerhalb von Compose/Coroutines: ein reiner `ProcessBuilder`-Test gegen die echte Testressource `core/src/jvmTest/resources/sample-thorsten-ball.wav`. Baseline volle Wiedergabe ~497 ms. Test: `paplay` starten, nach 150 ms `destroy()` + `waitFor()` (Java bestätigt den Prozess als beendet), sofort einen zweiten `paplay`-Prozess für dieselbe Datei starten → der zweite Prozess braucht **1100–2200 ms statt 497 ms**, mit variierender Dauer über mehrere Läufe. Schlussfolgerung: **PulseAudio spielt das vom ersten (toten) `paplay`-Prozess bereits übergebene Audio serverseitig weiter**, unabhängig vom Prozess-Tod — der zweite Prozess konkurriert mit einem Geister-Stream um denselben Sink. Das erklärt das eskalierende Verhalten bei schnellem Wiederholen (mehrere Geister-Streams stapeln sich) und warum es nicht deterministisch ist (Timing-abhängig).
+
+  Eine naheliegende Reparatur direkt ausprobiert und verworfen: `destroyForcibly()` (SIGKILL) statt `destroy()` (SIGTERM) — macht die Verzögerung **nicht** kleiner, in mehreren Läufen eher größer (2150+ ms). Das Signal ist also nicht der Hebel; das Problem sitzt auf PulseAudio-Server-Seite, nicht am Java-Prozess.
+
+  Bewusst **kein** Fix umgesetzt und **keine** Fixrichtung vorentschieden — als `[→Opus]`-Item ins Backlog gehoben (M2, direkt nach dem Gerätetest-Item), weil mehrere plausible Reparaturen mit unterschiedlichem Aufwand/Risiko offenstehen (gezieltes `pactl kill-client` beim Abbruch, Wechsel weg von `paplay` auf eine Bibliothek mit echter Stream-Kontrolle, präventives Killen verwaister Sink-Inputs) und keine ohne Abwägung „die" Lösung ist. Nicht betroffen: Android (`AudioTrack`, kein externer Prozess), die Compose-/Coroutine-Ebene (`PlaybackQueue`, Screen-State) — der zuvor gefixte Auto-Play-Key-Bug bleibt korrekt und unangetastet.
+
 ## 2026-07-10 (Sitzungshistorie S12 + AudioLex-Theme umgesetzt)
 
 - **Sitzungshistorie (S12) vollständig umgesetzt (alle 7 ACs).** `Clock` um `fun zoneId(): String` erweitert (jvm/android via `java.time.ZoneId.systemDefault().id`, minSdk 29 trägt das nativ ohne Desugaring; `FakeClock` um festen Test-Zone-Parameter ergänzt) — der Docstring wurde angepasst, da `Clock` jetzt bewusst Zeitpunkt *und* Zone trägt, Letztere aber weiterhin nur fürs Reporting, nie für SRS-Differenzrechnung.
