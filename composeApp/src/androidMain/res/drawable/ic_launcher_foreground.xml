@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Abstract sound-wave motif: three concentric arcs radiating from a small
+  source dot, all within the adaptive-icon safe zone (inner 66dp of the
+  108dp canvas, i.e. within 33dp of center (54,54)) so round/squircle
+  launcher masks never clip it. Deliberately quiet/symmetric (SOUL.md),
+  no photorealism. Farthest point of each shape from the safe-zone center,
+  verified: dot 13dp, arc1 16dp, arc2 21dp, arc3 30dp, all under 33dp.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FAF8F5"
+        android:pathData="M44,54m-3,0a3,3 0,1 1,6 0a3,3 0,1 1,-6 0" />
+    <path
+        android:strokeColor="#FAF8F5"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M50,42 A12,12 0,0 1,50 66" />
+    <path
+        android:strokeColor="#FAF8F5"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M53,34 A20,20 0,0 1,53 74" />
+    <path
+        android:strokeColor="#FAF8F5"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M56,26 A28,28 0,0 1,56 82" />
+</vector>

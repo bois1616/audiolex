@@ -66,6 +66,29 @@ class ExamSessionTest {
     }
 
     @Test
+    fun advanceMovesToNextCardUnrevealed() {
+        val session = ExamSession(threeCards).reveal()
+        val next = session.advance()
+
+        assertEquals("b", next?.currentCard?.wordId)
+        assertEquals(false, next?.revealed)
+        assertEquals(2, next?.progress)
+    }
+
+    @Test
+    fun advanceOnLastCardReturnsNull() {
+        val session = ExamSession(threeCards, currentIndex = 2, revealed = true)
+        assertNull(session.advance())
+    }
+
+    @Test
+    fun advanceDoesNotRateTheCurrentCard() {
+        val session = ExamSession(threeCards).reveal()
+        val next = session.advance()
+        assertEquals(threeCards, next?.cards)
+    }
+
+    @Test
     fun delegatesSchedulingEntirelyToScheduler() {
         val session = ExamSession(listOf(card("a")))
         val result = session.rate(ReviewRating.AGAIN, now, scheduler)

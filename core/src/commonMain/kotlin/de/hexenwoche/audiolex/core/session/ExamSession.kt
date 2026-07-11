@@ -32,6 +32,16 @@ data class ExamSession(
     fun reveal(): ExamSession = copy(revealed = true)
 
     /**
+     * Moves from the current card to the next (unrevealed) one, or `null` on
+     * the last card (Szenario S3 end-of-session). Deliberately separate from
+     * [rate]: rating and advancing are distinct user actions in Prüfmodus --
+     * the caller stays on the rated, revealed card until this is invoked
+     * (Autor-Finding 2026-07-10, "Wiederholen"/"Nächstes"-Entzerrung).
+     */
+    fun advance(): ExamSession? =
+        if (isLastCard) null else copy(currentIndex = currentIndex + 1, revealed = false)
+
+    /**
      * Rates the current card via [scheduler], producing the newly scheduled
      * [ReviewCard] the caller should persist, plus either the session moved
      * to the next (unrevealed) card or a terminal result once the last card

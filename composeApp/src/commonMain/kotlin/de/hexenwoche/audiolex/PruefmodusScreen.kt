@@ -53,7 +53,13 @@ private val scheduler = FixedIntervalScheduler()
 private sealed interface PruefmodusState {
     data object Loading : PruefmodusState
     data class NothingDue(val nextDueAtEpochMillis: Long?) : PruefmodusState
-    data class Running(val session: ExamSession) : PruefmodusState
+    /**
+     * [rated] separates rating from advancing (Autor-Finding 2026-07-10):
+     * once true, the screen stays on this revealed card showing "Nächstes"
+     * instead of the [RatingBar] -- [ExamSession.advance] (not [ExamSession.rate])
+     * is what actually moves to the next card, on an explicit tap.
+     */
+    data class Running(val session: ExamSession, val rated: Boolean = false) : PruefmodusState
     data class Finished(val ratedCount: Int) : PruefmodusState
     data class Error(val message: String) : PruefmodusState
 }
@@ -196,17 +202,23 @@ fun PruefmodusScreen(
                     },
                 )
 
-                Button(onClick = {
-                    scope.launch {
-                        playCurrentCard(session, words, recordings, queue) { message ->
-                            state = PruefmodusState.Error(message)
+                // Only meaningful before reveal (replay the still-hidden
+                // word) -- once rated, "Nächstes" below is the way forward
+                // instead (Autor-Finding 2026-07-10: "Wiederholen" made no
+                // sense once the word was already visible).
+                if (!current.rated) {
+                    Button(onClick = {
+                        scope.launch {
+                            playCurrentCard(session, words, recordings, queue) { message ->
+                                state = PruefmodusState.Error(message)
+                            }
                         }
+                    }) {
+                        Text("Wiederholen")
                     }
-                }) {
-                    Text("Wiederholen")
                 }
 
-                if (session.revealed) {
+                if (session.revealed && !current.rated) {
                     RatingBar(
                         enabled = !isRating,
                         onRate = { rating ->
@@ -217,7 +229,6 @@ fun PruefmodusScreen(
                             // still pending.
                             isRating = true
                             val result = session.rate(rating, clock.nowEpochMillis(), scheduler)
-                            val nextSession = result.nextSession
                             scope.launch {
                                 // Persisted before the state switch (Szenario
                                 // S5: an already-submitted rating must
@@ -229,15 +240,29 @@ fun PruefmodusScreen(
                                     this[rating] = (this[rating] ?: 0) + 1
                                 }
                                 isRating = false
-                                if (nextSession == null) {
-                                    logSessionIfAnyRatings()
-                                    state = PruefmodusState.Finished(ratedCount)
-                                } else {
-                                    state = PruefmodusState.Running(nextSession)
-                                }
+                                // Stays on this revealed, now-rated card --
+                                // advancing is a separate, explicit action via
+                                // "Nächstes" below, not an automatic jump.
+                                state = PruefmodusState.Running(session, rated = true)
                             }
                         },
                     )
+                }
+
+                if (current.rated) {
+                    Button(onClick = {
+                        val next = session.advance()
+                        if (next == null) {
+                            scope.launch {
+                                logSessionIfAnyRatings()
+                                state = PruefmodusState.Finished(ratedCount)
+                            }
+                        } else {
+                            state = PruefmodusState.Running(next)
+                        }
+                    }) {
+                        Text("Nächstes")
+                    }
                 }
 
                 Button(onClick = {

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Base (non-adaptive) fallback so @mipmap/ic_launcher resolves on any API
+  level; superseded by mipmap-anydpi-v26/ic_launcher.xml (the real adaptive
+  icon) on v26+, and minSdk here is 29, so this is never actually the one
+  rendered on-device, it just needs to exist and be valid.
+-->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/ic_launcher_background" />
+    <item android:drawable="@drawable/ic_launcher_foreground" />
+</layer-list>
