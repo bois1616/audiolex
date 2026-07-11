@@ -1,5 +1,21 @@
 # Umsetzungs-Log (Neueste Einträge zuerst)
 
+## 2026-07-12 (Vollständiger A53-Gerätetest ausgewertet, sechs neue Backlog-Punkte aufgenommen — bewusst nicht umgesetzt)
+
+- **Autor hat den kompletten A53-Testumfang durchlaufen und gemeldet.** Ergebnis größtenteils positiv: Icon erkennbar, Prüfmodus-Ablauf (Aufdecken/Bewerten/„Nächstes"/Fertig) korrekt, Sitzungshistorie zählt richtig und übersteht sogar einen kompletten App-Neustart, S5-Verlassen-mitten-drin korrekt. Auf ausdrücklichen Wunsch des Autors wurden alle Befunde **nur ins Backlog aufgenommen, nicht umgesetzt** — das bleibt bewusst der nächsten Runde vorbehalten.
+
+  Drei Befund-/Requirement-Gruppen ergänzt:
+  1. **Abschneide-Bug präzisiert:** neue Beobachtung zum bereits erfassten `[→Opus]`-Item (Wortanfang fehlt bei neuer Karte) — nicht gleichmäßig, sondern wortabhängig („Fenster"→„FeFenster", „Ball"→„BaBall", „Garten" unauffällig). Deutet eher auf eine kurze Anfangs-**Überlagerung** als auf reinen Silence-Verlust hin, was die Auswahl der Gegenmaßnahme beeinflusst (Pre-Roll-Stille löst reinen Verlust, aber nicht unbedingt eine Überlagerung) — in das bestehende Item eingearbeitet, kein neues Item.
+  2. **`RatingBar`-Layout bricht auf dem A53 um** (vierter/fünfter Button vertikal gequetscht). Autor schlug testweise vor, die SRS-Skala gleich auf drei Stufen zu kürzen. Bewusst als `[→Opus]` erfasst statt vorschnell umgesetzt: das ist mehr als ein Layout-Fix, sobald man die Skala selbst antastet — berührt ADR-0005 (feste 5-Stufen-Intervalltabelle) und den `ReviewRating`-Enum samt bereits gespeicherter A53-Testdaten. Zwei Richtungen gegenübergestellt (reiner Layout-Fix vs. Skalen-Kürzung mit ADR-Revision), Opus entscheidet.
+  3. **Theme-Umschalten (Hell/Dunkel) auf dem A53 nicht beobachtbar** — im Gerätetest-Item als offener Klärungspunkt vermerkt (nicht als Bug gewertet, da nicht sauber reproduziert: unklar ob System-Dark-Mode überhaupt umgeschaltet wurde).
+
+  Drei neue Lernmodus-Requirements aufgenommen (alle `[→Opus]`, da sie Design-/Modellentscheidungen brauchen, keine reinen Layout-/Bugfixes):
+  - **Zufällige statt feste Wortreihenfolge** im Lernmodus.
+  - **„Vorheriges" zusätzlich zu „Nächstes"**, ein Wort zurück statt zufällig — explizit mit dem Randomisierungs-Requirement zusammen zu schärfen, da eine „vorherige Position" nur bei einer für die Sitzungsdauer fixierten (einmal gewürfelten) Reihenfolge Sinn ergibt.
+  - **Ganze Sätze als Schwierigkeitsstufe.** Größter der drei Punkte: berührt das Korpusmodell (`Word` ist strikt Einzelwort-zugeschnitten), das noch unimplementierte M4-Presets-Item (`SettingsProfile`, sollte hier andocken statt eine zweite Einstellungs-Mechanik zu bauen) und die Korpus-Beschaffung (ADR-0006/Piper) für Sätze. Zur gemeinsamen Schärfung mit dem Presets-Item vorgemerkt.
+
+  Kein Produktionscode in diesem Turn geändert — ausschließlich Backlog-Ergänzungen, wie vom Autor angewiesen.
+
 ## 2026-07-12 (A53-Gerätetest: BT-Audio-Routing-Vorfall geklärt, neuer Abschneide-Bug diagnostiziert)
 
 - **„Kein Ton" auf dem A53 aufgeklärt — kein Code-Bug.** Autor meldete zunächst, im Kanaltest über das BT-Hörgerät gar nichts zu hören (auch nicht auf dem rechten Kanal), obwohl das Hörgerät als verbunden angezeigt wurde und andere Apps kurz „weggedrückt" wurden (Audio-Fokus griff also). Temporäres Diagnose-Logging in `AndroidAudioSink.play()` (`write()`-Rückgabewert, `track.state`/`playState`, `routedDevice`) eingebaut, Build neu installiert, zwei Testklicks (links/rechts) mitgeschnitten: `write()` schrieb vollständig (30720/30720 Shorts), `playState=3` (PLAYING), `routedDevice="Stephan Hearing Aid"` — die App-/`AudioTrack`-Ebene war durchgehend korrekt. Gegenprobe mit einer fremden App (nicht AudioLex) bestätigte: auch dort kein Ton — also kein App-spezifisches Problem, sondern eine verhakte System-BT-Route. Erneutes Bestätigen des Hörgeräts in den Android-Einstellungen (ohne tatsächliche Konfigurationsänderung) hat die Route repariert, seitdem funktioniert Ton in beiden Apps. Diagnose-Logging danach vollständig wieder entfernt (kein Produktionscode-Rest), sauberer Build neu installiert.
