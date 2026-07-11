@@ -1,5 +1,18 @@
 # Umsetzungs-Log (Neueste Einträge zuerst)
 
+## 2026-07-12 (Opus-Review nach Kompaktifizierung + Smartphone-tauglich-Schwung für Sonnet geschärft)
+
+- **Vollständige Codesichtung nach der Kompaktifizierung — die letzten drei Sonnet-Runden (Zeitquelle, Auto-Play-Key-Fix, Sitzungshistorie, Theme) sind sauber, kein Nacharbeitsbedarf.** Der Auto-Play-Key-Fix keyt in beiden Screens korrekt auf die Wort-/Karten-Identität (`LernmodusScreen.kt:91`, `PruefmodusScreen.kt:142`), die Session-Persistenz greift bei Abschluss und beim Verlassen, das Theme ist über `AudioLexTheme` verdrahtet. Der Doppeltap-Schutz (`isRating`) sitzt richtig.
+
+- **Ziel des Autors geschärft: „umgehend eine lauffähige, ansehnliche, nutzbare Version auf dem Smartphone, und diese auch aufrufen zu können".** Gemessen daran beim Sichten drei konkrete Lücken gefunden und gegen das Ziel gewichtet:
+  1. **Kein Launcher-Icon** — `composeApp/src/androidMain/` hat kein `res/`-Verzeichnis, das Manifest referenziert kein `android:icon`; die Debug-APK zeigt das grüne Android-Standard-Icon. Das trifft direkt das Autor-Ziel „ansehnlich" **und** „aufrufen können" (App ist auf dem Homescreen nicht als AudioLex erkennbar). → Als `[P1][Packaging][→Sonnet]` geschärft (M4-Kopf).
+  2. **Finding 5 aus der letzten Sichtprobe** (Prüfmodus: „Wiederholen" nach Aufdecken unsinnig → „Nächstes"; kein Auto-Advance nach Bewertung) war bewusst zurückgestellt worden und noch nicht im Backlog. → Als `[P1][UI][→Sonnet]` geschärft (M3), inkl. geprüftem API-Weg (additive `ExamSession.advance()`, `rate`-Signatur bleibt unangetastet).
+  3. Der **PulseAudio-Doppel-Ton-Bug** betrifft ausschließlich das Desktop-Dev-Target (`AudioSink.jvm.kt`/`paplay`), **nicht** das Smartphone (`AudioTrack`). Für den Smartphone-Test irrelevant → bleibt liegen als `[→Opus]`, nicht Teil dieses Schwungs (Autor-Entscheid).
+
+  Der Autor hat den Schwung-Zuschnitt bestätigt: **Icon + Finding-5-UX**, dann sofort A53-Gerätetest. Beide Items sind reine `[→Sonnet]`-Arbeit ohne offene Design-/Produktentscheide (Farbwerte, Motiv-Rahmen, API-Weg und ACs stehen im Item). Icon-Gestaltung: reines adaptives Vektor-Icon (kein PNG/keine Bildbearbeitung nötig), Teal-Hintergrund `#3A7D74` (Theme-Primary), Motiv in warmem Hell `#FAF8F5`, abstraktes Schallwellen-/Ohr-Symbol in der adaptiven Safe-Zone. UX: Bewerten und Weiterblättern werden getrennte Aktionen, „Nächstes" statt „Wiederholen" im aufgedeckten Zustand.
+
+  Kein Produktionscode in diesem Review-/Schärfungs-Turn geändert — nur Backlog und dieses Log. Nach Sonnets Umsetzung ist der Gerätetest (A53) der maßgebliche Nachweis; der Sicht-/Hörproben-Stau bleibt bis dahin bewusst offen.
+
 ## 2026-07-10 (Neuer Bug in der Desktop-Sichtprobe diagnostiziert: PulseAudio-Sink-Input überlebt Prozess-Abbruch)
 
 - **Autor meldet nach der Sitzungshistorie/Theme-Runde: „Ball" spielt weiterhin mehrfach** (2x, teils eskalierend bis 4x bei schnellem Wiederholen), nicht deterministisch. Auf den ersten Blick ein Rückfall des zuvor gefixten Compose-Key-Bugs — bei genauerem Hinsehen aber ein **anderer** Bug auf einer tieferen Ebene, der zufällig dasselbe Symptom erzeugt.
