@@ -1,5 +1,14 @@
 # Umsetzungs-Log (Neueste Einträge zuerst)
 
+## 2026-07-12 (Drei weitere Autor-Anforderungen ins Backlog aufgenommen — Qualifizierung durch Opus folgt)
+
+- **Nur Backlog-Aufnahme, keine Umsetzung (Autor-Anweisung).** Drei neue `[→Opus]`-Items in M2/M5 ergänzt, alle noch ohne ACs — Opus qualifiziert sie in der nächsten Runde:
+  1. **Lernmodus-Textanzeige als Karten-/Fenster-Layout analog Prüfmodus**, damit längere Texte passend umbrechen statt nur einzeilig zu schrumpfen — direkt an das „Ganze Sätze"-Item gekoppelt (ohne längere Texte im Korpus ist die aktuelle Einzeiler-Lösung weiterhin DESIGN.md-konform).
+  2. **Eigene Wortlisten hochladen, per TTS vertonen lassen** — Format offen, dazu die konkrete Autor-Frage nach einem „Still-Zeichen" für (auch nachgestellte) Pausen, da manche TTS-Wörter abrupt enden; als potenziell auch unabhängig vom Upload-Feature nutzbarer kleinerer Fix vermerkt (Piper `sentence_silence`/`phoneme_silence`-Parameter als naheliegender technischer Ansatzpunkt, noch ungeprüft).
+  3. **Eigene Wörter/Sätze menschlich einsprechen mit manueller Text-Zuordnung** (Gegenstück zu TTS — echte Aufnahmen statt synthetisch). Modell-seitig günstig: `AudioRecording` trennt bereits Aufnahme von `Word`/Text und erlaubt mehrere Sprecher (`voiceId`) — eine menschliche Aufnahme ist strukturell nur ein weiterer Sprecher, kein neues Konzept. Offene Fragen: Aufnahme in der App (Mikrofon-API) vs. externer Import, UI für die manuelle Zuordnung, Kopplung ans „Ganze Sätze"-Item für satzlange Aufnahmen.
+
+  Kein Produktionscode geändert.
+
 ## 2026-07-12 (Vollständiger A53-Gerätetest ausgewertet, sechs neue Backlog-Punkte aufgenommen — bewusst nicht umgesetzt)
 
 - **Autor hat den kompletten A53-Testumfang durchlaufen und gemeldet.** Ergebnis größtenteils positiv: Icon erkennbar, Prüfmodus-Ablauf (Aufdecken/Bewerten/„Nächstes"/Fertig) korrekt, Sitzungshistorie zählt richtig und übersteht sogar einen kompletten App-Neustart, S5-Verlassen-mitten-drin korrekt. Auf ausdrücklichen Wunsch des Autors wurden alle Befunde **nur ins Backlog aufgenommen, nicht umgesetzt** — das bleibt bewusst der nächsten Runde vorbehalten.
