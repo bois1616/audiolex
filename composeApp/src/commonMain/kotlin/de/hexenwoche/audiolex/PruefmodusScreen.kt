@@ -100,6 +100,11 @@ fun PruefmodusScreen(
     var startedAtEpochMillis by remember { mutableStateOf<Long?>(null) }
     val ratingCounts = remember { mutableStateOf(emptyMap<ReviewRating, Int>()) }
     var sessionLogged by remember { mutableStateOf(false) }
+    // Bumped by "Neue Prüfrunde" on the Finished screen to re-run the load
+    // effect below: it re-queries due cards (now including whatever the just-
+    // finished round rescheduled as due again) and starts a fresh session,
+    // without leaving the screen (Autor-Finding 2026-07-13).
+    var reloadKey by remember { mutableStateOf(0) }
 
     suspend fun logSessionIfAnyRatings() {
         val startedAt = startedAtEpochMillis
@@ -120,8 +125,16 @@ fun PruefmodusScreen(
         onDispose { queue.stop() }
     }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(reloadKey) {
         try {
+            // Reset the per-round session bookkeeping so a re-run (reloadKey
+            // bumped) starts a clean session rather than carrying the last
+            // round's counts into the new Sitzungshistorie entry.
+            ratedCount = 0
+            ratingCounts.value = emptyMap()
+            startedAtEpochMillis = null
+            sessionLogged = false
+
             val wordsJson = Res.readBytes("files/corpus/words.json").decodeToString()
             val recordingsJson = Res.readBytes("files/corpus/recordings.json").decodeToString()
             words = json.decodeFromString<List<Word>>(wordsJson)
@@ -181,6 +194,12 @@ fun PruefmodusScreen(
             is PruefmodusState.Finished -> {
                 Text("Fertig!", style = MaterialTheme.typography.headlineSmall)
                 Text("${current.ratedCount} Karten bewertet.", style = MaterialTheme.typography.bodyLarge)
+                // Re-queries due cards and starts a fresh session without
+                // leaving the screen (Autor-Finding 2026-07-13). The just-
+                // finished session is already logged (logSessionIfAnyRatings
+                // ran on the transition into Finished), so bumping reloadKey
+                // resets the per-round counters cleanly for the new round.
+                Button(onClick = { reloadKey += 1 }) { Text("Neue Prüfrunde") }
                 Button(onClick = onBeenden) { Text("Zurück zum Start") }
             }
 
@@ -209,10 +228,8 @@ fun PruefmodusScreen(
                 // sense once the word was already visible).
                 if (!current.rated) {
                     Button(onClick = {
-                        scope.launch {
-                            playCurrentCard(session, words, recordings, queue) { message ->
-                                state = PruefmodusState.Error(message)
-                            }
+                        playCurrentCard(session, words, recordings, queue) { message ->
+                            state = PruefmodusState.Error(message)
                         }
                     }) {
                         Text("Wiederholen")
@@ -381,7 +398,7 @@ private fun describeNextDue(nextDueAtEpochMillis: Long?, nowEpochMillis: Long): 
     }
 }
 
-private suspend fun playCurrentCard(
+private fun playCurrentCard(
     session: ExamSession,
     words: List<Word>,
     recordings: List<AudioRecording>,
@@ -398,11 +415,11 @@ private suspend fun playCurrentCard(
         onError("Keine Aufnahme für „${word.text}“ gefunden.")
         return
     }
-    try {
+    // Decode inside the queue producer so a fast double-tap on "Wiederholen"
+    // cancels the previous decode+play atomically instead of racing two
+    // AudioTracks (same fix as Lernmodus, Autor-Finding 2026-07-13).
+    queue.play {
         val bytes = Res.readBytes("files/corpus/${recording.fileRef}")
-        val buffer = WavFile.decode(bytes)
-        queue.play(buffer)
-    } catch (e: Exception) {
-        onError("Wort konnte nicht geladen werden: ${e.message}")
+        WavFile.decode(bytes)
     }
 }

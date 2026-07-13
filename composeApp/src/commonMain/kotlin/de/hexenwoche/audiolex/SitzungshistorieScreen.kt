@@ -3,7 +3,10 @@ package de.hexenwoche.audiolex
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -40,6 +43,10 @@ fun SitzungshistorieScreen(repository: SessionRepository, onBeenden: () -> Unit)
         state = SitzungshistorieState.Loaded(repository.all())
     }
 
+    // Title and "Zurück" stay pinned; only the session list between them
+    // scrolls. Without this the list grew past the screen and pushed the
+    // "Zurück" button out of view -- a dead end that forced an app restart
+    // (Autor-Finding 2026-07-13, A53-Gerätetest).
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -54,7 +61,13 @@ fun SitzungshistorieScreen(repository: SessionRepository, onBeenden: () -> Unit)
                 if (current.sessions.isEmpty()) {
                     Text("Noch keine Sitzungen.", style = MaterialTheme.typography.bodyLarge)
                 } else {
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
                         current.sessions.forEach { session -> SessionRow(session) }
                     }
                 }

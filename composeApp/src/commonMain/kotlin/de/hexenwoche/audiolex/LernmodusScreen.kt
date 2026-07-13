@@ -156,10 +156,8 @@ fun LernmodusScreen(onBeenden: () -> Unit) {
                 )
 
                 Button(onClick = {
-                    scope.launch {
-                        playCurrentWord(session, recordings, queue) { message ->
-                            state = LernmodusState.Error(message)
-                        }
+                    playCurrentWord(session, recordings, queue) { message ->
+                        state = LernmodusState.Error(message)
                     }
                 }) {
                     Text("Wiederholen")
@@ -194,13 +192,15 @@ fun LernmodusScreen(onBeenden: () -> Unit) {
 }
 
 /**
- * Loads and decodes the current word's recording, then hands it to [queue].
- * A missing recording or a corrupt WAV file fails here, synchronously, and
- * is reported via [onError]; a failure inside the sink itself (device
- * disconnected mid-playback) surfaces later through [PlaybackQueue]'s own
- * `onError` callback instead, since [PlaybackQueue.play] doesn't suspend.
+ * Enqueues the current word's recording for playback. The missing-recording
+ * check is synchronous (not a race). The actual file read + WAV decode runs
+ * *inside* the [PlaybackQueue] producer, so a fast double-tap on "Wiederholen"
+ * cancels the previous decode+play atomically instead of racing two
+ * AudioTracks to the sink (Autor-Finding 2026-07-13, "Kaffee" -> "Kakaffee").
+ * A missing recording, a corrupt WAV, or a sink failure all surface via
+ * [onError] -- decode/read errors through the queue's own onError path.
  */
-private suspend fun playCurrentWord(
+private fun playCurrentWord(
     session: LearningSession,
     recordings: List<AudioRecording>,
     queue: PlaybackQueue,
@@ -211,11 +211,8 @@ private suspend fun playCurrentWord(
         onError("Keine Aufnahme für „${session.currentWord.text}“ gefunden.")
         return
     }
-    try {
+    queue.play {
         val bytes = Res.readBytes("files/corpus/${recording.fileRef}")
-        val buffer = WavFile.decode(bytes)
-        queue.play(buffer)
-    } catch (e: Exception) {
-        onError("Wort konnte nicht geladen werden: ${e.message}")
+        WavFile.decode(bytes)
     }
 }

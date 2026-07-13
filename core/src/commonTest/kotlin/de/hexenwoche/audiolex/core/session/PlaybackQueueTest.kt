@@ -114,4 +114,43 @@ class PlaybackQueueTest {
 
         assertEquals(emptyList(), errors, "cancellation for the cutover is not a playback failure")
     }
+
+    /**
+     * The producer overload's whole point (Autor-Finding 2026-07-13,
+     * "Kaffee" -> "Kakaffee"): a second play cancels the first *while it is
+     * still producing its buffer* (decoding), before that buffer ever
+     * reaches the sink -- so only the second word is ever heard, never both
+     * overlapping. The first producer suspends on a gate that never opens;
+     * without the cancel it would eventually produce buffer 1 and play it.
+     */
+    @Test
+    fun secondPlayCancelsAFirstStillProducingItsBuffer() = runTest {
+        val sink = GatedSink()
+        val produceGate = CompletableDeferred<Unit>()
+
+        val queue = PlaybackQueue(sink, this)
+        queue.play {
+            produceGate.await() // first call is stuck mid-decode
+            bufferTagged(1)
+        }
+        runCurrent()
+        sink.gateFor(2).complete(Unit)
+        queue.play { bufferTagged(2) }
+        advanceUntilIdle()
+
+        assertEquals(listOf(2), sink.started, "the still-decoding first buffer must never reach the sink")
+        assertEquals(listOf(2), sink.completed)
+    }
+
+    @Test
+    fun producerFailureIsReportedViaOnErrorNotThrown() = runTest {
+        val error = IllegalStateException("corrupt WAV")
+        val errors = mutableListOf<Throwable>()
+        val queue = PlaybackQueue(GatedSink(), this, onError = { errors += it })
+
+        queue.play { throw error }
+        advanceUntilIdle()
+
+        assertEquals(listOf<Throwable>(error), errors)
+    }
 }

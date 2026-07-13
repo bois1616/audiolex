@@ -16,10 +16,21 @@ actual fun createAudioSink(): AudioSink = AndroidAudioSink()
 fun createAudioSinkWithSwapOverride(swapChannels: Boolean): AudioSink =
     AndroidAudioSink(swapChannels)
 
+/**
+ * Milliseconds of silence prepended to every word so a cold Bluetooth path's
+ * wake-up drops silence instead of the word's first syllable (Autor-Finding
+ * 2026-07-13: "Telefon" -> "fon" after a pause). 180 ms comfortably covers a
+ * typical A2DP/LE-Audio cold start and is short enough not to feel like a
+ * delay; the value is a starting point to confirm on-device and tune if the
+ * clipping persists or the lead-in feels too long.
+ */
+private const val BLUETOOTH_PREROLL_MILLIS = 180
+
 /** Minimal AudioTrack sink (static mode, fine for single-word playback). */
 private class AndroidAudioSink(private val swapChannels: Boolean = false) : AudioSink {
     override suspend fun play(buffer: PcmBuffer) {
-        val playable = if (buffer.channels == 2 && swapChannels) buffer.swapStereoChannels() else buffer
+        val swapped = if (buffer.channels == 2 && swapChannels) buffer.swapStereoChannels() else buffer
+        val playable = swapped.withLeadingSilence(BLUETOOTH_PREROLL_MILLIS)
 
         val channelMask = if (playable.channels == 1) {
             AudioFormat.CHANNEL_OUT_MONO
