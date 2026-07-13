@@ -4,8 +4,19 @@
   source dot, all within the adaptive-icon safe zone (inner 66dp of the
   108dp canvas, i.e. within 33dp of center (54,54)) so round/squircle
   launcher masks never clip it. Deliberately quiet/symmetric (SOUL.md),
-  no photorealism. Farthest point of each shape from the safe-zone center,
-  verified: dot 13dp, arc1 16dp, arc2 21dp, arc3 30dp, all under 33dp.
+  no photorealism.
+
+  Centering (Opus Review Befund 2026-07-12): the arcs open to the right
+  and don't bulge left, so the visible motif isn't symmetric around its own
+  arc centers; its visible x-range was originally [41, 84] (leftmost:
+  dot at cx minus r equals 41; rightmost: outermost arc bulge at cx plus r
+  equals 84), midpoint 62.5, i.e. 8.5dp right of the canvas center x=54.
+  Shifted the whole group by 8.5dp to the left in x (dot cx 44 to 35.5,
+  arc centers 50/53/56 to 41.5/44.5/47.5; y unchanged, already symmetric)
+  so the visible range becomes [32.5, 75.5], midpoint 54. Re-verified
+  against the safe zone after the shift (farthest point of each shape from
+  canvas center (54,54)): dot 21.5dp, arc1 17.33dp, arc2 22.14dp,
+  arc3 28.74dp, all still under the 33dp limit.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
@@ -14,23 +25,23 @@
     android:viewportHeight="108">
     <path
         android:fillColor="#FAF8F5"
-        android:pathData="M44,54m-3,0a3,3 0,1 1,6 0a3,3 0,1 1,-6 0" />
+        android:pathData="M35.5,54m-3,0a3,3 0,1 1,6 0a3,3 0,1 1,-6 0" />
     <path
         android:strokeColor="#FAF8F5"
         android:strokeWidth="3.5"
         android:strokeLineCap="round"
         android:fillColor="#00000000"
-        android:pathData="M50,42 A12,12 0,0 1,50 66" />
+        android:pathData="M41.5,42 A12,12 0,0 1,41.5 66" />
     <path
         android:strokeColor="#FAF8F5"
         android:strokeWidth="3.5"
         android:strokeLineCap="round"
         android:fillColor="#00000000"
-        android:pathData="M53,34 A20,20 0,0 1,53 74" />
+        android:pathData="M44.5,34 A20,20 0,0 1,44.5 74" />
     <path
         android:strokeColor="#FAF8F5"
         android:strokeWidth="3.5"
         android:strokeLineCap="round"
         android:fillColor="#00000000"
-        android:pathData="M56,26 A28,28 0,0 1,56 82" />
+        android:pathData="M47.5,26 A28,28 0,0 1,47.5 82" />
 </vector>

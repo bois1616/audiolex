@@ -36,28 +36,31 @@ class ExamSessionTest {
     }
 
     @Test
-    fun rateSchedulesCurrentCardAndAdvancesUnrevealed() {
+    fun rateSchedulesCurrentCardWithoutAdvancing() {
         val session = ExamSession(threeCards).reveal()
         val result = session.rate(ReviewRating.GOOD, now, scheduler)
 
         assertEquals("a", result.ratedCard.wordId)
         assertEquals(now + ReviewRating.GOOD.interval.inWholeMilliseconds, result.ratedCard.dueAtEpochMillis)
 
-        val next = result.nextSession
+        val next = session.advance()
         assertEquals("b", next?.currentCard?.wordId)
         assertEquals(false, next?.revealed)
         assertEquals(2, next?.progress)
     }
 
     @Test
-    fun rateOnLastCardReturnsNullNextSession() {
+    fun rateOnLastCardStillAllowsAdvanceToReturnNull() {
         var session: ExamSession? = ExamSession(threeCards)
-        repeat(2) { session = session?.rate(ReviewRating.GOOD, now, scheduler)?.nextSession }
+        repeat(2) {
+            session!!.rate(ReviewRating.GOOD, now, scheduler)
+            session = session?.advance()
+        }
         assertTrue(session?.isLastCard == true)
 
         val result = session!!.rate(ReviewRating.GOOD, now, scheduler)
         assertEquals("c", result.ratedCard.wordId)
-        assertNull(result.nextSession)
+        assertNull(session!!.advance())
     }
 
     @Test

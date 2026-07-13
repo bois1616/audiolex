@@ -43,24 +43,14 @@ data class ExamSession(
 
     /**
      * Rates the current card via [scheduler], producing the newly scheduled
-     * [ReviewCard] the caller should persist, plus either the session moved
-     * to the next (unrevealed) card or a terminal result once the last card
-     * is rated.
+     * [ReviewCard] the caller should persist. Advancing to the next card is
+     * a separate, explicit step ([advance]), not part of rating.
      */
     fun rate(rating: ReviewRating, nowEpochMillis: Long, scheduler: ReviewScheduler): RateResult {
         val ratedCard = scheduler.review(currentCard, rating, nowEpochMillis)
-        val next = if (isLastCard) {
-            null
-        } else {
-            copy(currentIndex = currentIndex + 1, revealed = false)
-        }
-        return RateResult(ratedCard, next)
+        return RateResult(ratedCard)
     }
 }
 
-/**
- * Result of [ExamSession.rate]: [ratedCard] is always the newly scheduled
- * card to persist; [nextSession] is null once the last due card was rated
- * (Szenario S3 end-of-session), analogous to [LearningSession.advance].
- */
-data class RateResult(val ratedCard: ReviewCard, val nextSession: ExamSession?)
+/** Result of [ExamSession.rate]: the newly scheduled card to persist. */
+data class RateResult(val ratedCard: ReviewCard)

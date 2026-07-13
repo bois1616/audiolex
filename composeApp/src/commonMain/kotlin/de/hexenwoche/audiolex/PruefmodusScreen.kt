@@ -3,6 +3,7 @@ package de.hexenwoche.audiolex
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -331,10 +332,15 @@ private fun RevealCard(text: String?, revealed: Boolean, onClick: () -> Unit) {
 /**
  * Five equally-weighted rating buttons with interval hints (SOUL.md/DESIGN.md:
  * the scale steers repetition, it doesn't grade -- no traffic-light colors).
+ * FlowRow instead of a fixed Row so the buttons wrap onto a second line on
+ * narrow phone widths (A53) instead of getting squeezed vertically.
  */
 @Composable
 private fun RatingBar(enabled: Boolean, onRate: (ReviewRating) -> Unit) {
-    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
         for (rating in ReviewRating.entries) {
             Button(enabled = enabled, onClick = { onRate(rating) }) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {

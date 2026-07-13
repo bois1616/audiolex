@@ -75,7 +75,11 @@ fun LernmodusScreen(onBeenden: () -> Unit) {
             state = if (words.isEmpty()) {
                 LernmodusState.EmptyCorpus
             } else {
-                LernmodusState.Running(LearningSession(words))
+                // Shuffled once per session start, then fixed for the rest of
+                // the session (Autor-Requirement 2026-07-12) -- so the word
+                // order itself isn't what gets memorized, and "Vorheriges"
+                // below steps back through a stable order.
+                LernmodusState.Running(LearningSession(words.shuffled()))
             }
         } catch (e: Exception) {
             state = LernmodusState.Error("Korpus konnte nicht geladen werden: ${e.message}")
@@ -159,6 +163,16 @@ fun LernmodusScreen(onBeenden: () -> Unit) {
                     }
                 }) {
                     Text("Wiederholen")
+                }
+
+                Button(
+                    enabled = !session.isFirstWord,
+                    onClick = {
+                        val previous = session.back() ?: return@Button
+                        state = LernmodusState.Running(previous)
+                    },
+                ) {
+                    Text("Vorheriges")
                 }
 
                 Button(onClick = {

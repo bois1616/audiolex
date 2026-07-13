@@ -50,4 +50,26 @@ class LearningSessionTest {
     fun rejectsEmptyWordList() {
         assertFailsWith<IllegalArgumentException> { LearningSession(emptyList()) }
     }
+
+    @Test
+    fun backOnFirstWordReturnsNull() {
+        val session = LearningSession(threeWords)
+        assertTrue(session.isFirstWord)
+        assertNull(session.back())
+    }
+
+    @Test
+    fun backMovesToPreviousWordAndResetsRepeatCount() {
+        val session = LearningSession(threeWords, currentIndex = 2).repeat().back()
+        assertEquals("b", session?.currentWord?.id)
+        assertEquals(0, session?.repeatCount)
+        assertEquals(2, session?.progress)
+    }
+
+    @Test
+    fun advanceThenBackReturnsToOriginalWord() {
+        val session = LearningSession(threeWords).advance()?.back()
+        assertEquals("a", session?.currentWord?.id)
+        assertTrue(session?.isFirstWord == true)
+    }
 }
