@@ -53,7 +53,12 @@ private val scheduler = FixedIntervalScheduler()
 
 private sealed interface PruefmodusState {
     data object Loading : PruefmodusState
-    data class NothingDue(val nextDueAtEpochMillis: Long?) : PruefmodusState
+    /**
+     * No cards at all to show. Since a round tops up with not-yet-due cards
+     * (Autor-Entscheid 2026-07-13), this now only happens when the corpus
+     * itself is empty -- not merely when nothing is due.
+     */
+    data object EmptyCorpus : PruefmodusState
     /**
      * [rated] separates rating from advancing (Autor-Finding 2026-07-10):
      * once true, the screen stays on this revealed card showing "Nächstes"
@@ -141,12 +146,16 @@ fun PruefmodusScreen(
             recordings = json.decodeFromString<List<AudioRecording>>(recordingsJson)
 
             val cards = repository.allOrSeed(words.map { it.id })
-            val due = ReviewQueue.due(cards, clock.nowEpochMillis())
-            state = if (due.isEmpty()) {
-                PruefmodusState.NothingDue(cards.minOfOrNull { it.dueAtEpochMillis })
+            // A round is up to 15 cards: due ones first, topped up with random
+            // not-yet-due cards so there's always something to practise
+            // (Autor-Entscheid 2026-07-13). Empty only when the corpus itself
+            // has no cards -- then there's genuinely nothing to show.
+            val round = ReviewQueue.roundOf(cards, clock.nowEpochMillis())
+            state = if (round.isEmpty()) {
+                PruefmodusState.EmptyCorpus
             } else {
                 startedAtEpochMillis = clock.nowEpochMillis()
-                PruefmodusState.Running(ExamSession(due))
+                PruefmodusState.Running(ExamSession(round))
             }
         } catch (e: Exception) {
             state = PruefmodusState.Error("Korpus konnte nicht geladen werden: ${e.message}")
@@ -176,10 +185,10 @@ fun PruefmodusScreen(
         when (val current = state) {
             is PruefmodusState.Loading -> CircularProgressIndicator()
 
-            is PruefmodusState.NothingDue -> {
-                Text("Nichts fällig.", style = MaterialTheme.typography.headlineSmall)
+            is PruefmodusState.EmptyCorpus -> {
+                Text("Kein Wort im Korpus.", style = MaterialTheme.typography.headlineSmall)
                 Text(
-                    describeNextDue(current.nextDueAtEpochMillis, clock.nowEpochMillis()),
+                    "Es gibt noch keine Karten zum Üben.",
                     style = MaterialTheme.typography.bodyLarge,
                 )
                 Button(onClick = onZumLernmodus) { Text("Stattdessen Lernmodus") }
@@ -383,19 +392,6 @@ private fun germanIntervalHint(rating: ReviewRating): String = when (rating) {
     ReviewRating.LATER -> "1 Tag"
     ReviewRating.GOOD -> "1 Woche"
     ReviewRating.PERFECT -> "1 Monat"
-}
-
-private fun describeNextDue(nextDueAtEpochMillis: Long?, nowEpochMillis: Long): String {
-    if (nextDueAtEpochMillis == null) return "Kein Wort im Korpus vorhanden."
-    val remainingMillis = nextDueAtEpochMillis - nowEpochMillis
-    if (remainingMillis <= 0) return "Die nächste Karte ist bereits fällig."
-    val minutes = remainingMillis / 60_000
-    return when {
-        minutes < 1 -> "Nächste Karte in weniger als einer Minute fällig."
-        minutes < 60 -> "Nächste Karte in $minutes Minute(n) fällig."
-        minutes < 24 * 60 -> "Nächste Karte in ${minutes / 60} Stunde(n) fällig."
-        else -> "Nächste Karte in ${minutes / (24 * 60)} Tag(en) fällig."
-    }
 }
 
 private fun playCurrentCard(

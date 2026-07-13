@@ -1,5 +1,15 @@
 # Umsetzungs-Log (Neueste Einträge zuerst)
 
+## 2026-07-13 (A53-Gegenprobe bestätigt die Fixes + Prüfrunde auf 15 zufällige Karten umgestellt)
+
+- **Autor hat die vier Fixes des vorigen Eintrags auf dem A53 gegengeprüft — drei bestätigt, dazu ein präzisierender Folgebefund zum Prüfmodus, der ein neues Rundenkonzept auslöste.**
+
+  **Bestätigt am Gerät (abgehakt):** „Telefon" wird beim ersten Mal **und** nach einer Pause vollständig abgespielt, kein Abschneiden mehr (Pre-Roll wirkt, 180 ms reichen, keine spürbare Verzögerung → BT-Wortanfang-Item abgehakt, beide Muster gelöst). Schnelles Doppeltap erzeugt keine Überlagerung mehr — kein „Kakaffee", kein „FeFenster" (PlaybackQueue-Producer-Fix wirkt, deckt das Überlagerungsmuster mit ab). Sitzungshistorie rollt, „Zurück" bleibt durchgehend sichtbar. Alle drei Backlog-Items mit dem A53-Bestätigungsvermerk versehen.
+
+  **Folgebefund + Rundenkonzept:** Der „Neue Prüfrunde"-Button aus dem vorigen Eintrag saß nur im `Finished`-State — der Autor sah aber nach dem Durchbewerten stattdessen „Nichts fällig" (nur „Stattdessen Lernmodus"/„Zurück"), weil alle Karten auf Zukunftsintervalle terminiert waren. Statt bloß den Button zu verschieben, Autor-Entscheid für ein klareres Modell: **eine Prüfrunde = bis zu 15 Karten, fällige zuerst, dann mit zufälligen nicht-fälligen aufgefüllt** (bei <15 Karten im Korpus einfach alle, keine Wiederholung). Umgesetzt als `ReviewQueue.roundOf(...)` in `:core` (6 neue `ReviewQueueTest`-Fälle, `Random` injizierbar für Determinismus). `PruefmodusScreen` nutzt jetzt `roundOf` statt `due`; damit kommt eine Runde immer zustande, solange Karten existieren — der frühere `NothingDue`-Zustand (Fälligkeits-Countdown) wird zu `EmptyCorpus` (nur leerer Korpus), der tote `describeNextDue`-Helfer entfiel. Zusammen mit „Neue Prüfrunde" ergibt das den vollen Übungszyklus: Runde bewerten → frische 15 (fällige bevorzugt). Wichtig: `roundOf` steuert nur die **Auswahl**, nicht das **Scheduling** — Bewertungen aktualisieren das Fälligkeitsdatum unverändert.
+
+  **Verifikation:** `./gradlew build` grün inkl. `:core:jvmTest` (neue `ReviewQueueTest`-Fälle). Neue Debug-APK auf den A53 installiert und gestartet. Die Sichtprobe des neuen Rundenverhaltens (Runde ≤15, „Neue Prüfrunde" zieht frisch, kein „Nichts fällig" mehr bei nicht-leerem Korpus) liegt beim Autor am Gerät.
+
 ## 2026-07-13 (A53-Gerätetest ausgewertet: drei UI-Bugs gefixt + BT-Wortanfang diagnostiziert und Pre-Roll umgesetzt)
 
 - **Autor hat den vorigen Schwung auf dem A53 getestet und sechs Findings gemeldet; drei UI-Bugs und der BT-Audio-Bug in dieser Runde bearbeitet, zwei bewusst nicht.** Vorgehen: erst die letzten Sonnet-Änderungen gegen die Findings verifiziert (keiner der Findings ist eine Regression aus diesem Schwung — „Vorheriges"/„Weiter" bestätigt der Autor als gut), dann Findings 1/3/5 als Sonnet-fähige Fixes umgesetzt und Finding 4 als Opus-Diagnose mit Fix.
