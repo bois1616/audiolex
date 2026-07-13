@@ -35,7 +35,8 @@ AudioLex ist eine Hörtrainings-App (Android zuerst, iOS-Option offen) zum Wiede
 3. Sichtbares/hörbares Verhalten am Desktop-Target verifiziert (`./gradlew :composeApp:run`); Audio- und Gerätethemen zusätzlich auf dem Testgerät (Galaxy A53, Android 16).
 4. Backlog-Item abgehakt mit kurzem `Hinweis:` zum Ergebnis.
 5. Eintrag in `docs/umsetzungslog.md` (neueste zuerst; Datum, fetter Titel, was + warum + wie verifiziert).
-6. Commit mit prägnanter deutscher Message.
+6. **Version hochgezählt (je Batch, seit 2026-07-13):** `VERSION_NAME` in `composeApp/.../AppVersion.kt` eine Minor-Stufe (z. B. `0.5.0` → `0.6.0`), `VERSION_CODE` +1. Patch (`0.5.1`) bleibt Hotfixes vorbehalten. Diese Datei ist die Single Source of Truth — der Gradle-`versionName`/`versionCode` und die StartScreen-Anzeige lesen daraus, nirgends doppelt pflegen. Die neue Version im Umsetzungslog-Eintrag und in der Commit-Message nennen, damit klar ist, welche Version ein Gerätetest prüft.
+7. Commit mit prägnanter deutscher Message.
 
 ## 5) Konventionen
 

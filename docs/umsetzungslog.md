@@ -1,5 +1,15 @@
 # Umsetzungs-Log (Neueste Einträge zuerst)
 
+## 2026-07-13 — v0.5.0 (Versionierung je Batch eingeführt, sichtbar auf dem StartScreen)
+
+- **Ab jetzt bekommt jeder Batch eine eigene sichtbare App-Version (Autor-Wunsch), Start bei 0.5.0.** Zweck: im Gerätetest eindeutig ablesen können, welcher Build läuft und ob Testlücken bestehen. Schema: je Batch eine Minor-Stufe (0.5.0 → 0.6.0), `versionCode` +1; Patch bleibt Hotfixes vorbehalten.
+
+  **Single Source of Truth `AppVersion.kt`** (`composeApp/commonMain`) mit `VERSION_NAME`/`VERSION_CODE`. `composeApp/build.gradle.kts` liest beide **per Regex aus dieser Datei** und setzt damit `versionName`/`versionCode` — so kann die APK-Version nie von der angezeigten abweichen (verifiziert mit `aapt2 dump badging`: `versionName='0.5.0'`, `versionCode='5'`). Die UI zeigt `v$VERSION_NAME` dezent unten auf dem StartScreen (gedämpfte `onSurfaceVariant`-Farbe, nie Akzent — Referenzinfo, kein aktives Element, SOUL.md). Vorher lagen `versionCode=1`/`versionName="0.1.0"` hartcodiert im Gradle-Block und waren nirgends in der App sichtbar.
+
+  **Prozess verankert:** neuer DoD-Schritt 6 in `AGENTS.md` („Version hochgezählt je Batch … im Umsetzungslog + Commit nennen"), damit die Versionierung ab jetzt Teil jedes Batches ist und im Loop nicht vergessen wird. Kleiner Stolperstein unterwegs: `Modifier.weight` erneut versehentlich importiert (bricht den Build, weil der Top-Level-Name `internal` ist) — ohne Import genutzt, wie es sich für eine `ColumnScope`-Erweiterung gehört.
+
+  **Verifikation:** `./gradlew build` grün; APK mit `versionName=0.5.0`/`versionCode=5` gebaut und auf den A53 installiert/gestartet. Sichtprobe „v0.5.0 unten auf dem StartScreen" liegt beim Autor am Gerät.
+
 ## 2026-07-13 (A53-Gegenprobe bestätigt die Fixes + Prüfrunde auf 15 zufällige Karten umgestellt)
 
 - **Autor hat die vier Fixes des vorigen Eintrags auf dem A53 gegengeprüft — drei bestätigt, dazu ein präzisierender Folgebefund zum Prüfmodus, der ein neues Rundenkonzept auslöste.**

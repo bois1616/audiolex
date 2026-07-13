@@ -2,6 +2,7 @@ package de.hexenwoche.audiolex
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
@@ -105,6 +106,15 @@ private fun StartScreen(
         Button(onClick = onOpenDevKanaltest) {
             Text("Kanaltest (Dev)")
         }
+        // Version pinned quietly at the bottom so a device test can always
+        // tell which build is running (Autor-Wunsch 2026-07-13). Muted color,
+        // never the accent -- it's reference info, not an active element.
+        Spacer(modifier = Modifier.weight(1f))
+        Text(
+            "v$VERSION_NAME",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
