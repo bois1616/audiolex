@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.sp
 import de.hexenwoche.audiolex.core.audio.WavFile
 import de.hexenwoche.audiolex.core.audio.createAudioSink
 import de.hexenwoche.audiolex.core.corpus.AudioRecording
+import de.hexenwoche.audiolex.core.corpus.EntryKind
 import de.hexenwoche.audiolex.core.corpus.Word
 import de.hexenwoche.audiolex.core.session.LearningSession
 import de.hexenwoche.audiolex.core.session.PlaybackQueue
@@ -70,7 +71,10 @@ fun LernmodusScreen(onBeenden: () -> Unit) {
         try {
             val wordsJson = Res.readBytes("files/corpus/words.json").decodeToString()
             val recordingsJson = Res.readBytes("files/corpus/recordings.json").decodeToString()
+            // Temporary hard filter until Batch B replaces it with the
+            // CorpusMode switch -- sentences stay out of the word session.
             val words = json.decodeFromString<List<Word>>(wordsJson)
+                .filter { it.kind == EntryKind.WORD }
             recordings = json.decodeFromString<List<AudioRecording>>(recordingsJson)
             state = if (words.isEmpty()) {
                 LernmodusState.EmptyCorpus

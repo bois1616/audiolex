@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import de.hexenwoche.audiolex.core.audio.WavFile
 import de.hexenwoche.audiolex.core.audio.createAudioSink
 import de.hexenwoche.audiolex.core.corpus.AudioRecording
+import de.hexenwoche.audiolex.core.corpus.EntryKind
 import de.hexenwoche.audiolex.core.corpus.Word
 import de.hexenwoche.audiolex.core.persistence.ReviewCardRepository
 import de.hexenwoche.audiolex.core.persistence.SessionRepository
@@ -142,7 +143,10 @@ fun PruefmodusScreen(
 
             val wordsJson = Res.readBytes("files/corpus/words.json").decodeToString()
             val recordingsJson = Res.readBytes("files/corpus/recordings.json").decodeToString()
+            // Temporary hard filter until Batch B replaces it with the
+            // CorpusMode switch -- no sentence SRS cards get seeded yet.
             words = json.decodeFromString<List<Word>>(wordsJson)
+                .filter { it.kind == EntryKind.WORD }
             recordings = json.decodeFromString<List<AudioRecording>>(recordingsJson)
 
             val cards = repository.allOrSeed(words.map { it.id })

@@ -23,7 +23,7 @@
   { "id": "satz-strasse", "text": "Das Haus soll einer neuen Straße weichen.", "language": "de-DE", "syllableCount": 11, "category": "EVERYDAY", "kind": "SENTENCE" },
   { "id": "satz-plaene", "text": "Die Pläne lagen lange im Amt.", "language": "de-DE", "syllableCount": 9, "category": "EVERYDAY", "kind": "SENTENCE" },
   { "id": "satz-freund", "text": "Sein alter Freund kommt gerade vorbei.", "language": "de-DE", "syllableCount": 9, "category": "EVERYDAY", "kind": "SENTENCE" },
-  { "id": "satz-schlamm", "text": "Er liegt im Schlamm vor dem Haus.", "language": "de-DE", "syllableCount": 8, "category": "EVERYDAY", "kind": "SENTENCE" },
+  { "id": "satz-schlamm", "text": "Er liegt im Schlamm vor dem Haus.", "language": "de-DE", "syllableCount": 7, "category": "EVERYDAY", "kind": "SENTENCE" },
   { "id": "satz-warten", "text": "Sie warten beide auf den Chef.", "language": "de-DE", "syllableCount": 8, "category": "EVERYDAY", "kind": "SENTENCE" },
   { "id": "satz-schiff", "text": "Am Himmel taucht plötzlich ein Schiff auf.", "language": "de-DE", "syllableCount": 9, "category": "EVERYDAY", "kind": "SENTENCE" },
   { "id": "satz-abriss", "text": "Die Männer reißen heute das Haus ab.", "language": "de-DE", "syllableCount": 10, "category": "EVERYDAY", "kind": "SENTENCE" }
