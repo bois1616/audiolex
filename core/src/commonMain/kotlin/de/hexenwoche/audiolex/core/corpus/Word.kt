@@ -5,6 +5,11 @@ import kotlinx.serialization.Serializable
 /**
  * Generic corpus entry — nothing hearing-loss specific is wired in here,
  * so the corpus can later serve plain vocabulary training (concept 3.4).
+ *
+ * An entry is a word or a whole sentence (see [kind]; ADR-0009). Sentences
+ * are trained exactly like words: same learning/exam flow, same SRS. The
+ * name `Word` is kept for both; for sentences `syllableCount` is the
+ * sentence's total syllables and `phoneticGroup` stays null.
  */
 @Serializable
 data class Word(
@@ -16,7 +21,16 @@ data class Word(
     val category: WordCategory,
     /** Key of a minimal-pair group (e.g. "gnu-kuh"); null if not grouped. */
     val phoneticGroup: String? = null,
+    /**
+     * Entry kind (ADR-0009). kotlinx default WORD keeps words.json files
+     * without this field valid — no migration needed.
+     */
+    val kind: EntryKind = EntryKind.WORD,
 )
+
+/** Distinguishes single-word entries from sentence entries (ADR-0009). */
+@Serializable
+enum class EntryKind { WORD, SENTENCE }
 
 @Serializable
 enum class WordCategory { EVERYDAY, LOANWORD, FOREIGN }

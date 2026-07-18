@@ -1,5 +1,21 @@
 # Umsetzungs-Log (Neueste Einträge zuerst)
 
+## 2026-07-18 (Nacht) — v0.7.0 (Satz-Bogen Batch A: Korpus-Modell um `kind` erweitert + erster Satzkorpus per TTS)
+
+- **Umsetzung des geschärften Batch A (ADR-0009), delegiert an Sonnet.** Was: das generische Korpus-Modell bekommt seine Eintragsart, und der erste paraphrasierte Satzkorpus ist vertont im Repo — ohne dass sich für Wörter oder die App-Oberfläche irgendetwas ändert.
+
+- **`:core`-Modell (AC1):** `EntryKind { WORD, SENTENCE }` neu in `core/corpus/Word.kt`; `Word` trägt `kind: EntryKind = EntryKind.WORD` als kotlinx-Default — bestehende `words.json`-Einträge ohne `kind`-Feld bleiben unverändert gültig, keine Migration. Klassendoku von `Word` um den Satz-Bezug (Sätze werden wie Wörter trainiert; für Sätze: `syllableCount` = Satz-Gesamtsilben, `phoneticGroup` bleibt leer) und den ADR-0009-Verweis ergänzt. Keine Umbenennung von `Word` (ADR-0009, verworfene Alternative). Warum genau so: das Feld trägt dieselbe Information wie ein eigener `Sentence`-Typ bei einem Bruchteil der Änderungsfläche; der Default macht den Alt-Bestand kompatibel.
+
+- **Inhalt (AC2):** `words.json` um 10 Sätze (`satz-*`-IDs, `"kind": "SENTENCE"`) erweitert — je 6–8 Wörter, motivisch an „Per Anhalter durch die Galaxis" (Kap. 1: Bagger vorm Haus, Mann im Bademantel, Schlamm, Pläne im Amt, Freund, Schiff am Himmel, Abriss) angelehnt, aber frei paraphrasiert (keine wörtlichen Zitate), alltagsnah und beim Mitlesen akustisch erkennbar. Konvention eingehalten: `syllableCount` = Gesamtsilben des Satzes, `category` = `EVERYDAY`, `phoneticGroup` weggelassen. Die 18 bestehenden Wort-Einträge wurden bewusst **nicht** mit `"kind": "WORD"` nachgezogen — sie bleiben exakt das Alt-Format und decken damit dauerhaft den Default-Pfad ab.
+
+- **Tooling (AC3):** `tools/generate_tts.py` unverändert — Satz-Einträge laufen über `text` durch denselben Piper-Lauf: ein Lauf, 28 Recordings (18 Wörter + 10 Sätze × 1 Stimme), alle `satz-*__thorsten.wav` unter `raw/de-DE/` erzeugt, `recordings.json` neu geschrieben. WAVs bleiben gitignored und sind nicht im Commit. **Die Hörprobe der generierten Sätze (Piper-Satzprosodie bei thorsten-medium) steht als Teil der Abnahme beim Autor noch aus.**
+
+- **Herkunft (AC4):** Korpus-`README.md` dokumentiert: Sätze motivisch angelehnt an Douglas Adams, „Per Anhalter durch die Galaxis" (Kap. 1), paraphrasiert, private nicht-öffentliche Nutzung, keine wörtlichen Zitate im Repo.
+
+- **Screens unverändert — und warum das reicht:** `LernmodusScreen`/`PruefmodusScreen`/`DevPlaybackScreen` nutzen bereits `Json { ignoreUnknownKeys = true }`; das neue `kind`-Feld ist für alte Deployment-Stände unsichtbar, und fehlendes `kind` fällt auf den `WORD`-Default. Keine Änderung nötig. Wie im Nicht-Ziel festgelegt erscheinen Sätze in diesem Batch noch nicht in Lern-/Prüfmodus — die Filterung samt Modus-Schalter kommt mit Batch B.
+
+- **Verifikation (AC5):** neuer `WordSerializationTest` in `core/commonTest` (3 Fälle, TDD zuerst geschrieben): altes JSON ohne `kind` → `kind == WORD`; JSON mit `"kind": "SENTENCE"` → `SENTENCE`; Roundtrip erhält `kind`. `:core:jvmTest` grün (Test-Report: 3/3 in `WordSerializationTest`), danach kompletter `./gradlew build` grün (`:composeApp:assembleDebug` inklusive). `recordings.json` skriptgestützt gegengeprüft: für alle 10 `satz-*`-Einträge existiert ein Recording, und die referenzierten WAVs liegen auf der Platte. Version `AppVersion.kt` 0.6.0 → 0.7.0 (`VERSION_CODE` 6 → 7).
+
 ## 2026-07-18 (Nacht) — Satz-Bogen qualifiziert: ADR-0009 + zwei `[→Sonnet]`-Batches (reine Schärfung, kein Produktionscode)
 
 - **Autor-Entscheide (auf Rückfrage zur nächsten Runde):** (1) Zweite Stimme wird zurückgestellt. (2) **Sätze werden wie Wörter behandelt** — gleiche subjektive Bewertung im Prüfmodus, gleiche SRS-Logik, kein eigenes Scheduling-Konzept. (3) Erster Satzkorpus kommt **per TTS** (Piper), nicht als Eigenaufnahme. (4) Inhalte müssen **nicht originalgetreu** aus „Per Anhalter durch die Galaxis" sein — Kriterium ist „mitlesbar und erkennbar", kurze Sätze, **kein Gedächtnistraining**.

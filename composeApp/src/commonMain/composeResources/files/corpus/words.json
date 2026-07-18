@@ -16,5 +16,15 @@
   { "id": "panther", "text": "Panther", "language": "de-DE", "syllableCount": 2, "category": "EVERYDAY", "phoneticGroup": "panther-otter" },
   { "id": "otter", "text": "Otter", "language": "de-DE", "syllableCount": 2, "category": "EVERYDAY", "phoneticGroup": "panther-otter" },
   { "id": "regenschirm", "text": "Regenschirm", "language": "de-DE", "syllableCount": 3, "category": "EVERYDAY" },
-  { "id": "schmetterling", "text": "Schmetterling", "language": "de-DE", "syllableCount": 3, "category": "EVERYDAY" }
+  { "id": "schmetterling", "text": "Schmetterling", "language": "de-DE", "syllableCount": 3, "category": "EVERYDAY" },
+  { "id": "satz-morgen", "text": "Am Morgen steht ein Bagger vor dem Haus.", "language": "de-DE", "syllableCount": 10, "category": "EVERYDAY", "kind": "SENTENCE" },
+  { "id": "satz-bademantel", "text": "Ein Mann im Bademantel kommt aus dem Haus.", "language": "de-DE", "syllableCount": 11, "category": "EVERYDAY", "kind": "SENTENCE" },
+  { "id": "satz-gelber-bagger", "text": "Er legt sich vor den gelben Bagger.", "language": "de-DE", "syllableCount": 9, "category": "EVERYDAY", "kind": "SENTENCE" },
+  { "id": "satz-strasse", "text": "Das Haus soll einer neuen Straße weichen.", "language": "de-DE", "syllableCount": 11, "category": "EVERYDAY", "kind": "SENTENCE" },
+  { "id": "satz-plaene", "text": "Die Pläne lagen lange im Amt.", "language": "de-DE", "syllableCount": 9, "category": "EVERYDAY", "kind": "SENTENCE" },
+  { "id": "satz-freund", "text": "Sein alter Freund kommt gerade vorbei.", "language": "de-DE", "syllableCount": 9, "category": "EVERYDAY", "kind": "SENTENCE" },
+  { "id": "satz-schlamm", "text": "Er liegt im Schlamm vor dem Haus.", "language": "de-DE", "syllableCount": 8, "category": "EVERYDAY", "kind": "SENTENCE" },
+  { "id": "satz-warten", "text": "Sie warten beide auf den Chef.", "language": "de-DE", "syllableCount": 8, "category": "EVERYDAY", "kind": "SENTENCE" },
+  { "id": "satz-schiff", "text": "Am Himmel taucht plötzlich ein Schiff auf.", "language": "de-DE", "syllableCount": 9, "category": "EVERYDAY", "kind": "SENTENCE" },
+  { "id": "satz-abriss", "text": "Die Männer reißen heute das Haus ab.", "language": "de-DE", "syllableCount": 10, "category": "EVERYDAY", "kind": "SENTENCE" }
 ]

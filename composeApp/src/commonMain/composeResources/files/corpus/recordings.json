@@ -124,5 +124,75 @@
     "voiceId": "thorsten",
     "locale": "de-DE",
     "fileRef": "raw/de-DE/schmetterling__thorsten.wav"
+  },
+  {
+    "id": "satz-morgen__thorsten",
+    "wordId": "satz-morgen",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/satz-morgen__thorsten.wav"
+  },
+  {
+    "id": "satz-bademantel__thorsten",
+    "wordId": "satz-bademantel",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/satz-bademantel__thorsten.wav"
+  },
+  {
+    "id": "satz-gelber-bagger__thorsten",
+    "wordId": "satz-gelber-bagger",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/satz-gelber-bagger__thorsten.wav"
+  },
+  {
+    "id": "satz-strasse__thorsten",
+    "wordId": "satz-strasse",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/satz-strasse__thorsten.wav"
+  },
+  {
+    "id": "satz-plaene__thorsten",
+    "wordId": "satz-plaene",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/satz-plaene__thorsten.wav"
+  },
+  {
+    "id": "satz-freund__thorsten",
+    "wordId": "satz-freund",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/satz-freund__thorsten.wav"
+  },
+  {
+    "id": "satz-schlamm__thorsten",
+    "wordId": "satz-schlamm",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/satz-schlamm__thorsten.wav"
+  },
+  {
+    "id": "satz-warten__thorsten",
+    "wordId": "satz-warten",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/satz-warten__thorsten.wav"
+  },
+  {
+    "id": "satz-schiff__thorsten",
+    "wordId": "satz-schiff",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/satz-schiff__thorsten.wav"
+  },
+  {
+    "id": "satz-abriss__thorsten",
+    "wordId": "satz-abriss",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/satz-abriss__thorsten.wav"
   }
 ]
