@@ -7,14 +7,19 @@ import androidx.room.RoomDatabaseConstructor
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 
 /**
- * The app's persistence root (ADR-0004, Backlog M3 "Fälligkeits-Persistenz").
- * Settings remain a separate, not-yet-scoped schema.
+ * The app's persistence root (ADR-0004, Backlog M3 "Fälligkeits-Persistenz";
+ * Settings joined in Backlog M4 "Settings-Persistenz-Fundament").
  */
-@Database(entities = [ReviewCardEntity::class, SessionEntity::class], version = 2, exportSchema = false)
+@Database(
+    entities = [ReviewCardEntity::class, SessionEntity::class, SettingsEntity::class],
+    version = 3,
+    exportSchema = false,
+)
 @ConstructedBy(AudioLexDatabaseConstructor::class)
 abstract class AudioLexDatabase : RoomDatabase() {
     abstract fun reviewCardDao(): ReviewCardDao
     abstract fun sessionDao(): SessionDao
+    abstract fun settingsDao(): SettingsDao
 }
 
 // The Room KSP compiler generates the actual implementation per target --

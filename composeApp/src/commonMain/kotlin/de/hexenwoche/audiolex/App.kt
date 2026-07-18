@@ -10,9 +10,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -20,7 +22,11 @@ import androidx.compose.ui.unit.dp
 import de.hexenwoche.audiolex.core.persistence.AudioLexDatabase
 import de.hexenwoche.audiolex.core.persistence.RoomReviewCardRepository
 import de.hexenwoche.audiolex.core.persistence.RoomSessionRepository
+import de.hexenwoche.audiolex.core.persistence.RoomSettingsRepository
+import de.hexenwoche.audiolex.core.settings.AppSettings
+import de.hexenwoche.audiolex.core.settings.ThemeMode
 import de.hexenwoche.audiolex.core.time.Clock
+import kotlinx.coroutines.launch
 
 /**
  * Flat navigation (DESIGN.md "Screenstruktur"): Start is the hub, training
@@ -42,7 +48,17 @@ private sealed interface Screen {
 // on every screen visit, and the time source stays injectable (ADR-0008).
 @Composable
 fun App(database: AudioLexDatabase, clock: Clock) {
-    AudioLexTheme {
+    val scope = rememberCoroutineScope()
+    val settingsRepository = remember(database) { RoomSettingsRepository(database.settingsDao()) }
+    // Renders in the SYSTEM default until the LaunchedEffect below loads the
+    // persisted value -- a brief, one-time re-theme on a non-default setting,
+    // accepted for the MVP (Architektur-Notiz Backlog M4).
+    var themeMode by remember { mutableStateOf(ThemeMode.SYSTEM) }
+    LaunchedEffect(Unit) {
+        themeMode = settingsRepository.load().themeMode
+    }
+
+    AudioLexTheme(themeMode) {
         Surface(modifier = Modifier.fillMaxSize()) {
             var screen by remember { mutableStateOf<Screen>(Screen.Start) }
 
@@ -62,7 +78,14 @@ fun App(database: AudioLexDatabase, clock: Clock) {
                     onBeenden = { screen = Screen.Start },
                     onZumLernmodus = { screen = Screen.Lernmodus },
                 )
-                is Screen.Einstellungen -> EinstellungenScreen(onBeenden = { screen = Screen.Start })
+                is Screen.Einstellungen -> EinstellungenScreen(
+                    themeMode = themeMode,
+                    onThemeModeChange = { newMode ->
+                        themeMode = newMode
+                        scope.launch { settingsRepository.save(AppSettings(newMode)) }
+                    },
+                    onBeenden = { screen = Screen.Start },
+                )
                 is Screen.Sitzungshistorie -> SitzungshistorieScreen(
                     repository = remember(database) { RoomSessionRepository(database.sessionDao()) },
                     onBeenden = { screen = Screen.Start },
@@ -115,27 +138,6 @@ private fun StartScreen(
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-    }
-}
-
-/**
- * Placeholder frame for the future settings screen (DESIGN.md
- * "Screenstruktur"): a reachable dead end with no controls yet -- channel
- * selection, presets and noise settings are separate, not-yet-scoped items
- * that will fill this in later.
- */
-@Composable
-private fun EinstellungenScreen(onBeenden: () -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text("Einstellungen", style = MaterialTheme.typography.headlineLarge)
-        Text("Noch keine Einstellungen verfügbar.", style = MaterialTheme.typography.bodyLarge)
-        Button(onClick = onBeenden) {
-            Text("Zurück")
-        }
     }
 }
 

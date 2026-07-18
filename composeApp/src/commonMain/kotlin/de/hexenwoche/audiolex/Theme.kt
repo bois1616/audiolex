@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.sp
+import de.hexenwoche.audiolex.core.settings.ThemeMode
 
 private val LightColors = lightColorScheme(
     background = Color(0xFFFAF8F5),
@@ -40,13 +41,20 @@ private val AudioLexTypography = Typography(
 
 /**
  * AudioLex-Theme (DESIGN.md "Visuelle Prinzipien"): warm-neutral base, a
- * muted teal accent that carries meaning (active elements), following the
- * system's light/dark setting -- not a user-facing toggle. The target word
- * itself stays neutral (onSurface/onBackground), the accent is reserved for
- * buttons and other active elements, never decoration.
+ * muted teal accent that carries meaning (active elements). Follows the
+ * user's persisted [themeMode] setting (Backlog M4
+ * "Settings-Persistenz-Fundament"), defaulting to the system's light/dark
+ * setting for [ThemeMode.SYSTEM]. The target word itself stays neutral
+ * (onSurface/onBackground), the accent is reserved for buttons and other
+ * active elements, never decoration.
  */
 @Composable
-fun AudioLexTheme(content: @Composable () -> Unit) {
-    val colorScheme = if (isSystemInDarkTheme()) DarkColors else LightColors
+fun AudioLexTheme(themeMode: ThemeMode, content: @Composable () -> Unit) {
+    val dark = when (themeMode) {
+        ThemeMode.SYSTEM -> isSystemInDarkTheme()
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+    }
+    val colorScheme = if (dark) DarkColors else LightColors
     MaterialTheme(colorScheme = colorScheme, typography = AudioLexTypography, content = content)
 }
