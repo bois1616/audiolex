@@ -58,3 +58,4 @@ AudioLex ist eine Hörtrainings-App (Android zuerst, iOS-Option offen) zum Wiede
 - Entwicklung unter WSL2 (Debian), JDK 21, Android SDK unter `~/Android/Sdk` (Pfad in `local.properties`, nicht versioniert).
 - Schnelle Iteration über das **Desktop-Target**, nicht über den Emulator.
 - Gerätetest: Samsung Galaxy A53 (SM-A536B/DS, Android 16) via adb über WLAN oder USB (usbipd).
+- Deployment aufs Gerät über das `Makefile` im Repo-Root (`make pair` / `make deploy PORT=...`, Details `make help`); Standard-IP 192.168.178.42, bei DHCP-Drift `IP=...` überschreiben. ASHA-/BT-Audio-Diagnose am Gerät: `adb logcat | grep bluetooth-asha` — Signatur `SendStart ... volume=0x80` = systemseitig stummer Hörgerät-Volume-State (kein App-Bug), `volume=0x0` = gesund (Beweiskette: Umsetzungslog 2026-07-18 Abend).

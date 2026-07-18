@@ -1,5 +1,19 @@
 # Umsetzungs-Log (Neueste Einträge zuerst)
 
+## 2026-07-18 (Abend) — A53-Audio-Problem basisanalysiert: ASHA-Volume-State am Gerät, App entlastet (kein Code-Fix nötig)
+
+- **Autor-Meldung:** „Mit v0.6.0 kommt auch nach Lautstärketaste kein Ton mehr an" (im Gegensatz zu ≤ 0.5.0); dazu das bereits bekannte generelle „BT-Hörgerät stumm bis Lautstärketasten-Druck" (auch Spotify/MP3-Player betroffen, Kabel-Headset nicht). Vorgehen nach systematic-debugging: erst Beweislage, dann Hypothese, kein vorschneller Fix.
+
+- **Befund 1 — keine App-Regression möglich:** Diff v0.5.0→v0.6.0 komplett gelesen (nur Theme/Settings-Persistenz, `App.kt`/`Theme.kt`/`EinstellungenScreen.kt`/`:core`-Settings); `AudioSink`/`PlaybackQueue`/Screens unverändert seit dem am 2026-07-13 auf dem A53 als funktionierend bestätigten Stand. Auf dem Gerät lief nachweislich v0.6.0 (`dumpsys package`: versionCode 6).
+
+- **Befund 2 — logcat zeigt: Stream läuft, Hörgerät spielt Stille.** WLAN-adb verbunden (Makefile-Flow, IP ist aktuell 192.168.178.42 — die zuerst gemeldete .43 war ein Ablesefehler), App gestartet, Lernmodus-Wiedergabe mitgeschnitten. Im Stumm-Zustand: Routing korrekt (`AUDIO_DEVICE_OUT_HEARING_AID`), AudioFlinger-Lautstärke voll (`checkAndSetVolume: index 15, volume 1.0, muted false`), das Hörgerät geht hörbar in den Streaming-Zustand (Mikrofone muten ~Wortlänge) — aber jedes ASHA-`Start`-Kommando trug **`volume=0x80` (−128 dB = ASHA-Mute)**. Zusatzbeobachtung: ~150–240 ms `SendAudio: Playback stalled: cmd acked=false` nach jedem Start (Control-Point quittiert verzögert) — erklärt Anfangs-Verluste, nicht die Totalsilence.
+
+- **Root Cause (geräteseitig, vom Autor behoben):** Der Autor schaltete in den Hörgerät-Verbindungseinstellungen den rechten Kanal dazu („Lautstärke getrennt anpassen" blieb off) → sofort `SendStart: volume=0x0` (0 dB) und das Wort **vollständig hörbar**, beide Kanäle. Damit ist der Mechanismus des gesamten Komplexes identifiziert: der ASHA-Volume-State des Systems stand auf Mute; Lautstärketasten-Druck oder Kanal-Konfigurationsänderung setzen ein absolutes Volume und reparieren denselben State. Die App war zu keinem Zeitpunkt beteiligt.
+
+- **Konsequenz:** Kein Code-Fix, keine Version hochgezählt (reine Analyse-/Doku-Runde). Das P2-BT-Item im Backlog (M1) ist um die volle Beweiskette, die Diagnose-Signatur (`SendStart volume=0x80` = stummer ASHA-State; anhaltendes `Playback stalled` = hängender Control-Point) und eine Pre-Roll-Beobachtung (Stall-Fenster bis ~240 ms > 180 ms Pre-Roll — bei erneutem Wortanfang-Clipping `BLUETOOTH_PREROLL_MILLIS` erhöhen) ergänzt. Verbleibende, jetzt geschärfte Opus-Frage dort: app-seitiges Aufwecken (`adjustStreamVolume(ADJUST_SAME)`) nur noch als Fallback, falls der stumme State wiederkehrt. **Offene Gegenprobe beim Autor:** ob Spotify & Co. nach dem Kanal-Fix ohne Lautstärketaste sofort spielen.
+
+- **Verifikation:** zwei vollständige logcat-Mitschriften vor/nach dem Fix (Stumm: `volume=0x80` ×6; hörbar: `volume=0x0`), Autor-Hörprobe „vollständig hörbar". Keine Produktionscode-Änderung; Build nicht erneut nötig (Docs-only).
+
 ## 2026-07-18 — v0.6.0 (Settings-Persistenz-Fundament + manuelle Theme-Umschaltung System/Hell/Dunkel)
 
 - **Erste echte, persistierte Einstellung: manuelle Theme-Umschaltung**, plus die Persistenz-Basis, an der künftige Settings andocken (Opus-Qualifizierung direkt darüber). Warum: das Theme folgte bisher hart `isSystemInDarkTheme()` — der Autor konnte am 2026-07-13 auf dem A53 nicht verlässlich erkennen, ob Dark Mode überhaupt griff. Eine explizite In-App-Umschaltung behebt das direkt, unabhängig vom OS-Setting.
