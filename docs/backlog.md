@@ -74,7 +74,7 @@ Modell-Richtwert je offenem Item (AGENTS.md §6): `[→Sonnet]` = fertig spezifi
   - AC3 (Tooling): `tools/generate_tts.py` bleibt unverändert und vertont die Satz-Einträge im selben Lauf (`satz-*__thorsten.wav`, `recordings.json` aktualisiert). WAVs bleiben gitignored — Generierung lokal (`uv run generate_tts.py` aus `tools/`), Ergebnis vom Autor gehört/gegengeprüft (Piper-Satzprosodie vs. Einzelwort-Stauchung ist bei thorsten-medium unproblematisch, aber die Hörprobe der generierten Sätze ist Teil der Abnahme).
   - AC4 (Herkunft): Korpus-`README.md` dokumentiert: Sätze motivisch angelehnt an Douglas Adams, „Per Anhalter durch die Galaxis" (Kap. 1), paraphrasiert, private nicht-öffentliche Nutzung, keine wörtlichen Zitate im Repo.
   - AC5 (Verifikation): `./gradlew build` grün inkl. `:core:jvmTest` (neue Deserialisierungs-Tests). Version 0.6.0 → 0.7.0 (`VERSION_CODE` +1).
-  - Nicht-Ziele: kein UI-Schalter/Modus (Batch B), keine Anzeige-/Layout-Änderung (Batch B), keine Filterung in den Screens (Sätze erscheinen in diesem Batch noch **nicht** in Lern-/Prüfmodus — dafür ist Batch B da), keine neuen Stimmen, keine SRS-Änderung.
+  - Nicht-Ziele: kein UI-Schalter/Modus (Batch B), keine Anzeige-/Layout-Änderung (Batch B), keine Filterung in den Screens über den temporären Hard-Filter aus dem Review-Fix hinaus (Sätze erscheinen in diesem Batch noch **nicht** in Lern-/Prüfmodus — dafür ist Batch B da), keine neuen Stimmen, keine SRS-Änderung.
 
 - [ ] [P1] [UI] [→Sonnet] **Satz-Bogen, Batch B: Korpus-Modus-Schalter (Wörter/Sätze) + Filterung + mehrzeilige Satz-Anzeige** (geschärft 2026-07-18; baut auf Batch A, ADR-0009; nutzt das Settings-Fundament aus v0.6.0).
 
