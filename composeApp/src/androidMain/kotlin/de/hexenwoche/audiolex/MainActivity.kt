@@ -14,7 +14,7 @@ class MainActivity : ComponentActivity() {
         val database = createAudioLexDatabase(getDatabaseBuilder(applicationContext))
         val clock = systemClock()
         setContent {
-            App(database, clock)
+            App(database, clock, onExitApp = { finishAndRemoveTask() })
         }
     }
 }

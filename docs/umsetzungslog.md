@@ -1,5 +1,12 @@
 # Umsetzungs-Log (Neueste Einträge zuerst)
 
+## 2026-07-19 (Sonnet: **„App beenden"-Schaltfläche auf dem Start-Screen — v0.11.0**)
+
+- **Was:** Der Start-Screen hat jetzt eine dezente „App beenden"-Schaltfläche, die die App wirklich beendet, statt nur über System-Geste/Zurück-Navigation verlassen zu werden können (Autor-Requirement 2026-07-19).
+- **Wie:** Kein expect/actual — `App()` bekommt einen dritten Parameter `onExitApp: () -> Unit` (`App.kt`), reicht ihn unverändert an `StartScreen` durch. Beide Plattform-Entry-Points verdrahten ihn im jeweils passenden Scope: `main.kt` übergibt `onExitApp = ::exitApplication` (im `application {}`-Scope verfügbar, gleiche Funktion wie schon der Window-`onCloseRequest`), `MainActivity.kt` übergibt `onExitApp = { finishAndRemoveTask() }` (echtes Beenden, Task verschwindet aus den Recents — bewusst nicht `moveTaskToBack`/`finish`). `StartScreen` zeigt die Schaltfläche unten, direkt über der Versionszeile: ein `TextButton` (nicht der gefüllte `Button` der Trainings-Aktionen) mit `onSurfaceVariant`-Farbe, damit sie zurücktritt statt zu konkurrieren (DESIGN.md „Sekundäres tritt zurück"). Kein Bestätigungs-Dialog (Nicht-Ziel, per Neustart trivial rückgängig).
+- **Unverändert:** Die übrige `App(database, clock)`-Signatur (nur um den dritten Parameter erweitert); Navigation der übrigen Screens.
+- **Wie verifiziert:** `./gradlew build` grün — `:core:jvmTest` (unverändert, reines UI-Item), `:composeApp:assembleDebug`/`assembleRelease` kompilieren sowohl den Android-`MainActivity`-Pfad (`compileReleaseKotlinAndroid`) als auch den Desktop-Pfad (`compileKotlinDesktop`) frisch durch. **A53-Gerätetest (Button beendet die App, verschwindet aus Recents) und Desktop-Bedienprobe (Fenster schließt) stehen beim Autor noch aus** — Desktop-`:composeApp:run` ist hier weiterhin durch die bekannte Skiko-GL-/Display-Einschränkung (ADR-0003) keine echte Bedienprobe. Version 0.10.0 → **0.11.0** (`VERSION_NAME`/`VERSION_CODE`).
+
 ## 2026-07-19 (Sonnet: **Lernmodus-Zieltext im festen Kartenrahmen — v0.10.0**)
 
 - **Was:** Der Lernmodus-Zieltext war bisher ein freistehendes `BasicText` in der Column; jetzt sitzt er analog zur Prüfmodus-`RevealCard` in einem festen 280×160-dp-`Surface` (`tonalElevation = 4.dp`) — einheitliche Optik über beide Trainingsmodi (Autor-Entscheid 2026-07-19, Backlog-Item).

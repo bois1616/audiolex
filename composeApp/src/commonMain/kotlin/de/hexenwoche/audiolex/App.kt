@@ -9,6 +9,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -48,7 +49,7 @@ private sealed interface Screen {
 // point (MainActivity/main) and handed down -- the SQLite file isn't reopened
 // on every screen visit, and the time source stays injectable (ADR-0008).
 @Composable
-fun App(database: AudioLexDatabase, clock: Clock) {
+fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit) {
     val scope = rememberCoroutineScope()
     val settingsRepository = remember(database) { RoomSettingsRepository(database.settingsDao()) }
     // Renders in the SYSTEM default until the LaunchedEffect below loads the
@@ -77,6 +78,7 @@ fun App(database: AudioLexDatabase, clock: Clock) {
                     onOpenEinstellungen = { screen = Screen.Einstellungen },
                     onOpenSitzungshistorie = { screen = Screen.Sitzungshistorie },
                     onOpenDevKanaltest = { screen = Screen.DevKanaltest },
+                    onExitApp = onExitApp,
                 )
                 is Screen.Lernmodus -> LernmodusScreen(
                     corpusMode = corpusMode,
@@ -120,6 +122,7 @@ private fun StartScreen(
     onOpenEinstellungen: () -> Unit,
     onOpenSitzungshistorie: () -> Unit,
     onOpenDevKanaltest: () -> Unit,
+    onExitApp: () -> Unit,
 ) {
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),
@@ -150,6 +153,17 @@ private fun StartScreen(
         // tell which build is running (Autor-Wunsch 2026-07-13). Muted color,
         // never the accent -- it's reference info, not an active element.
         Spacer(modifier = Modifier.weight(1f))
+        // "App beenden" is deliberately a TextButton (not the filled Button
+        // used for the training actions above) with a muted color -- it must
+        // recede, not compete with the primary navigation (DESIGN.md
+        // "Sekundäres tritt zurück"). No confirmation dialog: a restart makes
+        // this trivially reversible (Autor-Requirement 2026-07-19).
+        TextButton(onClick = onExitApp) {
+            Text(
+                "App beenden",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         Text(
             "v$VERSION_NAME",
             style = MaterialTheme.typography.labelSmall,

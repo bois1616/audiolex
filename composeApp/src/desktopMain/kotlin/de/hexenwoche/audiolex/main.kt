@@ -10,7 +10,7 @@ fun main() {
     val clock = systemClock()
     application {
         Window(onCloseRequest = ::exitApplication, title = "AudioLex") {
-            App(database, clock)
+            App(database, clock, onExitApp = ::exitApplication)
         }
     }
 }
