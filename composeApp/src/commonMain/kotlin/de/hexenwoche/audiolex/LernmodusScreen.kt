@@ -3,10 +3,7 @@ package de.hexenwoche.audiolex
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.BasicText
-import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -21,10 +18,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.em
-import androidx.compose.ui.unit.sp
 import de.hexenwoche.audiolex.core.audio.WavFile
 import de.hexenwoche.audiolex.core.audio.createAudioSink
 import de.hexenwoche.audiolex.core.corpus.AudioRecording
@@ -145,48 +139,16 @@ fun LernmodusScreen(corpusMode: CorpusMode, onBeenden: () -> Unit) {
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                // Words keep the exact pre-Batch-B behaviour: one line,
-                // shrink-to-fit instead of wrapping or clipping (DESIGN.md:
-                // the target word is "groß und ruhig ... positionsstabil" --
-                // position and line count must not change, only the font
-                // size for overlength). Sentences may wrap up to three lines
-                // within the same stable area -- a whole sentence on one
-                // shrink-to-fit line would be illegibly small (Satz-Bogen
-                // Batch B, AC5; the shared 24sp minimum keeps both kinds
-                // grounded at the same floor).
-                // Explicitly neutral (onSurface), never the accent color --
-                // the accent is reserved for active elements (DESIGN.md).
-                val displayLarge = MaterialTheme.typography.displayLarge
+                // Fixed 280x160dp card, unified look with the Prüfmodus
+                // RevealCard (Backlog M2 "Lernmodus: Zieltext in festem
+                // Kartenrahmen analog Prüfmodus") -- no reveal/click here,
+                // the text is always visible. The text metric itself (word
+                // shrink-to-fit vs. sentence 3-line wrap + proportional
+                // lineHeight) lives in [TargetTextCard], shared with
+                // RevealCard's revealed state so it can't drift between the
+                // two modes.
                 val isSentence = session.currentWord.kind == EntryKind.SENTENCE
-                // Sentences get a relative `1.2.em` lineHeight instead of
-                // displayLarge's fixed 64sp default -- autoSize only ever
-                // rescales fontSize per trial layout, never lineHeight, so a
-                // fixed sp value would stay at 64sp even once the font
-                // shrinks to fit and could still overflow the frame (same
-                // RevealCard fix, Prüfmodus-Bug 2026-07-19, AC2). Words are
-                // untouched -- exact pre-existing style, single line.
-                val textStyle = if (isSentence) {
-                    displayLarge.copy(
-                        color = MaterialTheme.colorScheme.onSurface,
-                        textAlign = TextAlign.Center,
-                        lineHeight = 1.2.em,
-                    )
-                } else {
-                    displayLarge.copy(
-                        color = MaterialTheme.colorScheme.onSurface,
-                        textAlign = TextAlign.Center,
-                    )
-                }
-                BasicText(
-                    text = session.currentWord.text,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                    style = textStyle,
-                    maxLines = if (isSentence) 3 else 1,
-                    autoSize = TextAutoSize.StepBased(
-                        minFontSize = 24.sp,
-                        maxFontSize = displayLarge.fontSize,
-                    ),
-                )
+                TargetTextCard(text = session.currentWord.text, isSentence = isSentence)
 
                 Button(onClick = {
                     playCurrentWord(session, recordings, queue) { message ->

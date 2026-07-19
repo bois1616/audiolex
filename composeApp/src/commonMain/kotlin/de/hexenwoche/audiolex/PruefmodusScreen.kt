@@ -6,12 +6,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.text.BasicText
-import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -27,10 +24,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.em
-import androidx.compose.ui.unit.sp
 import de.hexenwoche.audiolex.core.audio.WavFile
 import de.hexenwoche.audiolex.core.audio.createAudioSink
 import de.hexenwoche.audiolex.core.corpus.AudioRecording
@@ -326,68 +320,32 @@ fun PruefmodusScreen(
  * (DESIGN.md): shows nothing until [revealed], then the word. A large tap
  * area doubles as the reveal gesture.
  *
- * The revealed word stays on one line and shrinks to fit (DESIGN.md: the
- * word is "groß und ruhig ... positionsstabil" -- it must not wrap or move,
- * only scale down for longer words). Sentences ([isSentence]) may wrap up to
- * three lines inside the same fixed 280x160dp frame instead -- one
- * shrink-to-fit line would be illegibly small for a whole sentence
- * (Satz-Bogen Batch B, AC5); the 24sp autoSize minimum applies to both.
- * The "tap to reveal" hint is secondary text, not the target word, so it's
- * set smaller instead of competing with it at displayLarge (DESIGN.md:
- * secondary content recedes).
- *
- * Sentences additionally set `lineHeight = 1.2.em` (Autor-Finding 2026-07-19,
- * A53-Gerätetest): `autoSize`'s step search only ever rescales the *font
- * size* it feeds into the style for each trial layout, it never touches
- * `lineHeight` -- verified against the real 1.8.2 foundation jar
- * (`MultiParagraphLayoutCache$TextAutoSizeLayoutScopeImpl.performLayout`
- * copies the composable's style with only `fontSize` overridden). A fixed sp
- * `lineHeight` (displayLarge's default is 64sp) would therefore stay at 64sp
- * even once the font shrinks to fit, so three lines could still overflow the
- * 160dp frame. `em` is relative: `TextUnit.isEm` is true for it, and the
- * layout cache resolves it against whatever `fontSize` that trial step is
- * using, so it shrinks together with the font instead of staying fixed. Only
- * the sentence branch gets this -- the word branch keeps the exact
- * pre-existing style so single-line words are untouched (Nicht-Ziel).
+ * Once revealed, this renders [TargetTextCard] -- the same fixed-frame text
+ * display the Lernmodus screen uses (Backlog M2 "Lernmodus: Zieltext in
+ * festem Kartenrahmen analog Prüfmodus"), so the word/sentence text metric
+ * (shrink-to-fit vs. 3-line wrap, proportional `lineHeight` for sentences)
+ * lives in exactly one place instead of two copies that could drift apart.
+ * This function keeps only its own reveal/click affordance -- the
+ * "Antippen zum Aufdecken" hint and the tap gesture -- which [TargetTextCard]
+ * knows nothing about.
  */
 @Composable
 private fun RevealCard(text: String?, isSentence: Boolean, revealed: Boolean, onClick: () -> Unit) {
-    Surface(
-        modifier = Modifier.width(280.dp).height(160.dp).clickable(enabled = !revealed, onClick = onClick),
-        tonalElevation = 4.dp,
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
+    if (revealed) {
+        TargetTextCard(text = text ?: "?", isSentence = isSentence)
+    } else {
+        Surface(
+            modifier = Modifier.width(280.dp).height(160.dp).clickable(onClick = onClick),
+            tonalElevation = 4.dp,
         ) {
-            if (revealed) {
-                // Explicitly neutral (onSurface), never the accent color --
-                // the accent is reserved for active elements (DESIGN.md).
-                val displayLarge = MaterialTheme.typography.displayLarge
-                val textStyle = if (isSentence) {
-                    displayLarge.copy(
-                        color = MaterialTheme.colorScheme.onSurface,
-                        textAlign = TextAlign.Center,
-                        lineHeight = 1.2.em,
-                    )
-                } else {
-                    displayLarge.copy(
-                        color = MaterialTheme.colorScheme.onSurface,
-                        textAlign = TextAlign.Center,
-                    )
-                }
-                BasicText(
-                    text = text ?: "?",
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                    style = textStyle,
-                    maxLines = if (isSentence) 3 else 1,
-                    autoSize = TextAutoSize.StepBased(
-                        minFontSize = 24.sp,
-                        maxFontSize = displayLarge.fontSize,
-                    ),
-                )
-            } else {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                // The "tap to reveal" hint is secondary text, not the target
+                // word, so it's set smaller instead of competing with it at
+                // displayLarge (DESIGN.md: secondary content recedes).
                 Text("Antippen zum Aufdecken", style = MaterialTheme.typography.titleMedium)
             }
         }
