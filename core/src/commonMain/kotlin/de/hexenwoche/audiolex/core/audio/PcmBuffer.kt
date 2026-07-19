@@ -34,6 +34,25 @@ fun PcmBuffer.withLeadingSilence(millis: Int): PcmBuffer {
 }
 
 /**
+ * Downmixes to mono by averaging channels frame-by-frame (Backlog M4
+ * "Störgeräusch-Overlay", ADR-0010 point 4): a defensive guard, not a
+ * feature -- the bundled noise loops are already mono at build time
+ * (ffmpeg `-ac 1`), this only catches a scenario file that accidentally
+ * ships stereo, so [mixWithNoise]'s channel-count check still passes
+ * instead of throwing. Already-mono buffers are returned unchanged.
+ */
+fun PcmBuffer.toMono(): PcmBuffer {
+    if (channels == 1) return this
+    val out = ShortArray(frameCount)
+    for (frame in 0 until frameCount) {
+        var sum = 0
+        for (ch in 0 until channels) sum += samples[frame * channels + ch]
+        out[frame] = (sum / channels).toShort()
+    }
+    return PcmBuffer(out, sampleRate, channels = 1)
+}
+
+/**
  * Per-ear gain, the core control for unilateral hearing training:
  * left only, right only, or both — each with its own level (0.0–1.0+).
  */

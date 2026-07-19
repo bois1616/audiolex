@@ -50,4 +50,18 @@ class PcmBufferTest {
         val buffer = mono(1, 2, 3)
         assertSame(buffer, buffer.withLeadingSilence(-50))
     }
+
+    @Test
+    fun toMonoAveragesStereoChannelsPerFrame() {
+        // Frame 1: (100, 300) -> 200; frame 2: (-100, -300) -> -200.
+        val out = stereo(100, 300, -100, -300).toMono()
+        assertEquals(1, out.channels)
+        assertEquals(listOf<Short>(200, -200), out.samples.toList())
+    }
+
+    @Test
+    fun toMonoOnAlreadyMonoBufferReturnsSameInstance() {
+        val buffer = mono(1, 2, 3)
+        assertSame(buffer, buffer.toMono())
+    }
 }

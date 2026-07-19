@@ -61,10 +61,18 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit) {
     // screens (each visit re-enters the screen, so the filter always sees
     // the current mode).
     var corpusMode by remember { mutableStateOf(CorpusMode.WOERTER) }
+    // Noise overlay (Backlog M4 "Störgeräusch-Overlay", ADR-0010): shared by
+    // both training modes, same lazy-load pattern as themeMode/corpusMode.
+    var noiseEnabled by remember { mutableStateOf(false) }
+    var snrDb by remember { mutableStateOf(10) }
+    var noiseScenario by remember { mutableStateOf("restaurant") }
     LaunchedEffect(Unit) {
         val settings = settingsRepository.load()
         themeMode = settings.themeMode
         corpusMode = settings.corpusMode
+        noiseEnabled = settings.noiseEnabled
+        snrDb = settings.snrDb
+        noiseScenario = settings.noiseScenario
     }
 
     AudioLexTheme(themeMode) {
@@ -82,6 +90,9 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit) {
                 )
                 is Screen.Lernmodus -> LernmodusScreen(
                     corpusMode = corpusMode,
+                    noiseEnabled = noiseEnabled,
+                    snrDb = snrDb,
+                    noiseScenario = noiseScenario,
                     onBeenden = { screen = Screen.Start },
                 )
                 is Screen.Pruefmodus -> PruefmodusScreen(
@@ -89,6 +100,9 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit) {
                     sessionRepository = remember(database) { RoomSessionRepository(database.sessionDao()) },
                     clock = clock,
                     corpusMode = corpusMode,
+                    noiseEnabled = noiseEnabled,
+                    snrDb = snrDb,
+                    noiseScenario = noiseScenario,
                     onBeenden = { screen = Screen.Start },
                     onZumLernmodus = { screen = Screen.Lernmodus },
                 )
@@ -96,12 +110,47 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit) {
                     themeMode = themeMode,
                     onThemeModeChange = { newMode ->
                         themeMode = newMode
-                        scope.launch { settingsRepository.save(AppSettings(newMode, corpusMode)) }
+                        scope.launch {
+                            settingsRepository.save(
+                                AppSettings(newMode, corpusMode, noiseEnabled, snrDb, noiseScenario)
+                            )
+                        }
                     },
                     corpusMode = corpusMode,
                     onCorpusModeChange = { newMode ->
                         corpusMode = newMode
-                        scope.launch { settingsRepository.save(AppSettings(themeMode, newMode)) }
+                        scope.launch {
+                            settingsRepository.save(
+                                AppSettings(themeMode, newMode, noiseEnabled, snrDb, noiseScenario)
+                            )
+                        }
+                    },
+                    noiseEnabled = noiseEnabled,
+                    onNoiseEnabledChange = { newEnabled ->
+                        noiseEnabled = newEnabled
+                        scope.launch {
+                            settingsRepository.save(
+                                AppSettings(themeMode, corpusMode, newEnabled, snrDb, noiseScenario)
+                            )
+                        }
+                    },
+                    snrDb = snrDb,
+                    onSnrDbChange = { newSnrDb ->
+                        snrDb = newSnrDb
+                        scope.launch {
+                            settingsRepository.save(
+                                AppSettings(themeMode, corpusMode, noiseEnabled, newSnrDb, noiseScenario)
+                            )
+                        }
+                    },
+                    noiseScenario = noiseScenario,
+                    onNoiseScenarioChange = { newScenario ->
+                        noiseScenario = newScenario
+                        scope.launch {
+                            settingsRepository.save(
+                                AppSettings(themeMode, corpusMode, noiseEnabled, snrDb, newScenario)
+                            )
+                        }
                     },
                     onBeenden = { screen = Screen.Start },
                 )

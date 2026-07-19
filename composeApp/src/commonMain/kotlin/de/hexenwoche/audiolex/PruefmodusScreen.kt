@@ -25,6 +25,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import de.hexenwoche.audiolex.core.audio.PcmBuffer
 import de.hexenwoche.audiolex.core.audio.WavFile
 import de.hexenwoche.audiolex.core.audio.createAudioSink
 import de.hexenwoche.audiolex.core.corpus.AudioRecording
@@ -75,6 +76,11 @@ private sealed interface PruefmodusState {
  * seeded as immediately due (Szenario S10, see [allOrSeed]), and every
  * rating is saved right away so it survives leaving the session (S5).
  * Playback goes exclusively through [PlaybackQueue], same as [LernmodusScreen].
+ *
+ * [noiseEnabled]/[snrDb]/[noiseScenario] drive the same noise overlay as
+ * [LernmodusScreen] (Backlog M4 "Störgeräusch-Overlay", ADR-0010) -- both
+ * modes share one setting, and the mixing happens in the [PlaybackQueue]
+ * producer via the same [mixWithOptionalNoise] helper.
  */
 @Composable
 fun PruefmodusScreen(
@@ -82,6 +88,9 @@ fun PruefmodusScreen(
     sessionRepository: SessionRepository,
     clock: Clock,
     corpusMode: CorpusMode,
+    noiseEnabled: Boolean,
+    snrDb: Int,
+    noiseScenario: String,
     onBeenden: () -> Unit,
     onZumLernmodus: () -> Unit,
 ) {
@@ -95,6 +104,7 @@ fun PruefmodusScreen(
     }
     var words by remember { mutableStateOf<List<Word>>(emptyList()) }
     var recordings by remember { mutableStateOf<List<AudioRecording>>(emptyList()) }
+    var noiseBuffer by remember { mutableStateOf<PcmBuffer?>(null) }
     var ratedCount by remember { mutableStateOf(0) }
     var isRating by remember { mutableStateOf(false) }
     // Distribution and session start (Szenario S12, Sitzungshistorie) -- only
@@ -149,6 +159,9 @@ fun PruefmodusScreen(
             words = json.decodeFromString<List<Word>>(wordsJson)
                 .filter { it.kind == corpusMode.entryKind() }
             recordings = json.decodeFromString<List<AudioRecording>>(recordingsJson)
+            // Loaded once per round, not per card (AC6) -- same defensive
+            // fallback to null (clean speech) as Lernmodus.
+            noiseBuffer = loadNoiseBuffer(noiseEnabled, noiseScenario)
 
             val cards = repository.allOrSeed(words.map { it.id })
             // A round is up to 15 cards: due ones first, topped up with random
@@ -177,7 +190,7 @@ fun PruefmodusScreen(
     LaunchedEffect(runningCardWordId) {
         val running = state as? PruefmodusState.Running ?: return@LaunchedEffect
         if (words.isEmpty() || recordings.isEmpty()) return@LaunchedEffect
-        playCurrentCard(running.session, words, recordings, queue) { message ->
+        playCurrentCard(running.session, words, recordings, queue, noiseBuffer, snrDb) { message ->
             state = PruefmodusState.Error(message)
         }
     }
@@ -243,7 +256,7 @@ fun PruefmodusScreen(
                 // sense once the word was already visible).
                 if (!current.rated) {
                     Button(onClick = {
-                        playCurrentCard(session, words, recordings, queue) { message ->
+                        playCurrentCard(session, words, recordings, queue, noiseBuffer, snrDb) { message ->
                             state = PruefmodusState.Error(message)
                         }
                     }) {
@@ -396,6 +409,8 @@ private fun playCurrentCard(
     words: List<Word>,
     recordings: List<AudioRecording>,
     queue: PlaybackQueue,
+    noiseBuffer: PcmBuffer?,
+    snrDb: Int,
     onError: (String) -> Unit,
 ) {
     val word = words.firstOrNull { it.id == session.currentCard.wordId }
@@ -413,6 +428,7 @@ private fun playCurrentCard(
     // AudioTracks (same fix as Lernmodus, Autor-Finding 2026-07-13).
     queue.play {
         val bytes = Res.readBytes("files/corpus/${recording.fileRef}")
-        WavFile.decode(bytes)
+        val speech = WavFile.decode(bytes)
+        mixWithOptionalNoise(speech, noiseBuffer, snrDb)
     }
 }

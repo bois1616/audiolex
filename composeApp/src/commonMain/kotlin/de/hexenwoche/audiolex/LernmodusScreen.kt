@@ -19,6 +19,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import de.hexenwoche.audiolex.core.audio.PcmBuffer
 import de.hexenwoche.audiolex.core.audio.WavFile
 import de.hexenwoche.audiolex.core.audio.createAudioSink
 import de.hexenwoche.audiolex.core.corpus.AudioRecording
@@ -50,9 +51,21 @@ private sealed interface LernmodusState {
  *
  * [corpusMode] selects which corpus entries the session runs on (Backlog M2
  * Satz-Bogen Batch B, ADR-0009): words only, or sentences only.
+ *
+ * [noiseEnabled]/[snrDb]/[noiseScenario] drive the noise overlay (Backlog M4
+ * "Störgeräusch-Overlay", ADR-0010): mixed into the speech signal inside the
+ * [PlaybackQueue] producer, after WAV decode, so both training modes get the
+ * same treatment through the same mixer. The noise loop is loaded once in
+ * the load block below (not per word) and cached in [noiseBuffer].
  */
 @Composable
-fun LernmodusScreen(corpusMode: CorpusMode, onBeenden: () -> Unit) {
+fun LernmodusScreen(
+    corpusMode: CorpusMode,
+    noiseEnabled: Boolean,
+    snrDb: Int,
+    noiseScenario: String,
+    onBeenden: () -> Unit,
+) {
     val scope = rememberCoroutineScope()
     val sink = remember { createAudioSink() }
     var state by remember { mutableStateOf<LernmodusState>(LernmodusState.Loading) }
@@ -62,6 +75,7 @@ fun LernmodusScreen(corpusMode: CorpusMode, onBeenden: () -> Unit) {
         })
     }
     var recordings by remember { mutableStateOf<List<AudioRecording>>(emptyList()) }
+    var noiseBuffer by remember { mutableStateOf<PcmBuffer?>(null) }
 
     DisposableEffect(Unit) {
         onDispose { queue.stop() }
@@ -77,6 +91,10 @@ fun LernmodusScreen(corpusMode: CorpusMode, onBeenden: () -> Unit) {
             val words = json.decodeFromString<List<Word>>(wordsJson)
                 .filter { it.kind == corpusMode.entryKind() }
             recordings = json.decodeFromString<List<AudioRecording>>(recordingsJson)
+            // Loaded once per screen entry, not per word (AC6) -- a missing/
+            // mismatched file or noise disabled all resolve to null, which
+            // mixWithOptionalNoise treats as "play clean speech".
+            noiseBuffer = loadNoiseBuffer(noiseEnabled, noiseScenario)
             state = if (words.isEmpty()) {
                 LernmodusState.EmptyCorpus
             } else {
@@ -101,7 +119,7 @@ fun LernmodusScreen(corpusMode: CorpusMode, onBeenden: () -> Unit) {
     LaunchedEffect(runningWordIndex) {
         val running = state as? LernmodusState.Running ?: return@LaunchedEffect
         if (recordings.isEmpty()) return@LaunchedEffect
-        playCurrentWord(running.session, recordings, queue) { message ->
+        playCurrentWord(running.session, recordings, queue, noiseBuffer, snrDb) { message ->
             state = LernmodusState.Error(message)
         }
     }
@@ -151,7 +169,7 @@ fun LernmodusScreen(corpusMode: CorpusMode, onBeenden: () -> Unit) {
                 TargetTextCard(text = session.currentWord.text, isSentence = isSentence)
 
                 Button(onClick = {
-                    playCurrentWord(session, recordings, queue) { message ->
+                    playCurrentWord(session, recordings, queue, noiseBuffer, snrDb) { message ->
                         state = LernmodusState.Error(message)
                     }
                 }) {
@@ -199,6 +217,8 @@ private fun playCurrentWord(
     session: LearningSession,
     recordings: List<AudioRecording>,
     queue: PlaybackQueue,
+    noiseBuffer: PcmBuffer?,
+    snrDb: Int,
     onError: (String) -> Unit,
 ) {
     val recording = recordings.firstOrNull { it.wordId == session.currentWord.id }
@@ -208,6 +228,7 @@ private fun playCurrentWord(
     }
     queue.play {
         val bytes = Res.readBytes("files/corpus/${recording.fileRef}")
-        WavFile.decode(bytes)
+        val speech = WavFile.decode(bytes)
+        mixWithOptionalNoise(speech, noiseBuffer, snrDb)
     }
 }

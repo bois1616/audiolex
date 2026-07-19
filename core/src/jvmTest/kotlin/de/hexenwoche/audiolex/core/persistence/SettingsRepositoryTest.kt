@@ -84,4 +84,47 @@ class SettingsRepositoryTest {
 
         assertEquals(ThemeMode.SYSTEM, loaded.themeMode)
     }
+
+    @Test
+    fun loadReturnsNoiseDefaultsForFreshDatabase() = runTest {
+        val loaded = newRepository().load()
+
+        assertEquals(false, loaded.noiseEnabled)
+        assertEquals(10, loaded.snrDb)
+        assertEquals("restaurant", loaded.noiseScenario)
+    }
+
+    @Test
+    fun savedNoiseSettingsRoundtrip() = runTest {
+        val repository = newRepository()
+
+        repository.save(AppSettings(ThemeMode.SYSTEM, noiseEnabled = true, snrDb = -5, noiseScenario = "verkehr"))
+        val loaded = repository.load()
+
+        assertEquals(true, loaded.noiseEnabled)
+        assertEquals(-5, loaded.snrDb)
+        assertEquals("verkehr", loaded.noiseScenario)
+    }
+
+    @Test
+    fun outOfRangeStoredSnrDbFallsBackToTenDb() = runTest {
+        val db = newDatabase()
+        db.settingsDao().upsert(SettingsEntity(themeMode = "SYSTEM", snrDb = 999))
+
+        val loaded = newRepository(db).load()
+
+        assertEquals(10, loaded.snrDb)
+        // The snrDb fallback must not take the other fields down with it.
+        assertEquals(ThemeMode.SYSTEM, loaded.themeMode)
+    }
+
+    @Test
+    fun blankStoredNoiseScenarioFallsBackToRestaurant() = runTest {
+        val db = newDatabase()
+        db.settingsDao().upsert(SettingsEntity(themeMode = "SYSTEM", noiseScenario = ""))
+
+        val loaded = newRepository(db).load()
+
+        assertEquals("restaurant", loaded.noiseScenario)
+    }
 }

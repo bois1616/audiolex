@@ -14,12 +14,22 @@ import androidx.room.Upsert
  * fields are expected to land here as additional columns rather than a new
  * mechanism. [corpusMode] defaults to WOERTER so constructor call sites that
  * predate the column (and Room's own default-value handling) keep working.
+ *
+ * [noiseEnabled]/[snrDb]/[noiseScenario] (Backlog M4 "Störgeräusch-Overlay",
+ * ADR-0010) hold the noise-overlay setting shared by both training modes.
+ * [noiseScenario] stores the scenario's `id` from `files/noise/noise.json`
+ * as a plain string, not an enum -- the catalog is data, not a compile-time
+ * type -- so the "unknown id" fallback (resolve to the first catalog entry)
+ * lives where the catalog is loaded (composeApp), not in this mapper.
  */
 @Entity
 data class SettingsEntity(
     @PrimaryKey val id: Int = 0,
     val themeMode: String,
     val corpusMode: String = "WOERTER",
+    val noiseEnabled: Boolean = false,
+    val snrDb: Int = 10,
+    val noiseScenario: String = "restaurant",
 )
 
 @Dao
