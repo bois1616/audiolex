@@ -9,16 +9,17 @@ import androidx.room.Upsert
 /**
  * Singleton settings row (Backlog M4 "Settings-Persistenz-Fundament"): fixed
  * primary key id=0, so [upsert][SettingsDao.upsert] always overwrites the
- * same row instead of accumulating rows. [themeMode] stores a
- * [de.hexenwoche.audiolex.core.settings.ThemeMode] enum name, not its
- * ordinal -- same rationale as [ReviewRatingConverter]. More fields (e.g. a
- * later word/sentence toggle) are expected to land here as additional
- * columns rather than a new mechanism.
+ * same row instead of accumulating rows. [themeMode]/[corpusMode] store enum
+ * names, not ordinals -- same rationale as [ReviewRatingConverter]. More
+ * fields are expected to land here as additional columns rather than a new
+ * mechanism. [corpusMode] defaults to WOERTER so constructor call sites that
+ * predate the column (and Room's own default-value handling) keep working.
  */
 @Entity
 data class SettingsEntity(
     @PrimaryKey val id: Int = 0,
     val themeMode: String,
+    val corpusMode: String = "WOERTER",
 )
 
 @Dao

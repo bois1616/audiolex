@@ -1,6 +1,7 @@
 package de.hexenwoche.audiolex.core.persistence
 
 import de.hexenwoche.audiolex.core.settings.AppSettings
+import de.hexenwoche.audiolex.core.settings.CorpusMode
 import de.hexenwoche.audiolex.core.settings.ThemeMode
 import de.hexenwoche.audiolex.core.settings.toDomain
 import de.hexenwoche.audiolex.core.settings.toEntity
@@ -15,9 +16,9 @@ interface SettingsRepository {
 }
 
 /**
- * [load] returns [AppSettings] defaults ([ThemeMode.SYSTEM]) when the
- * singleton row hasn't been written yet -- the table starts empty, there is
- * no seeding step.
+ * [load] returns the [AppSettings] defaults ([ThemeMode.SYSTEM],
+ * [CorpusMode.WOERTER]) when the singleton row hasn't been written yet --
+ * the table starts empty, there is no seeding step.
  */
 class RoomSettingsRepository(private val dao: SettingsDao) : SettingsRepository {
     override suspend fun load(): AppSettings = dao.get()?.toDomain() ?: AppSettings(ThemeMode.SYSTEM)

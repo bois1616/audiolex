@@ -12,7 +12,9 @@ import androidx.sqlite.driver.bundled.BundledSQLiteDriver
  */
 @Database(
     entities = [ReviewCardEntity::class, SessionEntity::class, SettingsEntity::class],
-    version = 3,
+    // v3 -> v4: corpusMode column on SettingsEntity (Backlog M2 Satz-Bogen
+    // Batch B); the destructive fallback carries the bump like v2 -> v3 did.
+    version = 4,
     exportSchema = false,
 )
 @ConstructedBy(AudioLexDatabaseConstructor::class)

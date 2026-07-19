@@ -17,14 +17,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import de.hexenwoche.audiolex.core.settings.CorpusMode
 import de.hexenwoche.audiolex.core.settings.ThemeMode
 
 /**
- * Einstellungen (Backlog M4 "Settings-Persistenz-Fundament"): the first real
- * setting, a manual theme override -- the app previously followed
+ * Einstellungen (Backlog M4 "Settings-Persistenz-Fundament", erweitert in M2
+ * "Satz-Bogen Batch B" um den Trainingsinhalt-Schalter): the first setting
+ * was a manual theme override -- the app previously followed
  * `isSystemInDarkTheme()` unconditionally with no way to confirm Dark Mode
- * actually engaged (Autor-Finding 2026-07-13, A53-Gerätetest). Everything
- * else (channel selection, presets, noise settings) stays out of scope, own
+ * actually engaged (Autor-Finding 2026-07-13, A53-Gerätetest). The second
+ * setting picks the corpus entries the training screens work on (Wörter /
+ * Sätze, ADR-0009 point 4 -- a plain setting, not a preset). Everything else
+ * (channel selection, presets, noise settings) stays out of scope, own
  * backlog items. A dead end with "Zurück", same navigation pattern as the
  * other screens.
  */
@@ -32,6 +36,8 @@ import de.hexenwoche.audiolex.core.settings.ThemeMode
 fun EinstellungenScreen(
     themeMode: ThemeMode,
     onThemeModeChange: (ThemeMode) -> Unit,
+    corpusMode: CorpusMode,
+    onCorpusModeChange: (CorpusMode) -> Unit,
     onBeenden: () -> Unit,
 ) {
     Column(
@@ -46,20 +52,38 @@ fun EinstellungenScreen(
             modifier = Modifier.fillMaxWidth().selectableGroup(),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            ThemeModeOption(
+            RadioOption(
                 label = "System",
                 selected = themeMode == ThemeMode.SYSTEM,
                 onSelect = { onThemeModeChange(ThemeMode.SYSTEM) },
             )
-            ThemeModeOption(
+            RadioOption(
                 label = "Hell",
                 selected = themeMode == ThemeMode.LIGHT,
                 onSelect = { onThemeModeChange(ThemeMode.LIGHT) },
             )
-            ThemeModeOption(
+            RadioOption(
                 label = "Dunkel",
                 selected = themeMode == ThemeMode.DARK,
                 onSelect = { onThemeModeChange(ThemeMode.DARK) },
+            )
+        }
+
+        Text("Trainingsinhalt", style = MaterialTheme.typography.titleMedium)
+
+        Column(
+            modifier = Modifier.fillMaxWidth().selectableGroup(),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            RadioOption(
+                label = "Wörter",
+                selected = corpusMode == CorpusMode.WOERTER,
+                onSelect = { onCorpusModeChange(CorpusMode.WOERTER) },
+            )
+            RadioOption(
+                label = "Sätze",
+                selected = corpusMode == CorpusMode.SAETZE,
+                onSelect = { onCorpusModeChange(CorpusMode.SAETZE) },
             )
         }
 
@@ -74,7 +98,7 @@ fun EinstellungenScreen(
 // mode. RadioButton's own onClick stays null so there's exactly one click
 // handler, not two racing ones.
 @Composable
-private fun ThemeModeOption(label: String, selected: Boolean, onSelect: () -> Unit) {
+private fun RadioOption(label: String, selected: Boolean, onSelect: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()

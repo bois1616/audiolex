@@ -31,6 +31,8 @@ import de.hexenwoche.audiolex.core.corpus.EntryKind
 import de.hexenwoche.audiolex.core.corpus.Word
 import de.hexenwoche.audiolex.core.session.LearningSession
 import de.hexenwoche.audiolex.core.session.PlaybackQueue
+import de.hexenwoche.audiolex.core.settings.CorpusMode
+import de.hexenwoche.audiolex.core.settings.entryKind
 import de.hexenwoche.audiolex.generated.resources.Res
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -50,9 +52,12 @@ private sealed interface LernmodusState {
  * im Detail"). Playback goes exclusively through [PlaybackQueue] -- a direct
  * `sink.play()` call (as in [DevPlaybackScreen], which predates the queue)
  * would let a fast double-tap on "Wiederholen" overlap two playbacks.
+ *
+ * [corpusMode] selects which corpus entries the session runs on (Backlog M2
+ * Satz-Bogen Batch B, ADR-0009): words only, or sentences only.
  */
 @Composable
-fun LernmodusScreen(onBeenden: () -> Unit) {
+fun LernmodusScreen(corpusMode: CorpusMode, onBeenden: () -> Unit) {
     val scope = rememberCoroutineScope()
     val sink = remember { createAudioSink() }
     var state by remember { mutableStateOf<LernmodusState>(LernmodusState.Loading) }
@@ -71,10 +76,11 @@ fun LernmodusScreen(onBeenden: () -> Unit) {
         try {
             val wordsJson = Res.readBytes("files/corpus/words.json").decodeToString()
             val recordingsJson = Res.readBytes("files/corpus/recordings.json").decodeToString()
-            // Temporary hard filter until Batch B replaces it with the
-            // CorpusMode switch -- sentences stay out of the word session.
+            // Only entries matching the current corpus mode enter the
+            // session (Satz-Bogen Batch B, AC3) -- an empty filtered corpus
+            // falls through to the existing EmptyCorpus state below.
             val words = json.decodeFromString<List<Word>>(wordsJson)
-                .filter { it.kind == EntryKind.WORD }
+                .filter { it.kind == corpusMode.entryKind() }
             recordings = json.decodeFromString<List<AudioRecording>>(recordingsJson)
             state = if (words.isEmpty()) {
                 LernmodusState.EmptyCorpus
@@ -138,10 +144,15 @@ fun LernmodusScreen(onBeenden: () -> Unit) {
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                // Stays on one line and shrinks to fit instead of wrapping or
-                // clipping a longer word (DESIGN.md: the target word is
-                // "groß und ruhig ... positionsstabil" -- position and line
-                // count must not change, only the font size for overlength).
+                // Words keep the exact pre-Batch-B behaviour: one line,
+                // shrink-to-fit instead of wrapping or clipping (DESIGN.md:
+                // the target word is "groß und ruhig ... positionsstabil" --
+                // position and line count must not change, only the font
+                // size for overlength). Sentences may wrap up to three lines
+                // within the same stable area -- a whole sentence on one
+                // shrink-to-fit line would be illegibly small (Satz-Bogen
+                // Batch B, AC5; the shared 24sp minimum keeps both kinds
+                // grounded at the same floor).
                 // Explicitly neutral (onSurface), never the accent color --
                 // the accent is reserved for active elements (DESIGN.md).
                 val displayLarge = MaterialTheme.typography.displayLarge
@@ -152,7 +163,7 @@ fun LernmodusScreen(onBeenden: () -> Unit) {
                         color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Center,
                     ),
-                    maxLines = 1,
+                    maxLines = if (session.currentWord.kind == EntryKind.SENTENCE) 3 else 1,
                     autoSize = TextAutoSize.StepBased(
                         minFontSize = 24.sp,
                         maxFontSize = displayLarge.fontSize,

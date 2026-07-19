@@ -41,6 +41,8 @@ import de.hexenwoche.audiolex.core.persistence.allOrSeed
 import de.hexenwoche.audiolex.core.session.ExamSession
 import de.hexenwoche.audiolex.core.session.PlaybackQueue
 import de.hexenwoche.audiolex.core.session.Session
+import de.hexenwoche.audiolex.core.settings.CorpusMode
+import de.hexenwoche.audiolex.core.settings.entryKind
 import de.hexenwoche.audiolex.core.srs.FixedIntervalScheduler
 import de.hexenwoche.audiolex.core.srs.ReviewQueue
 import de.hexenwoche.audiolex.core.srs.ReviewRating
@@ -84,6 +86,7 @@ fun PruefmodusScreen(
     repository: ReviewCardRepository,
     sessionRepository: SessionRepository,
     clock: Clock,
+    corpusMode: CorpusMode,
     onBeenden: () -> Unit,
     onZumLernmodus: () -> Unit,
 ) {
@@ -143,10 +146,13 @@ fun PruefmodusScreen(
 
             val wordsJson = Res.readBytes("files/corpus/words.json").decodeToString()
             val recordingsJson = Res.readBytes("files/corpus/recordings.json").decodeToString()
-            // Temporary hard filter until Batch B replaces it with the
-            // CorpusMode switch -- no sentence SRS cards get seeded yet.
+            // Only entries matching the current corpus mode become SRS
+            // cards (Satz-Bogen Batch B, AC3) -- so sentence cards are
+            // seeded additively via allOrSeed only in SAETZE mode, and an
+            // empty filtered corpus falls through to the existing
+            // EmptyCorpus state below.
             words = json.decodeFromString<List<Word>>(wordsJson)
-                .filter { it.kind == EntryKind.WORD }
+                .filter { it.kind == corpusMode.entryKind() }
             recordings = json.decodeFromString<List<AudioRecording>>(recordingsJson)
 
             val cards = repository.allOrSeed(words.map { it.id })
@@ -227,6 +233,7 @@ fun PruefmodusScreen(
                 val word = words.firstOrNull { it.id == session.currentCard.wordId }
                 RevealCard(
                     text = word?.text,
+                    isSentence = word?.kind == EntryKind.SENTENCE,
                     revealed = session.revealed,
                     onClick = {
                         if (!session.revealed) {
@@ -320,12 +327,16 @@ fun PruefmodusScreen(
  *
  * The revealed word stays on one line and shrinks to fit (DESIGN.md: the
  * word is "groß und ruhig ... positionsstabil" -- it must not wrap or move,
- * only scale down for longer words). The "tap to reveal" hint is secondary
- * text, not the target word, so it's set smaller instead of competing with
- * it at displayLarge (DESIGN.md: secondary content recedes).
+ * only scale down for longer words). Sentences ([isSentence]) may wrap up to
+ * three lines inside the same fixed 280x160dp frame instead -- one
+ * shrink-to-fit line would be illegibly small for a whole sentence
+ * (Satz-Bogen Batch B, AC5); the 24sp autoSize minimum applies to both.
+ * The "tap to reveal" hint is secondary text, not the target word, so it's
+ * set smaller instead of competing with it at displayLarge (DESIGN.md:
+ * secondary content recedes).
  */
 @Composable
-private fun RevealCard(text: String?, revealed: Boolean, onClick: () -> Unit) {
+private fun RevealCard(text: String?, isSentence: Boolean, revealed: Boolean, onClick: () -> Unit) {
     Surface(
         modifier = Modifier.width(280.dp).height(160.dp).clickable(enabled = !revealed, onClick = onClick),
         tonalElevation = 4.dp,
@@ -346,7 +357,7 @@ private fun RevealCard(text: String?, revealed: Boolean, onClick: () -> Unit) {
                         color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Center,
                     ),
-                    maxLines = 1,
+                    maxLines = if (isSentence) 3 else 1,
                     autoSize = TextAutoSize.StepBased(
                         minFontSize = 24.sp,
                         maxFontSize = displayLarge.fontSize,

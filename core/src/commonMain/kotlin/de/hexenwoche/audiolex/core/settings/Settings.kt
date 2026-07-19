@@ -1,5 +1,6 @@
 package de.hexenwoche.audiolex.core.settings
 
+import de.hexenwoche.audiolex.core.corpus.EntryKind
 import de.hexenwoche.audiolex.core.persistence.SettingsEntity
 
 /**
@@ -12,20 +13,45 @@ import de.hexenwoche.audiolex.core.persistence.SettingsEntity
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
 /**
- * Persisted app-wide settings, Room-free like the other domain types
- * ([de.hexenwoche.audiolex.core.session.Session]) -- persistence mapping
- * happens at the boundary via [toEntity]/[toDomain]. Currently just the
- * theme; more fields are expected to land here later (see
- * [SettingsEntity]).
+ * Which corpus entries the training screens work on (Backlog M2 "Satz-Bogen
+ * Batch B", ADR-0009 point 4): a plain persisted setting, deliberately *not*
+ * a SettingsProfile/preset construct. [WOERTER] is the default so existing
+ * installs behave exactly as before the switch existed.
  */
-data class AppSettings(val themeMode: ThemeMode)
+enum class CorpusMode { WOERTER, SAETZE }
 
 /**
- * Maps the stored enum name back to [ThemeMode], not by ordinal (survives
- * reordering the enum) -- an unknown/corrupted name falls back to [ThemeMode.SYSTEM]
- * defensively instead of crashing.
+ * Persisted app-wide settings, Room-free like the other domain types
+ * ([de.hexenwoche.audiolex.core.session.Session]) -- persistence mapping
+ * happens at the boundary via [toEntity]/[toDomain]. Currently the theme and
+ * the corpus mode; more fields are expected to land here later (see
+ * [SettingsEntity]).
+ */
+data class AppSettings(
+    val themeMode: ThemeMode,
+    val corpusMode: CorpusMode = CorpusMode.WOERTER,
+)
+
+/**
+ * Maps the stored enum names back to the domain enums, not by ordinal
+ * (survives reordering the enums) -- unknown/corrupted names fall back to
+ * the defaults defensively instead of crashing.
  */
 fun SettingsEntity.toDomain(): AppSettings =
-    AppSettings(themeMode = ThemeMode.entries.firstOrNull { it.name == themeMode } ?: ThemeMode.SYSTEM)
+    AppSettings(
+        themeMode = ThemeMode.entries.firstOrNull { it.name == themeMode } ?: ThemeMode.SYSTEM,
+        corpusMode = CorpusMode.entries.firstOrNull { it.name == corpusMode } ?: CorpusMode.WOERTER,
+    )
 
-fun AppSettings.toEntity(): SettingsEntity = SettingsEntity(themeMode = themeMode.name)
+fun AppSettings.toEntity(): SettingsEntity =
+    SettingsEntity(themeMode = themeMode.name, corpusMode = corpusMode.name)
+
+/**
+ * The corpus entry kind a mode admits (Backlog M2 Satz-Bogen Batch B, AC3) --
+ * the training screens filter with this, so the mapping lives in exactly one
+ * place instead of being re-derived per screen.
+ */
+fun CorpusMode.entryKind(): EntryKind = when (this) {
+    CorpusMode.WOERTER -> EntryKind.WORD
+    CorpusMode.SAETZE -> EntryKind.SENTENCE
+}

@@ -3,6 +3,7 @@ package de.hexenwoche.audiolex.core.persistence
 import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import de.hexenwoche.audiolex.core.settings.AppSettings
+import de.hexenwoche.audiolex.core.settings.CorpusMode
 import de.hexenwoche.audiolex.core.settings.ThemeMode
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -24,6 +25,32 @@ class SettingsRepositoryTest {
     @Test
     fun loadReturnsSystemDefaultForFreshDatabase() = runTest {
         assertEquals(ThemeMode.SYSTEM, newRepository().load().themeMode)
+    }
+
+    @Test
+    fun loadReturnsWoerterDefaultForFreshDatabase() = runTest {
+        assertEquals(CorpusMode.WOERTER, newRepository().load().corpusMode)
+    }
+
+    @Test
+    fun savedCorpusModeRoundtrips() = runTest {
+        val repository = newRepository()
+
+        repository.save(AppSettings(ThemeMode.SYSTEM, CorpusMode.SAETZE))
+
+        assertEquals(CorpusMode.SAETZE, repository.load().corpusMode)
+    }
+
+    @Test
+    fun unknownStoredCorpusModeFallsBackToWoerter() = runTest {
+        val db = newDatabase()
+        db.settingsDao().upsert(SettingsEntity(themeMode = "DARK", corpusMode = "GEMISCHT"))
+
+        val loaded = newRepository(db).load()
+
+        assertEquals(CorpusMode.WOERTER, loaded.corpusMode)
+        // The corpusMode fallback must not take the other field down with it.
+        assertEquals(ThemeMode.DARK, loaded.themeMode)
     }
 
     @Test

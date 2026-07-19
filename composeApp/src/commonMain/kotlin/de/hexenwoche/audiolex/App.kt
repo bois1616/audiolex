@@ -24,6 +24,7 @@ import de.hexenwoche.audiolex.core.persistence.RoomReviewCardRepository
 import de.hexenwoche.audiolex.core.persistence.RoomSessionRepository
 import de.hexenwoche.audiolex.core.persistence.RoomSettingsRepository
 import de.hexenwoche.audiolex.core.settings.AppSettings
+import de.hexenwoche.audiolex.core.settings.CorpusMode
 import de.hexenwoche.audiolex.core.settings.ThemeMode
 import de.hexenwoche.audiolex.core.time.Clock
 import kotlinx.coroutines.launch
@@ -54,8 +55,15 @@ fun App(database: AudioLexDatabase, clock: Clock) {
     // persisted value -- a brief, one-time re-theme on a non-default setting,
     // accepted for the MVP (Architektur-Notiz Backlog M4).
     var themeMode by remember { mutableStateOf(ThemeMode.SYSTEM) }
+    // Same lazy-load pattern as themeMode: renders on the WOERTER default
+    // until the persisted value arrives, then hands it to the training
+    // screens (each visit re-enters the screen, so the filter always sees
+    // the current mode).
+    var corpusMode by remember { mutableStateOf(CorpusMode.WOERTER) }
     LaunchedEffect(Unit) {
-        themeMode = settingsRepository.load().themeMode
+        val settings = settingsRepository.load()
+        themeMode = settings.themeMode
+        corpusMode = settings.corpusMode
     }
 
     AudioLexTheme(themeMode) {
@@ -70,11 +78,15 @@ fun App(database: AudioLexDatabase, clock: Clock) {
                     onOpenSitzungshistorie = { screen = Screen.Sitzungshistorie },
                     onOpenDevKanaltest = { screen = Screen.DevKanaltest },
                 )
-                is Screen.Lernmodus -> LernmodusScreen(onBeenden = { screen = Screen.Start })
+                is Screen.Lernmodus -> LernmodusScreen(
+                    corpusMode = corpusMode,
+                    onBeenden = { screen = Screen.Start },
+                )
                 is Screen.Pruefmodus -> PruefmodusScreen(
                     repository = remember(database) { RoomReviewCardRepository(database.reviewCardDao()) },
                     sessionRepository = remember(database) { RoomSessionRepository(database.sessionDao()) },
                     clock = clock,
+                    corpusMode = corpusMode,
                     onBeenden = { screen = Screen.Start },
                     onZumLernmodus = { screen = Screen.Lernmodus },
                 )
@@ -82,7 +94,12 @@ fun App(database: AudioLexDatabase, clock: Clock) {
                     themeMode = themeMode,
                     onThemeModeChange = { newMode ->
                         themeMode = newMode
-                        scope.launch { settingsRepository.save(AppSettings(newMode)) }
+                        scope.launch { settingsRepository.save(AppSettings(newMode, corpusMode)) }
+                    },
+                    corpusMode = corpusMode,
+                    onCorpusModeChange = { newMode ->
+                        corpusMode = newMode
+                        scope.launch { settingsRepository.save(AppSettings(themeMode, newMode)) }
                     },
                     onBeenden = { screen = Screen.Start },
                 )
