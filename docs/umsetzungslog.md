@@ -1,5 +1,15 @@
 # Umsetzungs-Log (Neueste Einträge zuerst)
 
+## 2026-07-19 (A53-Gerätetest v0.8.0 abgenommen — zwei Findings ins Backlog aufgenommen, bewusst nicht umgesetzt)
+
+- **Autor hat v0.8.0 auf dem A53 installiert und durchgetestet: funktioniert.** Damit sind die beiden offenen Abnahmen des Satz-Bogens erledigt: die Gerätetest-Checkliste von Batch B (AC6 — Schalter „Trainingsinhalt", Lernen **und** Prüfen von Sätzen, Einstellungen) und die Hörprobe der Satz-TTS von Batch A (AC3 — Lernmodus-Sätze wurden im Test gehört und für gut befunden). Die destruktive DB-Migration v3→v4 lief im Update ohne Auffälligkeit durch (Karten-DB startete leer, Seeding beim ersten Prüfmodus-Start griff).
+
+- **Zwei Findings aufgenommen (Autor-Anweisung: nur aufnehmen, nicht umsetzen — Kontingent):**
+  1. **Prüfmodus-`RevealCard`: Zeilenabstand zu groß, Satz nicht vollständig in der Kachel** → neues P1-Bug-Item `[→Sonnet]` in M2, direkt mit Root-Cause-Verdacht qualifiziert (`autoSize` skaliert nur die Schriftgröße, nicht die `lineHeight` des `displayLarge`-Stils: 3 Zeilen × 64 sp ≈ 192 sp > 160 dp Kartenhöhe) und AC1–AC3/Nicht-Zielen. Lernmodus-Zieltext ist beim Fix mitzuprüfen (gleiche Stil-Logik).
+  2. **„App beenden"-Schaltfläche auf dem Start-Screen** (neue Anforderung) → P2-Item `[→Opus→Sonnet]` in M2 mit den zu klärenden Punkten (Beenden-Semantik `finish()`/`finishAndRemoveTask()`/`moveTaskToBack()`, dezente Gestaltung nach DESIGN.md, kein Bestätigungs-Dialog nötig?).
+
+- Kein Produktionscode geändert, kein Versions-Bump (bleibt v0.8.0) — reine Backlog-/Journal-Pflege.
+
 ## 2026-07-19 — v0.8.0 (Satz-Bogen Batch B: Korpus-Modus-Schalter Wörter/Sätze + Filterung + mehrzeilige Satz-Anzeige)
 
 - **Umsetzung des geschärften Batch B (ADR-0009 Punkt 4, AC1–AC6), delegiert an Sonnet.** Was: die Wahl Wörter/Sätze ist jetzt eine persistierte App-Einstellung, beide Trainingsscreens arbeiten modus-abhängig auf dem jeweiligen Eintrags-Subset, und Sätze werden lesbar mehrzeilig angezeigt — Wörter verhalten sich exakt wie bisher. Der temporäre Hard-Filter aus Batch A ist damit ersetzt.
