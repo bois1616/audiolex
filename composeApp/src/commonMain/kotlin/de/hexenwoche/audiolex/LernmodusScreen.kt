@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import de.hexenwoche.audiolex.core.audio.WavFile
 import de.hexenwoche.audiolex.core.audio.createAudioSink
@@ -156,14 +157,31 @@ fun LernmodusScreen(corpusMode: CorpusMode, onBeenden: () -> Unit) {
                 // Explicitly neutral (onSurface), never the accent color --
                 // the accent is reserved for active elements (DESIGN.md).
                 val displayLarge = MaterialTheme.typography.displayLarge
+                val isSentence = session.currentWord.kind == EntryKind.SENTENCE
+                // Sentences get a relative `1.2.em` lineHeight instead of
+                // displayLarge's fixed 64sp default -- autoSize only ever
+                // rescales fontSize per trial layout, never lineHeight, so a
+                // fixed sp value would stay at 64sp even once the font
+                // shrinks to fit and could still overflow the frame (same
+                // RevealCard fix, Prüfmodus-Bug 2026-07-19, AC2). Words are
+                // untouched -- exact pre-existing style, single line.
+                val textStyle = if (isSentence) {
+                    displayLarge.copy(
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 1.2.em,
+                    )
+                } else {
+                    displayLarge.copy(
+                        color = MaterialTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center,
+                    )
+                }
                 BasicText(
                     text = session.currentWord.text,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                    style = displayLarge.copy(
-                        color = MaterialTheme.colorScheme.onSurface,
-                        textAlign = TextAlign.Center,
-                    ),
-                    maxLines = if (session.currentWord.kind == EntryKind.SENTENCE) 3 else 1,
+                    style = textStyle,
+                    maxLines = if (isSentence) 3 else 1,
                     autoSize = TextAutoSize.StepBased(
                         minFontSize = 24.sp,
                         maxFontSize = displayLarge.fontSize,

@@ -13,5 +13,5 @@ package de.hexenwoche.audiolex
  * VERSION_CODE +1 (Android requires it to increase monotonically). Patch
  * (0.5.1) stays reserved for hotfixes.
  */
-const val VERSION_NAME = "0.8.0"
-const val VERSION_CODE = 8
+const val VERSION_NAME = "0.9.0"
+const val VERSION_CODE = 9
