@@ -1,5 +1,25 @@
 # Umsetzungs-Log (Neueste Einträge zuerst)
 
+## 2026-07-19 (Opus: sechs Backlog-Items geschärft/geplant + ADR-0010 — reine Qualifizierung, kein Produktionscode)
+
+- **Stand aufgenommen und die vom Autor benannten M2/M4-Items für die Sonnet-Umsetzung vorbereitet.** Vorgehen: erst der echte Code (`LernmodusScreen.kt`, `PruefmodusScreen.kt`/`RevealCard`, `EinstellungenScreen.kt`, `App.kt`, `main.kt`/`MainActivity.kt`, `Mixer.kt`, `PcmBuffer.kt`, `AudioSink.android.kt`, `Settings.kt`, `AppVersion.kt`) und die Steuerdokumente gelesen; drei Autor-Entscheide abgefragt, dann die Items gegen den Code geschärft. Kein Build, kein Versions-Bump (die Items tragen ihre eigenen Bump-ACs).
+
+- **Autor-Entscheide (2026-07-19, zur Schärfung abgefragt):** (1) Lernmodus-Zieltext bekommt einen **festen Kartenrahmen** analog `RevealCard` (nicht freistehend). (2) Störgeräusch aus **freier Quelle** (frei lizenziert, lokal beschafft/konvertiert wie die Korpus-WAVs), nicht im Code erzeugt. (3) SNR-Regler in den **Einstellungen**, Störgeräusch wirkt in **beiden** Trainingsmodi.
+
+- **M2 — drei Items:**
+  - **RevealCard mehrzeiliger Satz (P1 Bug):** war bereits Sonnet-reif (`autoSize` skaliert nur die Schriftgröße, nicht die `lineHeight` des `displayLarge`-Stils) — nur um einen Reihenfolge-Hinweis ergänzt (vor der Lernmodus-Karte umsetzen, gemeinsame Anzeigefläche). Direkt an Sonnet übergebbar, Version → 0.9.0.
+  - **Lernmodus-Karte (P2):** von `[→Opus]` (offene Design-Frage) zu `[→Sonnet]` geschärft — fester `Surface` (280×160 dp, `tonalElevation = 4.dp`) analog `RevealCard`, empfohlene Extraktion einer gemeinsamen Anzeigefläche, AC1–AC4 + Nicht-Ziele. Reihenfolge: nach dem Zeilenabstand-Bug.
+  - **„App beenden" (P2):** von `[→Opus→Sonnet]` zu `[→Sonnet]` — Architektur ohne expect/actual (`onExitApp: () -> Unit`-Callback durch `App()`, Desktop `::exitApplication`, Android `finishAndRemoveTask()`), dezenter `TextButton`, kein Dialog. AC1–AC4 + Nicht-Ziele.
+
+- **M4 — Störgeräusch-Bogen:**
+  - **KLÄRUNG Störgeräusch-Quelle** abgehakt (Autor-Entscheid: freie Quelle, Lizenz im `files/noise/README.md`).
+  - **SNR-Overlay (P2):** von `[→Opus→Sonnet]` zu `[→Sonnet]` — Mischung im gemeinsamen Producer (nach Decode, vor Sink), `noiseEnabled`/`snrDb` als persistiertes Setting (DB v4→5), `Switch`+`Slider` in den Einstellungen, defensiver `PcmBuffer.toMono()` + Sample-Rate-Guard, Noise-Loop gitignored wie der Korpus. AC1–AC7 + Nicht-Ziele; Architektur als **ADR-0010** festgehalten.
+  - **Szenario-Presets (P1):** bewusst **nicht** geschärft — die Haupt-Stellschrauben eines Presets sind die Noise/SNR-Settings, die es erst nach dem Overlay gibt (sonst „Batch B ohne Batch A = totes UI"). Bleibt `[→Opus→Sonnet]`, mit dokumentierter Reihenfolge (nach dem Overlay) und empfohlener Gestalt (`SettingsProfile` schreibt die atomaren Settings, diese bleiben Quelle der Wahrheit).
+
+- **Störgeräusch-Assets bereitgestellt (Autor lieferte drei frei lizenzierte Loops).** Quellen salamisound.de/pixabay.com; nach `composeApp/.../composeResources/files/noise/` konvertiert (mono 22050 Hz PCM16, je 20 s getrimmt, gitignored wie der Korpus), `noise.json` (Szenario-Metadaten) + `README.md` (Herkunft/Lizenz/ffmpeg) angelegt, `.gitignore` um die Autor-Quellbibliothek `resources/sounds/` und `files/noise/*.wav` erweitert. Batch 4 dadurch von „ein Szenario" auf **drei mit Auswahl** geschärft (`noiseScenario`-Setting + Szenario-Radio-Gruppe in den Einstellungen); ADR-0010 (Punkt 2 + Konsequenzen) entsprechend präzisiert: `resources/sounds/` ist Build-Zeit-Quellbibliothek, nicht der Laufzeit-Ressourcenpfad, und abzugrenzen von späteren in-App eingesprochenen Aufnahmen (device-lokal, eigenes `[→Opus]`-Item).
+
+- **Empfohlene Umsetzungsreihenfolge für Sonnet:** RevealCard-Zeilenabstand (P1) → Lernmodus-Karte (P2) → App beenden (P2) → SNR-Overlay (P2) → dann Presets schärfen (Opus) → umsetzen. Jeder Schritt ein eigener Batch mit Minor-Bump (DoD §6).
+
 ## 2026-07-19 (A53-Gerätetest v0.8.0 abgenommen — zwei Findings ins Backlog aufgenommen, bewusst nicht umgesetzt)
 
 - **Autor hat v0.8.0 auf dem A53 installiert und durchgetestet: funktioniert.** Damit sind die beiden offenen Abnahmen des Satz-Bogens erledigt: die Gerätetest-Checkliste von Batch B (AC6 — Schalter „Trainingsinhalt", Lernen **und** Prüfen von Sätzen, Einstellungen) und die Hörprobe der Satz-TTS von Batch A (AC3 — Lernmodus-Sätze wurden im Test gehört und für gut befunden). Die destruktive DB-Migration v3→v4 lief im Update ohne Auffälligkeit durch (Karten-DB startete leer, Seeding beim ersten Prüfmodus-Start griff).
