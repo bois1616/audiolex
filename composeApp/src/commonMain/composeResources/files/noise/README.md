@@ -14,11 +14,17 @@ Nutzungskontext: privat, nicht-kommerziell (wie der Korpus). Die Quell-MP3s lieg
 
 ## Format & Konvertierung
 
-Die App decodiert nur PCM16-WAV und der Mixer (`mixWithNoise`) verlangt dieselbe Sample-Rate und Kanalzahl wie das Speech-Signal (Piper: **mono, 22050 Hz**). Die WAVs werden daher aus den (stereo, 44,1/48 kHz) MP3-Quellen so erzeugt — auf 20 s getrimmt, weil bei der Per-Wort-Mischung ohnehin nie mehr genutzt wird und das APK-Bundle klein bleibt:
+Die App decodiert nur PCM16-WAV und der Mixer (`mixWithNoise`) verlangt dieselbe Sample-Rate und Kanalzahl wie das Speech-Signal (Piper: **mono, 22050 Hz**). Die WAVs werden aus den (stereo, 44,1/48 kHz) MP3-Quellen als **kurze (~8 s), gleichmäßig laute Loops aus einem stetigen Abschnitt** erzeugt und auf einheitliche Lautheit normalisiert (`loudnorm`).
+
+**Warum so (A53-Befund 2026-07-19):** Bei der Per-Wort-Mischung wird immer nur der **Loop-Anfang** gehört (jedes Wort startet das Rauschen bei Sample 0, ein Wort dauert ~1–3 s), und die SNR-Verstärkung wird über die RMS des **ganzen** Loops berechnet. Ein leiser Intro-Abschnitt (die frühere 20-s-Fassung des Verkehrs-Loops war am Anfang ~10 dB leiser als im Schnitt) war dadurch effektiv fast unhörbar. Ein kurzer, stetiger, normalisierter Abschnitt macht Anfang ≈ Schnitt, sodass das Gehörte den eingestellten SNR trifft; 8 s > längster Satz verhindert einen Wrap-Klick beim Loopen.
 
 ```bash
-ffmpeg -y -i resources/sounds/<quelle>.mp3 -t 20 -ac 1 -ar 22050 -c:a pcm_s16le \
+# <start> = Sekunden-Offset in einen stetigen Abschnitt (Intro/leise Stellen überspringen)
+ffmpeg -y -ss <start> -t 8 -i resources/sounds/<quelle>.mp3 -ac 1 -ar 22050 \
+  -af loudnorm=I=-20:TP=-2:LRA=11 -c:a pcm_s16le \
   composeApp/src/commonMain/composeResources/files/noise/<id>.wav
 ```
 
-Neues Szenario: MP3/WAV nach `resources/sounds/` legen, wie oben nach `files/noise/<id>.wav` konvertieren und einen Eintrag in `noise.json` (`id`, `label`, `fileRef`, `source`, `license`) ergänzen.
+Aktueller Bestand (`<start>`-Offsets): verkehr 30 s, strassenbahn 6 s, restaurant 12 s.
+
+Neues Szenario: MP3/WAV nach `resources/sounds/` legen, wie oben (stetigen `<start>` wählen) nach `files/noise/<id>.wav` konvertieren und einen Eintrag in `noise.json` (`id`, `label`, `fileRef`, `source`, `license`) ergänzen.

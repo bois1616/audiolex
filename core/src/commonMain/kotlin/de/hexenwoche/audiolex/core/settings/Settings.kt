@@ -23,7 +23,7 @@ enum class CorpusMode { WOERTER, SAETZE }
 /** Valid SNR slider range in dB (Backlog M4 AC4); a stored value outside this falls back to [DEFAULT_SNR_DB]. */
 const val SNR_DB_MIN = -5
 const val SNR_DB_MAX = 20
-private const val DEFAULT_SNR_DB = 10
+private const val DEFAULT_SNR_DB = 5
 private const val DEFAULT_NOISE_SCENARIO = "restaurant"
 
 /**

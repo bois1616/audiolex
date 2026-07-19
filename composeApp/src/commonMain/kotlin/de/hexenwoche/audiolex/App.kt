@@ -64,7 +64,7 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit) {
     // Noise overlay (Backlog M4 "Störgeräusch-Overlay", ADR-0010): shared by
     // both training modes, same lazy-load pattern as themeMode/corpusMode.
     var noiseEnabled by remember { mutableStateOf(false) }
-    var snrDb by remember { mutableStateOf(10) }
+    var snrDb by remember { mutableStateOf(5) }
     var noiseScenario by remember { mutableStateOf("restaurant") }
     LaunchedEffect(Unit) {
         val settings = settingsRepository.load()

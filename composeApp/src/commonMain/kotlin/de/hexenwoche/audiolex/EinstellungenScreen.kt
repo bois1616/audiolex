@@ -6,8 +6,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
@@ -45,6 +47,13 @@ import kotlin.math.roundToInt
  * Everything else (channel selection, presets) stays out of scope, own
  * backlog items. A dead end with "Zurück", same navigation pattern as the
  * other screens.
+ *
+ * Title and "Zurück" stay pinned; only the settings content between them
+ * scrolls (same `Modifier.weight(1f).verticalScroll(rememberScrollState())`
+ * pattern as `SitzungshistorieScreen`). With the noise section visible
+ * (switch + slider + scenario radio group) the non-scrollable column used to
+ * overflow the A53 screen height and push "Zurück" out of view -- a dead end
+ * (A53-Befund 2026-07-19).
  */
 @Composable
 fun EinstellungenScreen(
@@ -68,87 +77,100 @@ fun EinstellungenScreen(
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = Modifier.fillMaxSize().padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text("Einstellungen", style = MaterialTheme.typography.headlineLarge)
-        Text("Erscheinungsbild", style = MaterialTheme.typography.titleMedium)
 
+        // Only this middle section scrolls -- title above and "Zurück" below
+        // stay pinned, so the noise section (switch + slider + scenario
+        // radios) can never push "Zurück" out of view again.
         Column(
-            modifier = Modifier.fillMaxWidth().selectableGroup(),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            RadioOption(
-                label = "System",
-                selected = themeMode == ThemeMode.SYSTEM,
-                onSelect = { onThemeModeChange(ThemeMode.SYSTEM) },
-            )
-            RadioOption(
-                label = "Hell",
-                selected = themeMode == ThemeMode.LIGHT,
-                onSelect = { onThemeModeChange(ThemeMode.LIGHT) },
-            )
-            RadioOption(
-                label = "Dunkel",
-                selected = themeMode == ThemeMode.DARK,
-                onSelect = { onThemeModeChange(ThemeMode.DARK) },
-            )
-        }
-
-        Text("Trainingsinhalt", style = MaterialTheme.typography.titleMedium)
-
-        Column(
-            modifier = Modifier.fillMaxWidth().selectableGroup(),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            RadioOption(
-                label = "Wörter",
-                selected = corpusMode == CorpusMode.WOERTER,
-                onSelect = { onCorpusModeChange(CorpusMode.WOERTER) },
-            )
-            RadioOption(
-                label = "Sätze",
-                selected = corpusMode == CorpusMode.SAETZE,
-                onSelect = { onCorpusModeChange(CorpusMode.SAETZE) },
-            )
-        }
-
-        Text("Störgeräusch", style = MaterialTheme.typography.titleMedium)
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Switch(checked = noiseEnabled, onCheckedChange = onNoiseEnabledChange)
-            Text("Ein/Aus", style = MaterialTheme.typography.bodyLarge)
-        }
-
-        if (noiseEnabled) {
-            val snrLabel = if (snrDb >= 0) "SNR: +$snrDb dB" else "SNR: $snrDb dB"
-            Text(snrLabel, style = MaterialTheme.typography.bodyLarge)
-            Slider(
-                value = snrDb.toFloat(),
-                onValueChange = { onSnrDbChange(it.roundToInt()) },
-                valueRange = SNR_DB_MIN.toFloat()..SNR_DB_MAX.toFloat(),
-                // 26 integer values (-5..20 inclusive); `steps` excludes the
-                // two endpoints, so 26 - 2 = 24.
-                steps = SNR_DB_MAX - SNR_DB_MIN - 1,
-            )
-
-            Text("Szenario", style = MaterialTheme.typography.titleMedium)
+            Text("Erscheinungsbild", style = MaterialTheme.typography.titleMedium)
 
             Column(
                 modifier = Modifier.fillMaxWidth().selectableGroup(),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
-                for (scenario in scenarios) {
-                    RadioOption(
-                        label = scenario.label,
-                        selected = noiseScenario == scenario.id,
-                        onSelect = { onNoiseScenarioChange(scenario.id) },
-                    )
+                RadioOption(
+                    label = "System",
+                    selected = themeMode == ThemeMode.SYSTEM,
+                    onSelect = { onThemeModeChange(ThemeMode.SYSTEM) },
+                )
+                RadioOption(
+                    label = "Hell",
+                    selected = themeMode == ThemeMode.LIGHT,
+                    onSelect = { onThemeModeChange(ThemeMode.LIGHT) },
+                )
+                RadioOption(
+                    label = "Dunkel",
+                    selected = themeMode == ThemeMode.DARK,
+                    onSelect = { onThemeModeChange(ThemeMode.DARK) },
+                )
+            }
+
+            Text("Trainingsinhalt", style = MaterialTheme.typography.titleMedium)
+
+            Column(
+                modifier = Modifier.fillMaxWidth().selectableGroup(),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                RadioOption(
+                    label = "Wörter",
+                    selected = corpusMode == CorpusMode.WOERTER,
+                    onSelect = { onCorpusModeChange(CorpusMode.WOERTER) },
+                )
+                RadioOption(
+                    label = "Sätze",
+                    selected = corpusMode == CorpusMode.SAETZE,
+                    onSelect = { onCorpusModeChange(CorpusMode.SAETZE) },
+                )
+            }
+
+            Text("Störgeräusch", style = MaterialTheme.typography.titleMedium)
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Switch(checked = noiseEnabled, onCheckedChange = onNoiseEnabledChange)
+                Text("Ein/Aus", style = MaterialTheme.typography.bodyLarge)
+            }
+
+            if (noiseEnabled) {
+                val snrLabel = if (snrDb >= 0) "SNR: +$snrDb dB" else "SNR: $snrDb dB"
+                Text(snrLabel, style = MaterialTheme.typography.bodyLarge)
+                Slider(
+                    value = snrDb.toFloat(),
+                    onValueChange = { onSnrDbChange(it.roundToInt()) },
+                    valueRange = SNR_DB_MIN.toFloat()..SNR_DB_MAX.toFloat(),
+                    // 26 integer values (-5..20 inclusive); `steps` excludes the
+                    // two endpoints, so 26 - 2 = 24.
+                    steps = SNR_DB_MAX - SNR_DB_MIN - 1,
+                )
+
+                Text("Szenario", style = MaterialTheme.typography.titleMedium)
+
+                Column(
+                    modifier = Modifier.fillMaxWidth().selectableGroup(),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    for (scenario in scenarios) {
+                        RadioOption(
+                            label = scenario.label,
+                            selected = noiseScenario == scenario.id,
+                            onSelect = { onNoiseScenarioChange(scenario.id) },
+                        )
+                    }
                 }
             }
         }
@@ -169,7 +191,7 @@ private fun RadioOption(label: String, selected: Boolean, onSelect: () -> Unit) 
         modifier = Modifier
             .fillMaxWidth()
             .selectable(selected = selected, onClick = onSelect, role = Role.RadioButton)
-            .padding(vertical = 8.dp),
+            .padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {

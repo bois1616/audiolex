@@ -35,7 +35,7 @@ AudioLex ist eine Hörtrainings-App (Android zuerst, iOS-Option offen) zum Wiede
 3. Sichtbares/hörbares Verhalten am Desktop-Target verifiziert (`./gradlew :composeApp:run`); Audio- und Gerätethemen zusätzlich auf dem Testgerät (Galaxy A53, Android 16).
 4. Backlog-Item abgehakt mit kurzem `Hinweis:` zum Ergebnis.
 5. Eintrag in `docs/umsetzungslog.md` (neueste zuerst; Datum, fetter Titel, was + warum + wie verifiziert).
-6. **Version hochgezählt (je Batch, seit 2026-07-13):** `VERSION_NAME` in `composeApp/.../AppVersion.kt` eine Minor-Stufe (z. B. `0.5.0` → `0.6.0`), `VERSION_CODE` +1. Patch (`0.5.1`) bleibt Hotfixes vorbehalten. Diese Datei ist die Single Source of Truth — der Gradle-`versionName`/`versionCode` und die StartScreen-Anzeige lesen daraus, nirgends doppelt pflegen. Die neue Version im Umsetzungslog-Eintrag und in der Commit-Message nennen, damit klar ist, welche Version ein Gerätetest prüft.
+6. **Version hochgezählt (je Batch, seit 2026-07-13):** `VERSION_NAME` in `composeApp/.../AppVersion.kt` eine Minor-Stufe (z. B. `0.5.0` → `0.6.0`), `VERSION_CODE` +1. Patch (`0.5.1`) bleibt Hotfixes vorbehalten. Diese Datei ist die Single Source of Truth — der Gradle-`versionName`/`versionCode` und die StartScreen-Anzeige lesen daraus, nirgends doppelt pflegen. Die neue Version im Umsetzungslog-Eintrag und in der Commit-Message nennen, damit klar ist, welche Version ein Gerätetest prüft. **Bündeln (seit 2026-07-19):** Ein Batch darf mehrere zusammenhängende Items in **eine** Version/Commit bündeln — Richtschnur ist „eine Version je *kohärenter* Änderung", nicht zwingend eine je Item. Verwandtes (gleiches Subsystem, oder ein Schwung Gerätetest-Findings) läuft dann in einer Umsetzung; nur eigenständige Brocken (z. B. ein Audio-Feature vs. ein UI-Fix) bekommen eigene Versionen.
 7. Commit mit prägnanter deutscher Message.
 
 ## 5) Konventionen
@@ -52,6 +52,7 @@ AudioLex ist eine Hörtrainings-App (Android zuerst, iOS-Option offen) zum Wiede
 - **Opus-Klasse**: Architektur, mehrdeutige Designfragen, ADR-Entwürfe, Prozess-Reflexion, Backlog-Schärfung.
 - **Sonnet-Klasse**: klar spezifizierte Implementierung, Tests, Refactoring.
 - **Je offenem Backlog-Item als Tag vermerkt**: `[→Sonnet]`, `[→Opus]` oder `[→Opus→Sonnet]` (erst schärfen, dann umsetzen); Items ohne Tag brauchen den Autor. Entscheidend ist der Spezifikationsgrad, nicht die Item-Größe: ein Item ohne Akzeptanzkriterien und Nicht-Ziele ist nie Sonnet-reif — Sonnet-Sessions setzen nur `[→Sonnet]`-Items um und schärfen nicht selbst nach.
+- **Effizienz bei mehreren `[→Sonnet]`-Items:** eine zusammenhängende Kette in **einer** Agent-Session abarbeiten (Kontext einmal lesen statt je Item kalt neu), pro Commit nur die DoD-Mindest-Tasks bauen (`:core:jvmTest` + `:composeApp:assembleDebug`), den vollen `./gradlew build` einmal am Ende. Kein voller Rebuild + kalter Agent-Neustart je Kleinst-Item. (Hintergrund-Agenten sind in dieser Umgebung unzuverlässig durchgelaufen — synchron delegieren.)
 
 ## 7) Umgebung
 

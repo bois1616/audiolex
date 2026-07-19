@@ -28,7 +28,7 @@ data class SettingsEntity(
     val themeMode: String,
     val corpusMode: String = "WOERTER",
     val noiseEnabled: Boolean = false,
-    val snrDb: Int = 10,
+    val snrDb: Int = 5,
     val noiseScenario: String = "restaurant",
 )
 

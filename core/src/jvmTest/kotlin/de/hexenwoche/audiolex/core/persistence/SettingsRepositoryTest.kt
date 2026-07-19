@@ -90,7 +90,7 @@ class SettingsRepositoryTest {
         val loaded = newRepository().load()
 
         assertEquals(false, loaded.noiseEnabled)
-        assertEquals(10, loaded.snrDb)
+        assertEquals(5, loaded.snrDb)
         assertEquals("restaurant", loaded.noiseScenario)
     }
 
@@ -107,13 +107,13 @@ class SettingsRepositoryTest {
     }
 
     @Test
-    fun outOfRangeStoredSnrDbFallsBackToTenDb() = runTest {
+    fun outOfRangeStoredSnrDbFallsBackToFiveDb() = runTest {
         val db = newDatabase()
         db.settingsDao().upsert(SettingsEntity(themeMode = "SYSTEM", snrDb = 999))
 
         val loaded = newRepository(db).load()
 
-        assertEquals(10, loaded.snrDb)
+        assertEquals(5, loaded.snrDb)
         // The snrDb fallback must not take the other fields down with it.
         assertEquals(ThemeMode.SYSTEM, loaded.themeMode)
     }
