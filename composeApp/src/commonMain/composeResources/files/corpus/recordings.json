@@ -194,5 +194,285 @@
     "voiceId": "thorsten",
     "locale": "de-DE",
     "fileRef": "raw/de-DE/satz-abriss__thorsten.wav"
+  },
+  {
+    "id": "nase__thorsten",
+    "wordId": "nase",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/nase__thorsten.wav"
+  },
+  {
+    "id": "hase__thorsten",
+    "wordId": "hase",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/hase__thorsten.wav"
+  },
+  {
+    "id": "kanne__thorsten",
+    "wordId": "kanne",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/kanne__thorsten.wav"
+  },
+  {
+    "id": "tanne__thorsten",
+    "wordId": "tanne",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/tanne__thorsten.wav"
+  },
+  {
+    "id": "apfel__thorsten",
+    "wordId": "apfel",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/apfel__thorsten.wav"
+  },
+  {
+    "id": "blume__thorsten",
+    "wordId": "blume",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/blume__thorsten.wav"
+  },
+  {
+    "id": "vogel__thorsten",
+    "wordId": "vogel",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/vogel__thorsten.wav"
+  },
+  {
+    "id": "wolke__thorsten",
+    "wordId": "wolke",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/wolke__thorsten.wav"
+  },
+  {
+    "id": "kerze__thorsten",
+    "wordId": "kerze",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/kerze__thorsten.wav"
+  },
+  {
+    "id": "leiter__thorsten",
+    "wordId": "leiter",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/leiter__thorsten.wav"
+  },
+  {
+    "id": "loeffel__thorsten",
+    "wordId": "loeffel",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/loeffel__thorsten.wav"
+  },
+  {
+    "id": "teller__thorsten",
+    "wordId": "teller",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/teller__thorsten.wav"
+  },
+  {
+    "id": "kissen__thorsten",
+    "wordId": "kissen",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/kissen__thorsten.wav"
+  },
+  {
+    "id": "bruecke__thorsten",
+    "wordId": "bruecke",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/bruecke__thorsten.wav"
+  },
+  {
+    "id": "fahrrad__thorsten",
+    "wordId": "fahrrad",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/fahrrad__thorsten.wav"
+  },
+  {
+    "id": "kuehlschrank__thorsten",
+    "wordId": "kuehlschrank",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/kuehlschrank__thorsten.wav"
+  },
+  {
+    "id": "banane__thorsten",
+    "wordId": "banane",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/banane__thorsten.wav"
+  },
+  {
+    "id": "tomate__thorsten",
+    "wordId": "tomate",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/tomate__thorsten.wav"
+  },
+  {
+    "id": "kartoffel__thorsten",
+    "wordId": "kartoffel",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/kartoffel__thorsten.wav"
+  },
+  {
+    "id": "zitrone__thorsten",
+    "wordId": "zitrone",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/zitrone__thorsten.wav"
+  },
+  {
+    "id": "ameise__thorsten",
+    "wordId": "ameise",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/ameise__thorsten.wav"
+  },
+  {
+    "id": "elefant__thorsten",
+    "wordId": "elefant",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/elefant__thorsten.wav"
+  },
+  {
+    "id": "krokodil__thorsten",
+    "wordId": "krokodil",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/krokodil__thorsten.wav"
+  },
+  {
+    "id": "pinguin__thorsten",
+    "wordId": "pinguin",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/pinguin__thorsten.wav"
+  },
+  {
+    "id": "feuerwehr__thorsten",
+    "wordId": "feuerwehr",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/feuerwehr__thorsten.wav"
+  },
+  {
+    "id": "kokosnuss__thorsten",
+    "wordId": "kokosnuss",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/kokosnuss__thorsten.wav"
+  },
+  {
+    "id": "schokolade__thorsten",
+    "wordId": "schokolade",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/schokolade__thorsten.wav"
+  },
+  {
+    "id": "marmelade__thorsten",
+    "wordId": "marmelade",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/marmelade__thorsten.wav"
+  },
+  {
+    "id": "regenbogen__thorsten",
+    "wordId": "regenbogen",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/regenbogen__thorsten.wav"
+  },
+  {
+    "id": "sonnenblume__thorsten",
+    "wordId": "sonnenblume",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/sonnenblume__thorsten.wav"
+  },
+  {
+    "id": "satz-kuchen__thorsten",
+    "wordId": "satz-kuchen",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/satz-kuchen__thorsten.wav"
+  },
+  {
+    "id": "satz-garten__thorsten",
+    "wordId": "satz-garten",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/satz-garten__thorsten.wav"
+  },
+  {
+    "id": "satz-sonne__thorsten",
+    "wordId": "satz-sonne",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/satz-sonne__thorsten.wav"
+  },
+  {
+    "id": "satz-fahrrad__thorsten",
+    "wordId": "satz-fahrrad",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/satz-fahrrad__thorsten.wav"
+  },
+  {
+    "id": "satz-blumen__thorsten",
+    "wordId": "satz-blumen",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/satz-blumen__thorsten.wav"
+  },
+  {
+    "id": "satz-zeitung__thorsten",
+    "wordId": "satz-zeitung",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/satz-zeitung__thorsten.wav"
+  },
+  {
+    "id": "satz-schlitten__thorsten",
+    "wordId": "satz-schlitten",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/satz-schlitten__thorsten.wav"
+  },
+  {
+    "id": "satz-katze__thorsten",
+    "wordId": "satz-katze",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/satz-katze__thorsten.wav"
+  },
+  {
+    "id": "satz-fruehstueck__thorsten",
+    "wordId": "satz-fruehstueck",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/satz-fruehstueck__thorsten.wav"
+  },
+  {
+    "id": "satz-zug__thorsten",
+    "wordId": "satz-zug",
+    "voiceId": "thorsten",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/satz-zug__thorsten.wav"
   }
 ]
