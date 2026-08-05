@@ -25,7 +25,6 @@ import de.hexenwoche.audiolex.core.persistence.RoomReviewCardRepository
 import de.hexenwoche.audiolex.core.persistence.RoomSessionRepository
 import de.hexenwoche.audiolex.core.persistence.RoomSettingsRepository
 import de.hexenwoche.audiolex.core.settings.AppSettings
-import de.hexenwoche.audiolex.core.settings.CorpusMode
 import de.hexenwoche.audiolex.core.settings.ThemeMode
 import de.hexenwoche.audiolex.core.time.Clock
 import kotlinx.coroutines.launch
@@ -52,30 +51,28 @@ private sealed interface Screen {
 fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit) {
     val scope = rememberCoroutineScope()
     val settingsRepository = remember(database) { RoomSettingsRepository(database.settingsDao()) }
-    // Renders in the SYSTEM default until the LaunchedEffect below loads the
-    // persisted value -- a brief, one-time re-theme on a non-default setting,
-    // accepted for the MVP (Architektur-Notiz Backlog M4).
-    var themeMode by remember { mutableStateOf(ThemeMode.SYSTEM) }
-    // Same lazy-load pattern as themeMode: renders on the WOERTER default
-    // until the persisted value arrives, then hands it to the training
-    // screens (each visit re-enters the screen, so the filter always sees
-    // the current mode).
-    var corpusMode by remember { mutableStateOf(CorpusMode.WOERTER) }
-    // Noise overlay (Backlog M4 "Störgeräusch-Overlay", ADR-0010): shared by
-    // both training modes, same lazy-load pattern as themeMode/corpusMode.
-    var noiseEnabled by remember { mutableStateOf(false) }
-    var snrDb by remember { mutableStateOf(5) }
-    var noiseScenario by remember { mutableStateOf("restaurant") }
+    // One state object for all persisted settings (Backlog "Code-Qualität":
+    // five separate states + five near-identical save blocks used to mean
+    // every new field had to be maintained in 6+ places). Renders on the
+    // defaults until the LaunchedEffect below loads the persisted values --
+    // a brief, one-time re-theme on a non-default setting, accepted for the
+    // MVP (Architektur-Notiz Backlog M4).
+    var settings by remember { mutableStateOf(AppSettings(ThemeMode.SYSTEM)) }
     LaunchedEffect(Unit) {
-        val settings = settingsRepository.load()
-        themeMode = settings.themeMode
-        corpusMode = settings.corpusMode
-        noiseEnabled = settings.noiseEnabled
-        snrDb = settings.snrDb
-        noiseScenario = settings.noiseScenario
+        settings = settingsRepository.load()
     }
 
-    AudioLexTheme(themeMode) {
+    // Immediate state update + a single async persist, the only save path
+    // for every change handler -- the old per-field handlers each rebuilt a
+    // full AppSettings(...) from the individual states, so a forgotten
+    // field would have been silently reset to its default.
+    fun updateSettings(transform: (AppSettings) -> AppSettings) {
+        val updated = transform(settings)
+        settings = updated
+        scope.launch { settingsRepository.save(updated) }
+    }
+
+    AudioLexTheme(settings.themeMode) {
         Surface(modifier = Modifier.fillMaxSize()) {
             var screen by remember { mutableStateOf<Screen>(Screen.Start) }
 
@@ -89,68 +86,43 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit) {
                     onExitApp = onExitApp,
                 )
                 is Screen.Lernmodus -> LernmodusScreen(
-                    corpusMode = corpusMode,
-                    noiseEnabled = noiseEnabled,
-                    snrDb = snrDb,
-                    noiseScenario = noiseScenario,
+                    corpusMode = settings.corpusMode,
+                    noiseEnabled = settings.noiseEnabled,
+                    snrDb = settings.snrDb,
+                    noiseScenario = settings.noiseScenario,
                     onBeenden = { screen = Screen.Start },
                 )
                 is Screen.Pruefmodus -> PruefmodusScreen(
                     repository = remember(database) { RoomReviewCardRepository(database.reviewCardDao()) },
                     sessionRepository = remember(database) { RoomSessionRepository(database.sessionDao()) },
                     clock = clock,
-                    corpusMode = corpusMode,
-                    noiseEnabled = noiseEnabled,
-                    snrDb = snrDb,
-                    noiseScenario = noiseScenario,
+                    corpusMode = settings.corpusMode,
+                    noiseEnabled = settings.noiseEnabled,
+                    snrDb = settings.snrDb,
+                    noiseScenario = settings.noiseScenario,
                     onBeenden = { screen = Screen.Start },
                     onZumLernmodus = { screen = Screen.Lernmodus },
                 )
                 is Screen.Einstellungen -> EinstellungenScreen(
-                    themeMode = themeMode,
+                    themeMode = settings.themeMode,
                     onThemeModeChange = { newMode ->
-                        themeMode = newMode
-                        scope.launch {
-                            settingsRepository.save(
-                                AppSettings(newMode, corpusMode, noiseEnabled, snrDb, noiseScenario)
-                            )
-                        }
+                        updateSettings { it.copy(themeMode = newMode) }
                     },
-                    corpusMode = corpusMode,
+                    corpusMode = settings.corpusMode,
                     onCorpusModeChange = { newMode ->
-                        corpusMode = newMode
-                        scope.launch {
-                            settingsRepository.save(
-                                AppSettings(themeMode, newMode, noiseEnabled, snrDb, noiseScenario)
-                            )
-                        }
+                        updateSettings { it.copy(corpusMode = newMode) }
                     },
-                    noiseEnabled = noiseEnabled,
+                    noiseEnabled = settings.noiseEnabled,
                     onNoiseEnabledChange = { newEnabled ->
-                        noiseEnabled = newEnabled
-                        scope.launch {
-                            settingsRepository.save(
-                                AppSettings(themeMode, corpusMode, newEnabled, snrDb, noiseScenario)
-                            )
-                        }
+                        updateSettings { it.copy(noiseEnabled = newEnabled) }
                     },
-                    snrDb = snrDb,
+                    snrDb = settings.snrDb,
                     onSnrDbChange = { newSnrDb ->
-                        snrDb = newSnrDb
-                        scope.launch {
-                            settingsRepository.save(
-                                AppSettings(themeMode, corpusMode, noiseEnabled, newSnrDb, noiseScenario)
-                            )
-                        }
+                        updateSettings { it.copy(snrDb = newSnrDb) }
                     },
-                    noiseScenario = noiseScenario,
+                    noiseScenario = settings.noiseScenario,
                     onNoiseScenarioChange = { newScenario ->
-                        noiseScenario = newScenario
-                        scope.launch {
-                            settingsRepository.save(
-                                AppSettings(themeMode, corpusMode, noiseEnabled, snrDb, newScenario)
-                            )
-                        }
+                        updateSettings { it.copy(noiseScenario = newScenario) }
                     },
                     onBeenden = { screen = Screen.Start },
                 )

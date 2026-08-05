@@ -28,9 +28,8 @@ import androidx.compose.ui.unit.dp
 import de.hexenwoche.audiolex.core.audio.PcmBuffer
 import de.hexenwoche.audiolex.core.audio.WavFile
 import de.hexenwoche.audiolex.core.audio.createAudioSink
-import de.hexenwoche.audiolex.core.corpus.AudioRecording
 import de.hexenwoche.audiolex.core.corpus.EntryKind
-import de.hexenwoche.audiolex.core.corpus.Word
+import de.hexenwoche.audiolex.core.corpus.LoadedCorpus
 import de.hexenwoche.audiolex.core.persistence.ReviewCardRepository
 import de.hexenwoche.audiolex.core.persistence.SessionRepository
 import de.hexenwoche.audiolex.core.persistence.allOrSeed
@@ -45,9 +44,7 @@ import de.hexenwoche.audiolex.core.srs.ReviewRating
 import de.hexenwoche.audiolex.core.time.Clock
 import de.hexenwoche.audiolex.generated.resources.Res
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
 
-private val json = Json { ignoreUnknownKeys = true }
 private val scheduler = FixedIntervalScheduler()
 
 private sealed interface PruefmodusState {
@@ -102,8 +99,7 @@ fun PruefmodusScreen(
             state = PruefmodusState.Error("Wiedergabe fehlgeschlagen: ${e.message}")
         })
     }
-    var words by remember { mutableStateOf<List<Word>>(emptyList()) }
-    var recordings by remember { mutableStateOf<List<AudioRecording>>(emptyList()) }
+    var corpus by remember { mutableStateOf<LoadedCorpus?>(null) }
     var noiseBuffer by remember { mutableStateOf<PcmBuffer?>(null) }
     var ratedCount by remember { mutableStateOf(0) }
     var isRating by remember { mutableStateOf(false) }
@@ -149,21 +145,20 @@ fun PruefmodusScreen(
             startedAtEpochMillis = null
             sessionLogged = false
 
-            val wordsJson = Res.readBytes("files/corpus/words.json").decodeToString()
-            val recordingsJson = Res.readBytes("files/corpus/recordings.json").decodeToString()
             // Only entries matching the current corpus mode become SRS
             // cards (Satz-Bogen Batch B, AC3) -- so sentence cards are
             // seeded additively via allOrSeed only in SAETZE mode, and an
             // empty filtered corpus falls through to the existing
-            // EmptyCorpus state below.
-            words = json.decodeFromString<List<Word>>(wordsJson)
-                .filter { it.kind == corpusMode.entryKind() }
-            recordings = json.decodeFromString<List<AudioRecording>>(recordingsJson)
+            // EmptyCorpus state below. Loading lives in
+            // loadCorpus/parseCorpus (Backlog "Code-Qualität"), shared
+            // with Lern- and Dev-Screen.
+            val loaded = loadCorpus(corpusMode.entryKind())
+            corpus = loaded
             // Loaded once per round, not per card (AC6) -- same defensive
             // fallback to null (clean speech) as Lernmodus.
             noiseBuffer = loadNoiseBuffer(noiseEnabled, noiseScenario)
 
-            val cards = repository.allOrSeed(words.map { it.id })
+            val cards = repository.allOrSeed(loaded.words.map { it.id })
             // A round is up to 15 cards: due ones first, topped up with random
             // not-yet-due cards so there's always something to practise
             // (Autor-Entscheid 2026-07-13). Empty only when the corpus itself
@@ -189,8 +184,8 @@ fun PruefmodusScreen(
     val runningCardWordId = (state as? PruefmodusState.Running)?.session?.currentCard?.wordId
     LaunchedEffect(runningCardWordId) {
         val running = state as? PruefmodusState.Running ?: return@LaunchedEffect
-        if (words.isEmpty() || recordings.isEmpty()) return@LaunchedEffect
-        playCurrentCard(running.session, words, recordings, queue, noiseBuffer, snrDb) { message ->
+        val loaded = corpus ?: return@LaunchedEffect
+        playCurrentCard(running.session, loaded, queue, noiseBuffer, snrDb) { message ->
             state = PruefmodusState.Error(message)
         }
     }
@@ -238,7 +233,7 @@ fun PruefmodusScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
-                val word = words.firstOrNull { it.id == session.currentCard.wordId }
+                val word = corpus?.wordById(session.currentCard.wordId)
                 RevealCard(
                     text = word?.text,
                     isSentence = word?.kind == EntryKind.SENTENCE,
@@ -256,7 +251,8 @@ fun PruefmodusScreen(
                 // sense once the word was already visible).
                 if (!current.rated) {
                     Button(onClick = {
-                        playCurrentCard(session, words, recordings, queue, noiseBuffer, snrDb) { message ->
+                        val loaded = corpus ?: return@Button
+                        playCurrentCard(session, loaded, queue, noiseBuffer, snrDb) { message ->
                             state = PruefmodusState.Error(message)
                         }
                     }) {
@@ -406,19 +402,18 @@ private fun germanIntervalHint(rating: ReviewRating): String = when (rating) {
 
 private fun playCurrentCard(
     session: ExamSession,
-    words: List<Word>,
-    recordings: List<AudioRecording>,
+    corpus: LoadedCorpus,
     queue: PlaybackQueue,
     noiseBuffer: PcmBuffer?,
     snrDb: Int,
     onError: (String) -> Unit,
 ) {
-    val word = words.firstOrNull { it.id == session.currentCard.wordId }
+    val word = corpus.wordById(session.currentCard.wordId)
     if (word == null) {
         onError("Wort zu Karte „${session.currentCard.wordId}“ nicht gefunden.")
         return
     }
-    val recording = recordings.firstOrNull { it.wordId == word.id }
+    val recording = corpus.recordingFor(word.id)
     if (recording == null) {
         onError("Keine Aufnahme für „${word.text}“ gefunden.")
         return

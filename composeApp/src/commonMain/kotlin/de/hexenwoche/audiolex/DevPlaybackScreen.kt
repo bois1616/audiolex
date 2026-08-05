@@ -21,13 +21,11 @@ import de.hexenwoche.audiolex.core.audio.PcmBuffer
 import de.hexenwoche.audiolex.core.audio.StereoGain
 import de.hexenwoche.audiolex.core.audio.WavFile
 import de.hexenwoche.audiolex.core.audio.createAudioSink
-import de.hexenwoche.audiolex.core.corpus.AudioRecording
-import de.hexenwoche.audiolex.core.corpus.Word
+import de.hexenwoche.audiolex.core.corpus.LoadedCorpus
 import de.hexenwoche.audiolex.generated.resources.Res
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
 
 /**
  * Playback smoke test for M1 (backlog: Desktop-/Android-Sink verifizieren):
@@ -36,28 +34,23 @@ import kotlinx.serialization.json.Json
  * kept as a standalone dev screen so it doesn't grow into App.kt's
  * eventual navigation host (Opus-Review 2026-07-07).
  */
-private val json = Json { ignoreUnknownKeys = true }
-
 @Composable
 fun DevPlaybackScreen() {
-    var words by remember { mutableStateOf<List<Word>?>(null) }
-    var recordings by remember { mutableStateOf<List<AudioRecording>>(emptyList()) }
+    var corpus by remember { mutableStateOf<LoadedCorpus?>(null) }
     var status by remember { mutableStateOf("Lade Korpus…") }
     val scope = rememberCoroutineScope()
     val sink = remember { createAudioSink() }
 
     LaunchedEffect(Unit) {
-        val wordsJson = Res.readBytes("files/corpus/words.json").decodeToString()
-        val recordingsJson = Res.readBytes("files/corpus/recordings.json").decodeToString()
-        words = json.decodeFromString<List<Word>>(wordsJson)
-        recordings = json.decodeFromString<List<AudioRecording>>(recordingsJson)
+        // Unfiltered (kind = null): the dev list shows every entry.
+        corpus = loadCorpus()
         status = "Bereit"
     }
 
     Text(status, style = MaterialTheme.typography.bodyMedium)
 
-    val currentWords = words
-    if (currentWords == null) {
+    val currentCorpus = corpus
+    if (currentCorpus == null) {
         CircularProgressIndicator()
         return
     }
@@ -67,10 +60,10 @@ fun DevPlaybackScreen() {
     // word's loudness -- with a single hearing aid on one ear, hearing
     // "which word" is a much clearer signal than "louder/quieter".
     // Not the learning-mode UI (that's M2's session/settings work).
-    val leftWordRecording = recordings.firstOrNull { it.wordId == currentWords.getOrNull(0)?.id }
-    val rightWordRecording = recordings.firstOrNull { it.wordId == currentWords.getOrNull(1)?.id }
-    val leftWordText = currentWords.getOrNull(0)?.text ?: "?"
-    val rightWordText = currentWords.getOrNull(1)?.text ?: "?"
+    val leftWordRecording = currentCorpus.words.getOrNull(0)?.let { currentCorpus.recordingFor(it.id) }
+    val rightWordRecording = currentCorpus.words.getOrNull(1)?.let { currentCorpus.recordingFor(it.id) }
+    val leftWordText = currentCorpus.words.getOrNull(0)?.text ?: "?"
+    val rightWordText = currentCorpus.words.getOrNull(1)?.text ?: "?"
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         for ((label, gain) in listOf(
             "Nur „$leftWordText“ links" to StereoGain.LEFT_ONLY,
@@ -99,8 +92,8 @@ fun DevPlaybackScreen() {
     }
 
     LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(currentWords) { word ->
-            val recording = recordings.firstOrNull { it.wordId == word.id }
+        items(currentCorpus.words) { word ->
+            val recording = currentCorpus.recordingFor(word.id)
             Button(
                 enabled = recording != null,
                 onClick = {

@@ -22,18 +22,13 @@ import androidx.compose.ui.unit.dp
 import de.hexenwoche.audiolex.core.audio.PcmBuffer
 import de.hexenwoche.audiolex.core.audio.WavFile
 import de.hexenwoche.audiolex.core.audio.createAudioSink
-import de.hexenwoche.audiolex.core.corpus.AudioRecording
 import de.hexenwoche.audiolex.core.corpus.EntryKind
-import de.hexenwoche.audiolex.core.corpus.Word
+import de.hexenwoche.audiolex.core.corpus.LoadedCorpus
 import de.hexenwoche.audiolex.core.session.LearningSession
 import de.hexenwoche.audiolex.core.session.PlaybackQueue
 import de.hexenwoche.audiolex.core.settings.CorpusMode
 import de.hexenwoche.audiolex.core.settings.entryKind
 import de.hexenwoche.audiolex.generated.resources.Res
-import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
-
-private val json = Json { ignoreUnknownKeys = true }
 
 private sealed interface LernmodusState {
     data object Loading : LernmodusState
@@ -74,7 +69,7 @@ fun LernmodusScreen(
             state = LernmodusState.Error("Wiedergabe fehlgeschlagen: ${e.message}")
         })
     }
-    var recordings by remember { mutableStateOf<List<AudioRecording>>(emptyList()) }
+    var corpus by remember { mutableStateOf<LoadedCorpus?>(null) }
     var noiseBuffer by remember { mutableStateOf<PcmBuffer?>(null) }
 
     DisposableEffect(Unit) {
@@ -83,26 +78,25 @@ fun LernmodusScreen(
 
     LaunchedEffect(Unit) {
         try {
-            val wordsJson = Res.readBytes("files/corpus/words.json").decodeToString()
-            val recordingsJson = Res.readBytes("files/corpus/recordings.json").decodeToString()
             // Only entries matching the current corpus mode enter the
             // session (Satz-Bogen Batch B, AC3) -- an empty filtered corpus
             // falls through to the existing EmptyCorpus state below.
-            val words = json.decodeFromString<List<Word>>(wordsJson)
-                .filter { it.kind == corpusMode.entryKind() }
-            recordings = json.decodeFromString<List<AudioRecording>>(recordingsJson)
+            // Loading lives in loadCorpus/parseCorpus (Backlog
+            // "Code-Qualität"), shared with Prüf- and Dev-Screen.
+            val loaded = loadCorpus(corpusMode.entryKind())
+            corpus = loaded
             // Loaded once per screen entry, not per word (AC6) -- a missing/
             // mismatched file or noise disabled all resolve to null, which
             // mixWithOptionalNoise treats as "play clean speech".
             noiseBuffer = loadNoiseBuffer(noiseEnabled, noiseScenario)
-            state = if (words.isEmpty()) {
+            state = if (loaded.words.isEmpty()) {
                 LernmodusState.EmptyCorpus
             } else {
                 // Shuffled once per session start, then fixed for the rest of
                 // the session (Autor-Requirement 2026-07-12) -- so the word
                 // order itself isn't what gets memorized, and "Vorheriges"
                 // below steps back through a stable order.
-                LernmodusState.Running(LearningSession(words.shuffled()))
+                LernmodusState.Running(LearningSession(loaded.words.shuffled()))
             }
         } catch (e: Exception) {
             state = LernmodusState.Error("Korpus konnte nicht geladen werden: ${e.message}")
@@ -118,8 +112,8 @@ fun LernmodusScreen(
     val runningWordIndex = (state as? LernmodusState.Running)?.session?.currentIndex
     LaunchedEffect(runningWordIndex) {
         val running = state as? LernmodusState.Running ?: return@LaunchedEffect
-        if (recordings.isEmpty()) return@LaunchedEffect
-        playCurrentWord(running.session, recordings, queue, noiseBuffer, snrDb) { message ->
+        val loaded = corpus ?: return@LaunchedEffect
+        playCurrentWord(running.session, loaded, queue, noiseBuffer, snrDb) { message ->
             state = LernmodusState.Error(message)
         }
     }
@@ -169,7 +163,8 @@ fun LernmodusScreen(
                 TargetTextCard(text = session.currentWord.text, isSentence = isSentence)
 
                 Button(onClick = {
-                    playCurrentWord(session, recordings, queue, noiseBuffer, snrDb) { message ->
+                    val loaded = corpus ?: return@Button
+                    playCurrentWord(session, loaded, queue, noiseBuffer, snrDb) { message ->
                         state = LernmodusState.Error(message)
                     }
                 }) {
@@ -215,13 +210,13 @@ fun LernmodusScreen(
  */
 private fun playCurrentWord(
     session: LearningSession,
-    recordings: List<AudioRecording>,
+    corpus: LoadedCorpus,
     queue: PlaybackQueue,
     noiseBuffer: PcmBuffer?,
     snrDb: Int,
     onError: (String) -> Unit,
 ) {
-    val recording = recordings.firstOrNull { it.wordId == session.currentWord.id }
+    val recording = corpus.recordingFor(session.currentWord.id)
     if (recording == null) {
         onError("Keine Aufnahme für „${session.currentWord.text}“ gefunden.")
         return

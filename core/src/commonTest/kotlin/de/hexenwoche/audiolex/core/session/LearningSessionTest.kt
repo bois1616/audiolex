@@ -15,26 +15,17 @@ class LearningSessionTest {
     private val threeWords = listOf(word("a"), word("b"), word("c"))
 
     @Test
-    fun startsAtFirstWordWithNoRepeats() {
+    fun startsAtFirstWord() {
         val session = LearningSession(threeWords)
         assertEquals("a", session.currentWord.id)
         assertEquals(1, session.progress)
         assertEquals(3, session.total)
-        assertEquals(0, session.repeatCount)
     }
 
     @Test
-    fun repeatKeepsSameWordAndIncrementsCounter() {
-        val session = LearningSession(threeWords).repeat().repeat()
-        assertEquals("a", session.currentWord.id)
-        assertEquals(2, session.repeatCount)
-    }
-
-    @Test
-    fun advanceMovesToNextWordAndResetsRepeatCount() {
-        val session = LearningSession(threeWords).repeat().advance()
+    fun advanceMovesToNextWord() {
+        val session = LearningSession(threeWords).advance()
         assertEquals("b", session?.currentWord?.id)
-        assertEquals(0, session?.repeatCount)
         assertEquals(2, session?.progress)
     }
 
@@ -59,10 +50,9 @@ class LearningSessionTest {
     }
 
     @Test
-    fun backMovesToPreviousWordAndResetsRepeatCount() {
-        val session = LearningSession(threeWords, currentIndex = 2).repeat().back()
+    fun backMovesToPreviousWord() {
+        val session = LearningSession(threeWords, currentIndex = 2).back()
         assertEquals("b", session?.currentWord?.id)
-        assertEquals(0, session?.repeatCount)
         assertEquals(2, session?.progress)
     }
 

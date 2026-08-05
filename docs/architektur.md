@@ -12,7 +12,7 @@ Eine lokale Trainings-App ohne Backend. Sämtliche Fachlogik (SRS, Korpus, Sessi
 audiolex/
 ├── composeApp/                  # Compose-Multiplatform-UI
 │   └── src/
-│       ├── commonMain/          # Screens, Navigation, ViewModel-Schicht
+│       ├── commonMain/          # Screens, Navigation (flach, State in remember)
 │       │   └── composeResources/files/corpus/  # Wortkorpus (Metadaten
 │       │                         #   versioniert, Audio nicht, s. .gitignore) —
 │       │                         #   als Compose-Resource, damit Android per
@@ -66,6 +66,10 @@ Alles oberhalb des Sinks ist deterministisch und unit-getestet; der Sink erhält
 | `SettingsProfile` | name, Kanal/Pegel/SNR/Szenario/Wortfilter | benannte Presets (Einfach/Schwierig/Fortgeschritten) |
 
 Review-Historie wird roh gespeichert (Bewertung + Zeitpunkt), nicht nur der nächste Termin — hält den Weg zu FSRS/Auto-Bewertung offen (ADR-0005).
+
+## Bewusste Grenzen (MVP-Verzicht)
+
+- **Session-State überlebt keine Konfigurationsänderung/Prozess-Tod** (Autor-Entscheid 2026-08-05, Backlog „Code-Qualität"): Alle Screen-States leben in `remember` ohne `Saver`/ViewModel — eine bewusste Entscheidung, keine offene Lücke. Rotation oder System-Kill beendet die laufende Runde; sie startet beim nächsten Öffnen neu. Bereits abgegebene Bewertungen und SRS-Fälligkeiten sind sofort persistiert (ADR-0004) und bleiben erhalten. Eine ViewModel-/SavedState-Schicht wäre bei der flachen Navigation vergleichsweise billig, trägt aber in dieser Phase keinen Nutzwert — sie bleibt ein Backlog-Vorschlag für den Fall, dass Sitzungs-Unterbrechungen im Alltag wirklich stören.
 
 ## Teststrategie
 

@@ -147,11 +147,19 @@ fun EinstellungenScreen(
             }
 
             if (noiseEnabled) {
-                val snrLabel = if (snrDb >= 0) "SNR: +$snrDb dB" else "SNR: $snrDb dB"
+                // The slider drags on a local value and commits once on
+                // release (`onValueChangeFinished`) -- persisting every tick
+                // meant dozens of Room writes per drag gesture (Backlog
+                // "Code-Qualität"). `remember(snrDb)` re-syncs the local
+                // value whenever the persisted one changes from outside the
+                // drag (initial load, next screen visit).
+                var draggedSnrDb by remember(snrDb) { mutableStateOf(snrDb) }
+                val snrLabel = if (draggedSnrDb >= 0) "SNR: +$draggedSnrDb dB" else "SNR: $draggedSnrDb dB"
                 Text(snrLabel, style = MaterialTheme.typography.bodyLarge)
                 Slider(
-                    value = snrDb.toFloat(),
-                    onValueChange = { onSnrDbChange(it.roundToInt()) },
+                    value = draggedSnrDb.toFloat(),
+                    onValueChange = { draggedSnrDb = it.roundToInt() },
+                    onValueChangeFinished = { onSnrDbChange(draggedSnrDb) },
                     valueRange = SNR_DB_MIN.toFloat()..SNR_DB_MAX.toFloat(),
                     // 26 integer values (-5..20 inclusive); `steps` excludes the
                     // two endpoints, so 26 - 2 = 24.
