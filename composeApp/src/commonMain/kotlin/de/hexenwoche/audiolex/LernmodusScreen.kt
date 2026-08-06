@@ -32,8 +32,8 @@ import de.hexenwoche.audiolex.core.session.LearningSession
 import de.hexenwoche.audiolex.core.session.PlaybackQueue
 import de.hexenwoche.audiolex.core.settings.ChannelMode
 import de.hexenwoche.audiolex.core.settings.CorpusMode
+import de.hexenwoche.audiolex.core.settings.CorpusSource
 import de.hexenwoche.audiolex.core.settings.entryKind
-import de.hexenwoche.audiolex.generated.resources.Res
 
 private sealed interface LernmodusState {
     data object Loading : LernmodusState
@@ -62,6 +62,12 @@ private sealed interface LernmodusState {
  * Batch B", ADR-0011): applied via [applyChannelMode] in the same producer,
  * after the noise mix -- a no-op unless the live [rememberOutputSetup] result
  * is the stereo-headphone setup.
+ *
+ * [corpusSource] and [ownCorpusRepository] select and supply the second
+ * corpus source (Backlog Eigen-Korpus Batch C, ADR-0012): passed straight
+ * through to [loadCorpus] and, for a recording that turns out to be
+ * [de.hexenwoche.audiolex.core.corpus.RecordingSource.EIGEN], to
+ * [readRecordingBytes] inside [playCurrentWord].
  */
 @Composable
 fun LernmodusScreen(
@@ -70,6 +76,8 @@ fun LernmodusScreen(
     snrDb: Int,
     noiseScenario: String,
     channelMode: ChannelMode,
+    corpusSource: CorpusSource,
+    ownCorpusRepository: OwnCorpusRepository,
     onBeenden: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
@@ -98,7 +106,7 @@ fun LernmodusScreen(
             // falls through to the existing EmptyCorpus state below.
             // Loading lives in loadCorpus/parseCorpus (Backlog
             // "Code-Qualität"), shared with Prüf- and Dev-Screen.
-            val loaded = loadCorpus(corpusMode.entryKind())
+            val loaded = loadCorpus(corpusMode.entryKind(), corpusSource, ownCorpusRepository)
             corpus = loaded
             // Loaded once per screen entry, not per word (AC6) -- a missing/
             // mismatched file or noise disabled all resolve to null, which
@@ -128,7 +136,9 @@ fun LernmodusScreen(
     LaunchedEffect(runningWordIndex) {
         val running = state as? LernmodusState.Running ?: return@LaunchedEffect
         val loaded = corpus ?: return@LaunchedEffect
-        playCurrentWord(running.session, loaded, queue, noiseBuffer, snrDb, channelMode, outputSetup) { message ->
+        playCurrentWord(
+            running.session, loaded, queue, noiseBuffer, snrDb, channelMode, outputSetup, ownCorpusRepository,
+        ) { message ->
             state = LernmodusState.Error(message)
         }
     }
@@ -142,7 +152,7 @@ fun LernmodusScreen(
             is LernmodusState.Loading -> CircularProgressIndicator()
 
             is LernmodusState.EmptyCorpus -> {
-                Text("Kein Wort im Korpus vorhanden.", style = MaterialTheme.typography.bodyLarge)
+                Text(emptyCorpusHint(corpusSource), style = MaterialTheme.typography.bodyLarge)
                 Button(onClick = onBeenden) { Text("Zurück zum Start") }
             }
 
@@ -192,7 +202,9 @@ fun LernmodusScreen(
                 // StartScreen already uses for "App beenden".
                 FilledTonalButton(onClick = {
                     val loaded = corpus ?: return@FilledTonalButton
-                    playCurrentWord(session, loaded, queue, noiseBuffer, snrDb, channelMode, outputSetup) { message ->
+                    playCurrentWord(
+                        session, loaded, queue, noiseBuffer, snrDb, channelMode, outputSetup, ownCorpusRepository,
+                    ) { message ->
                         state = LernmodusState.Error(message)
                     }
                 }) {
@@ -247,6 +259,7 @@ private fun playCurrentWord(
     snrDb: Int,
     channelMode: ChannelMode,
     outputSetup: OutputSetup,
+    ownCorpusRepository: OwnCorpusRepository,
     onError: (String) -> Unit,
 ) {
     val recording = corpus.recordingFor(session.currentWord.id)
@@ -255,7 +268,7 @@ private fun playCurrentWord(
         return
     }
     queue.play {
-        val bytes = Res.readBytes("files/corpus/${recording.fileRef}")
+        val bytes = readRecordingBytes(recording, ownCorpusRepository)
         val speech = WavFile.decode(bytes)
         val mixed = mixWithOptionalNoise(speech, noiseBuffer, snrDb)
         applyChannelMode(mixed, channelMode, outputSetup)

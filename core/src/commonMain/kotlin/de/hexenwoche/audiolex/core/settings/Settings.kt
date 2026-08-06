@@ -32,6 +32,20 @@ enum class CorpusMode { WOERTER, SAETZE }
  */
 enum class ChannelMode { BEIDE, NUR_LINKS, NUR_RECHTS }
 
+/**
+ * Which corpus the training screens draw from (Backlog Eigen-Korpus Batch C,
+ * ADR-0012): [MITGELIEFERT] is the default so an existing install behaves
+ * exactly as before this setting existed -- the new source is opted into,
+ * never switched on silently by an update. The merge itself (mapping
+ * [de.hexenwoche.audiolex.core.corpus.OwnEntry] onto the shared
+ * [de.hexenwoche.audiolex.core.corpus.Word]/[de.hexenwoche.audiolex.core.corpus.AudioRecording]
+ * model, combining both sources) lives in `core/corpus/CorpusLoader.kt`, not
+ * here -- this enum only ever gets compared, never interpreted, on the
+ * `:core` side (see [de.hexenwoche.audiolex.core.corpus.mergeCorpus]'s doc
+ * for why the merge function stays unaware of this type entirely).
+ */
+enum class CorpusSource { MITGELIEFERT, EIGENE, BEIDE }
+
 /** Valid SNR slider range in dB (Backlog M4 AC4); a stored value outside this falls back to [DEFAULT_SNR_DB]. */
 const val SNR_DB_MIN = -5
 const val SNR_DB_MAX = 20
@@ -44,8 +58,9 @@ private const val DEFAULT_NOISE_SCENARIO = "restaurant"
  * happens at the boundary via [toEntity]/[toDomain]. Currently the theme,
  * the corpus mode, the noise overlay (Backlog M4 "Störgeräusch-Overlay",
  * ADR-0010, [noiseEnabled]/[snrDb]/[noiseScenario] shared by both training
- * modes), and the channel selection (Backlog M4 "Kopfhörer-Bogen Batch B",
- * ADR-0011, [channelMode]).
+ * modes), the channel selection (Backlog M4 "Kopfhörer-Bogen Batch B",
+ * ADR-0011, [channelMode]), and the corpus source (Backlog Eigen-Korpus
+ * Batch C, ADR-0012, [corpusSource]).
  */
 data class AppSettings(
     val themeMode: ThemeMode,
@@ -54,6 +69,7 @@ data class AppSettings(
     val snrDb: Int = DEFAULT_SNR_DB,
     val noiseScenario: String = DEFAULT_NOISE_SCENARIO,
     val channelMode: ChannelMode = ChannelMode.BEIDE,
+    val corpusSource: CorpusSource = CorpusSource.MITGELIEFERT,
 )
 
 /**
@@ -74,6 +90,7 @@ fun SettingsEntity.toDomain(): AppSettings =
         snrDb = snrDb.takeIf { it in SNR_DB_MIN..SNR_DB_MAX } ?: DEFAULT_SNR_DB,
         noiseScenario = noiseScenario.takeIf { it.isNotBlank() } ?: DEFAULT_NOISE_SCENARIO,
         channelMode = ChannelMode.entries.firstOrNull { it.name == channelMode } ?: ChannelMode.BEIDE,
+        corpusSource = CorpusSource.entries.firstOrNull { it.name == corpusSource } ?: CorpusSource.MITGELIEFERT,
     )
 
 fun AppSettings.toEntity(): SettingsEntity =
@@ -84,6 +101,7 @@ fun AppSettings.toEntity(): SettingsEntity =
         snrDb = snrDb,
         noiseScenario = noiseScenario,
         channelMode = channelMode.name,
+        corpusSource = corpusSource.name,
     )
 
 /**

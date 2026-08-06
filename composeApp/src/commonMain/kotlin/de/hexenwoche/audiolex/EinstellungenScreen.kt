@@ -30,6 +30,7 @@ import de.hexenwoche.audiolex.core.audio.NoiseScenario
 import de.hexenwoche.audiolex.core.audio.OutputSetup
 import de.hexenwoche.audiolex.core.settings.ChannelMode
 import de.hexenwoche.audiolex.core.settings.CorpusMode
+import de.hexenwoche.audiolex.core.settings.CorpusSource
 import de.hexenwoche.audiolex.core.settings.SNR_DB_MAX
 import de.hexenwoche.audiolex.core.settings.SNR_DB_MIN
 import de.hexenwoche.audiolex.core.settings.ThemeMode
@@ -54,8 +55,13 @@ import kotlin.math.roundToInt
  * whenever the detected setup is [OutputSetup.HOERGERAET] -- a channel
  * choice would be wirkungslos there (ADR-0007), and the disabled state says
  * so instead of just hiding the control. Presets stay out of scope, own
- * backlog items. A dead end with "Zurück", same navigation pattern as the
- * other screens.
+ * backlog items. The sixth, "Quelle" (Backlog Eigen-Korpus Batch C,
+ * ADR-0012), sits directly below "Trainingsinhalt" -- both settings answer
+ * "what does the training screen even draw from", [corpusSource] picking
+ * mitgeliefert/eigene/beide, [corpusMode] picking Wörter/Sätze within that.
+ * Default [CorpusSource.MITGELIEFERT] so an existing install trains exactly
+ * as before until the author opts in. A dead end with "Zurück", same
+ * navigation pattern as the other screens.
  *
  * Title and "Zurück" stay pinned; only the settings content between them
  * scrolls (same `Modifier.weight(1f).verticalScroll(rememberScrollState())`
@@ -78,6 +84,8 @@ fun EinstellungenScreen(
     onNoiseScenarioChange: (String) -> Unit,
     channelMode: ChannelMode,
     onChannelModeChange: (ChannelMode) -> Unit,
+    corpusSource: CorpusSource,
+    onCorpusSourceChange: (CorpusSource) -> Unit,
     onBeenden: () -> Unit,
 ) {
     // Loaded once when the screen is entered, just for the scenario labels --
@@ -143,6 +151,29 @@ fun EinstellungenScreen(
                     label = "Sätze",
                     selected = corpusMode == CorpusMode.SAETZE,
                     onSelect = { onCorpusModeChange(CorpusMode.SAETZE) },
+                )
+            }
+
+            Text("Quelle", style = MaterialTheme.typography.titleMedium)
+
+            Column(
+                modifier = Modifier.fillMaxWidth().selectableGroup(),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                RadioOption(
+                    label = "Mitgeliefert",
+                    selected = corpusSource == CorpusSource.MITGELIEFERT,
+                    onSelect = { onCorpusSourceChange(CorpusSource.MITGELIEFERT) },
+                )
+                RadioOption(
+                    label = "Eigene Aufnahmen",
+                    selected = corpusSource == CorpusSource.EIGENE,
+                    onSelect = { onCorpusSourceChange(CorpusSource.EIGENE) },
+                )
+                RadioOption(
+                    label = "Beide",
+                    selected = corpusSource == CorpusSource.BEIDE,
+                    onSelect = { onCorpusSourceChange(CorpusSource.BEIDE) },
                 )
             }
 

@@ -24,6 +24,14 @@ import androidx.room.Upsert
  *
  * [channelMode] (Backlog M4 "Kopfhörer-Bogen Batch B", ADR-0011) stores the
  * `ChannelMode` enum name, same pattern as [themeMode]/[corpusMode].
+ *
+ * [corpusSource] (Backlog Eigen-Korpus Batch C, ADR-0012) stores the
+ * `CorpusSource` enum name, same pattern again -- the column added by
+ * [MIGRATION_6_7][de.hexenwoche.audiolex.core.persistence.MIGRATION_6_7]
+ * instead of the destructive fallback that carried every earlier column
+ * (see [de.hexenwoche.audiolex.core.persistence.createAudioLexDatabase]):
+ * existing SRS cards and session history are no longer disposable test
+ * data, so this is the first schema bump that must actually preserve them.
  */
 @Entity
 data class SettingsEntity(
@@ -34,6 +42,7 @@ data class SettingsEntity(
     val snrDb: Int = 5,
     val noiseScenario: String = "restaurant",
     val channelMode: String = "BEIDE",
+    val corpusSource: String = "MITGELIEFERT",
 )
 
 @Dao

@@ -35,6 +35,45 @@ class OwnCorpusRepository(
     suspend fun all(): List<OwnEntry> = withContext(Dispatchers.IO) { allBlocking() }
 
     /**
+     * The subset of [all] that's actually trainable right now (Backlog
+     * Eigen-Korpus Batch C, AC4). Batch B deliberately allows saving a
+     * half-finished entry -- with a recording but no text yet, or with text
+     * but no recording yet (Batch B, AC3) -- and both halves are required
+     * before an entry can carry a training round:
+     *
+     * - No recording (never made, or the file has gone missing since): there
+     *   is nothing to play. Lernmodus would quit with "Keine Aufnahme für …
+     *   gefunden", Prüfmodus would show an unplayable card.
+     * - No text: there is nothing to *show*. Lernmodus exists to pair sound
+     *   with written word, and Prüfmodus's reveal card would come up blank,
+     *   leaving nothing to self-rate against. This is also what the entry
+     *   mask already promises the user in so many words ("Ohne Text lässt
+     *   sich der Eintrag nicht trainieren", v0.23.0) -- letting such an entry
+     *   into a round would make the app contradict its own hint.
+     *
+     * The recording half needs file access ([OwnCorpusFiles.recordingExists]),
+     * which is why this lives here rather than in `:core`'s merge logic
+     * ([de.hexenwoche.audiolex.core.corpus.mergeCorpus]), which stays
+     * platform-free.
+     */
+    suspend fun trainable(): List<OwnEntry> = withContext(Dispatchers.IO) {
+        allBlocking().filter { it.text.isNotBlank() && files.recordingExists(it.fileName) }
+    }
+
+    /**
+     * Raw bytes for a recording by file name (Backlog Eigen-Korpus Batch C,
+     * AC5): the merged-corpus playback path's counterpart to [audioFor],
+     * used by `CorpusLoading.kt`'s shared read function. Kept separate from
+     * [audioFor] (which additionally decodes, for "Eigene Aufnahmen"'s own
+     * "Anhören" button) because a training screen only ever has an
+     * [de.hexenwoche.audiolex.core.corpus.AudioRecording.fileRef] from the
+     * merged corpus, not the matching [OwnEntry].
+     */
+    suspend fun recordingBytes(fileName: String): ByteArray? = withContext(Dispatchers.IO) {
+        files.readRecording(fileName)
+    }
+
+    /**
      * Adds a new entry (AC3). [audio] is nullable: AC3 only requires *one*
      * of a recording or a non-blank text to enable "Speichern", so a
      * text-only entry is a valid (if incomplete) save -- its file simply

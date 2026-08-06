@@ -42,12 +42,12 @@ import de.hexenwoche.audiolex.core.session.PlaybackQueue
 import de.hexenwoche.audiolex.core.session.Session
 import de.hexenwoche.audiolex.core.settings.ChannelMode
 import de.hexenwoche.audiolex.core.settings.CorpusMode
+import de.hexenwoche.audiolex.core.settings.CorpusSource
 import de.hexenwoche.audiolex.core.settings.entryKind
 import de.hexenwoche.audiolex.core.srs.FixedIntervalScheduler
 import de.hexenwoche.audiolex.core.srs.ReviewQueue
 import de.hexenwoche.audiolex.core.srs.ReviewRating
 import de.hexenwoche.audiolex.core.time.Clock
-import de.hexenwoche.audiolex.generated.resources.Res
 import kotlinx.coroutines.launch
 
 private val scheduler = FixedIntervalScheduler()
@@ -88,6 +88,15 @@ private sealed interface PruefmodusState {
  * Batch B", ADR-0011): applied via [applyChannelMode] in the same producer,
  * after the noise mix -- a no-op unless the live [rememberOutputSetup] result
  * is the stereo-headphone setup.
+ *
+ * [corpusSource] and [ownCorpusRepository] select and supply the second
+ * corpus source (Backlog Eigen-Korpus Batch C, ADR-0012), same role as in
+ * [LernmodusScreen]: passed through to [loadCorpus] and, for
+ * [de.hexenwoche.audiolex.core.corpus.RecordingSource.EIGEN] recordings, to
+ * [readRecordingBytes] inside [playCurrentCard]. Own entries feed
+ * [ReviewCardRepository.allOrSeed] exactly like built-in ones (Backlog AC6)
+ * -- their `own-` prefixed ids are collision-free with the built-in ones, so
+ * no extra seeding logic is needed here.
  */
 @Composable
 fun PruefmodusScreen(
@@ -99,6 +108,8 @@ fun PruefmodusScreen(
     snrDb: Int,
     noiseScenario: String,
     channelMode: ChannelMode,
+    corpusSource: CorpusSource,
+    ownCorpusRepository: OwnCorpusRepository,
     onBeenden: () -> Unit,
     onZumLernmodus: () -> Unit,
 ) {
@@ -167,7 +178,7 @@ fun PruefmodusScreen(
             // EmptyCorpus state below. Loading lives in
             // loadCorpus/parseCorpus (Backlog "Code-Qualität"), shared
             // with Lern- and Dev-Screen.
-            val loaded = loadCorpus(corpusMode.entryKind())
+            val loaded = loadCorpus(corpusMode.entryKind(), corpusSource, ownCorpusRepository)
             corpus = loaded
             // Loaded once per round, not per card (AC6) -- same defensive
             // fallback to null (clean speech) as Lernmodus.
@@ -200,7 +211,9 @@ fun PruefmodusScreen(
     LaunchedEffect(runningCardWordId) {
         val running = state as? PruefmodusState.Running ?: return@LaunchedEffect
         val loaded = corpus ?: return@LaunchedEffect
-        playCurrentCard(running.session, loaded, queue, noiseBuffer, snrDb, channelMode, outputSetup) { message ->
+        playCurrentCard(
+            running.session, loaded, queue, noiseBuffer, snrDb, channelMode, outputSetup, ownCorpusRepository,
+        ) { message ->
             state = PruefmodusState.Error(message)
         }
     }
@@ -214,7 +227,7 @@ fun PruefmodusScreen(
             is PruefmodusState.Loading -> CircularProgressIndicator()
 
             is PruefmodusState.EmptyCorpus -> {
-                Text("Kein Wort im Korpus.", style = MaterialTheme.typography.headlineSmall)
+                Text(emptyCorpusHint(corpusSource), style = MaterialTheme.typography.headlineSmall)
                 Text(
                     "Es gibt noch keine Karten zum Üben.",
                     style = MaterialTheme.typography.bodyLarge,
@@ -278,7 +291,9 @@ fun PruefmodusScreen(
                 if (!current.rated) {
                     FilledTonalButton(onClick = {
                         val loaded = corpus ?: return@FilledTonalButton
-                        playCurrentCard(session, loaded, queue, noiseBuffer, snrDb, channelMode, outputSetup) { message ->
+                        playCurrentCard(
+                            session, loaded, queue, noiseBuffer, snrDb, channelMode, outputSetup, ownCorpusRepository,
+                        ) { message ->
                             state = PruefmodusState.Error(message)
                         }
                     }) {
@@ -440,6 +455,7 @@ private fun playCurrentCard(
     snrDb: Int,
     channelMode: ChannelMode,
     outputSetup: OutputSetup,
+    ownCorpusRepository: OwnCorpusRepository,
     onError: (String) -> Unit,
 ) {
     val word = corpus.wordById(session.currentCard.wordId)
@@ -456,7 +472,7 @@ private fun playCurrentCard(
     // cancels the previous decode+play atomically instead of racing two
     // AudioTracks (same fix as Lernmodus, Autor-Finding 2026-07-13).
     queue.play {
-        val bytes = Res.readBytes("files/corpus/${recording.fileRef}")
+        val bytes = readRecordingBytes(recording, ownCorpusRepository)
         val speech = WavFile.decode(bytes)
         val mixed = mixWithOptionalNoise(speech, noiseBuffer, snrDb)
         applyChannelMode(mixed, channelMode, outputSetup)

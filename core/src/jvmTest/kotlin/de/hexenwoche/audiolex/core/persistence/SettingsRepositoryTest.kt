@@ -5,6 +5,7 @@ import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import de.hexenwoche.audiolex.core.settings.AppSettings
 import de.hexenwoche.audiolex.core.settings.ChannelMode
 import de.hexenwoche.audiolex.core.settings.CorpusMode
+import de.hexenwoche.audiolex.core.settings.CorpusSource
 import de.hexenwoche.audiolex.core.settings.ThemeMode
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -152,6 +153,32 @@ class SettingsRepositoryTest {
 
         assertEquals(ChannelMode.BEIDE, loaded.channelMode)
         // The channelMode fallback must not take the other field down with it.
+        assertEquals(ThemeMode.DARK, loaded.themeMode)
+    }
+
+    @Test
+    fun loadReturnsMitgeliefertCorpusSourceDefaultForFreshDatabase() = runTest {
+        assertEquals(CorpusSource.MITGELIEFERT, newRepository().load().corpusSource)
+    }
+
+    @Test
+    fun savedCorpusSourceRoundtrips() = runTest {
+        val repository = newRepository()
+
+        repository.save(AppSettings(ThemeMode.SYSTEM, corpusSource = CorpusSource.BEIDE))
+
+        assertEquals(CorpusSource.BEIDE, repository.load().corpusSource)
+    }
+
+    @Test
+    fun unknownStoredCorpusSourceFallsBackToMitgeliefert() = runTest {
+        val db = newDatabase()
+        db.settingsDao().upsert(SettingsEntity(themeMode = "DARK", corpusSource = "NUR_FREUNDE"))
+
+        val loaded = newRepository(db).load()
+
+        assertEquals(CorpusSource.MITGELIEFERT, loaded.corpusSource)
+        // The corpusSource fallback must not take the other field down with it.
         assertEquals(ThemeMode.DARK, loaded.themeMode)
     }
 }

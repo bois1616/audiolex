@@ -42,4 +42,6 @@ private class JavaIoOwnCorpusFiles(dirPath: String) : OwnCorpusFiles {
     override fun deleteRecording(fileName: String) {
         File(dir, fileName).delete()
     }
+
+    override fun recordingExists(fileName: String): Boolean = File(dir, fileName).exists()
 }

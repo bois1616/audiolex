@@ -82,3 +82,75 @@ class CorpusLoaderTest {
         assertEquals(listOf("ball"), corpus.words.map { it.id })
     }
 }
+
+class MergeCorpusTest {
+
+    private val builtInWords = listOf(
+        Word("ball", "Ball", "de-DE", 1, WordCategory.EVERYDAY),
+        Word("satz-morgen", "Am Morgen...", "de-DE", 10, WordCategory.EVERYDAY, kind = EntryKind.SENTENCE),
+    )
+    private val builtInRecordings = listOf(
+        AudioRecording("ball__thorsten", "ball", "thorsten", "de-DE", "raw/de-DE/ball__thorsten.wav"),
+        AudioRecording("satz-morgen__thorsten", "satz-morgen", "thorsten", "de-DE", "raw/de-DE/satz-morgen__thorsten.wav"),
+    )
+    private val ownWordEntry = OwnEntry(
+        id = "own-1", text = "Fenster", kind = EntryKind.WORD, speaker = "Anna", fileName = "own-1.wav",
+        createdAtEpochMillis = 1L,
+    )
+    private val ownSentenceEntry = OwnEntry(
+        id = "own-2", text = "Die Tür ist offen.", kind = EntryKind.SENTENCE, speaker = "Anna",
+        fileName = "own-2.wav", createdAtEpochMillis = 2L,
+    )
+
+    @Test
+    fun `only built-in entries when own list is empty`() {
+        val corpus = mergeCorpus(builtInWords, builtInRecordings, emptyList())
+
+        assertEquals(listOf("ball", "satz-morgen"), corpus.words.map { it.id })
+    }
+
+    @Test
+    fun `only own entries when built-in lists are empty`() {
+        val corpus = mergeCorpus(emptyList(), emptyList(), listOf(ownWordEntry, ownSentenceEntry))
+
+        assertEquals(listOf("own-1", "own-2"), corpus.words.map { it.id })
+    }
+
+    @Test
+    fun `both sources merge together`() {
+        val corpus = mergeCorpus(builtInWords, builtInRecordings, listOf(ownWordEntry))
+
+        assertEquals(listOf("ball", "satz-morgen", "own-1"), corpus.words.map { it.id })
+    }
+
+    @Test
+    fun `kind filter applies across both sources`() {
+        val corpus = mergeCorpus(builtInWords, builtInRecordings, listOf(ownWordEntry, ownSentenceEntry), kind = EntryKind.WORD)
+
+        assertEquals(listOf("ball", "own-1"), corpus.words.map { it.id })
+    }
+
+    @Test
+    fun `empty on both sides yields an empty corpus`() {
+        val corpus = mergeCorpus(emptyList(), emptyList(), emptyList())
+
+        assertEquals(emptyList(), corpus.words)
+    }
+
+    @Test
+    fun `own entry maps voiceId from speaker and locale defaults to de-DE`() {
+        val corpus = mergeCorpus(emptyList(), emptyList(), listOf(ownWordEntry))
+
+        val recording = corpus.recordingFor("own-1")
+        assertEquals("Anna", recording?.voiceId)
+        assertEquals("de-DE", recording?.locale)
+        assertEquals(RecordingSource.EIGEN, recording?.source)
+    }
+
+    @Test
+    fun `built-in recording keeps the MITGELIEFERT default source`() {
+        val corpus = mergeCorpus(builtInWords, builtInRecordings, emptyList())
+
+        assertEquals(RecordingSource.MITGELIEFERT, corpus.recordingFor("ball")?.source)
+    }
+}

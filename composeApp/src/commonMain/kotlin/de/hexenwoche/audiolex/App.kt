@@ -122,6 +122,8 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit, ownCorp
                         snrDb = settings.snrDb,
                         noiseScenario = settings.noiseScenario,
                         channelMode = settings.channelMode,
+                        corpusSource = settings.corpusSource,
+                        ownCorpusRepository = ownCorpusRepository,
                         onBeenden = { screen = Screen.Start },
                     )
                     is Screen.Pruefmodus -> PruefmodusScreen(
@@ -133,6 +135,8 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit, ownCorp
                         snrDb = settings.snrDb,
                         noiseScenario = settings.noiseScenario,
                         channelMode = settings.channelMode,
+                        corpusSource = settings.corpusSource,
+                        ownCorpusRepository = ownCorpusRepository,
                         onBeenden = { screen = Screen.Start },
                         onZumLernmodus = { screen = Screen.Lernmodus },
                     )
@@ -161,6 +165,10 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit, ownCorp
                         onChannelModeChange = { newMode ->
                             updateSettings { it.copy(channelMode = newMode) }
                         },
+                        corpusSource = settings.corpusSource,
+                        onCorpusSourceChange = { newSource ->
+                            updateSettings { it.copy(corpusSource = newSource) }
+                        },
                         onBeenden = { screen = Screen.Start },
                     )
                     is Screen.Sitzungshistorie -> SitzungshistorieScreen(
@@ -173,7 +181,10 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit, ownCorp
                         clock = clock,
                         onBeenden = { screen = Screen.Start },
                     )
-                    is Screen.DevKanaltest -> DevKanaltestScreen(onBeenden = { screen = Screen.Start })
+                    is Screen.DevKanaltest -> DevKanaltestScreen(
+                        ownCorpusRepository = ownCorpusRepository,
+                        onBeenden = { screen = Screen.Start },
+                    )
                 }
             }
         }
@@ -255,7 +266,7 @@ private fun StartScreen(
 }
 
 @Composable
-private fun DevKanaltestScreen(onBeenden: () -> Unit) {
+private fun DevKanaltestScreen(ownCorpusRepository: OwnCorpusRepository, onBeenden: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -263,6 +274,6 @@ private fun DevKanaltestScreen(onBeenden: () -> Unit) {
         Button(onClick = onBeenden) {
             Text("Beenden")
         }
-        DevPlaybackScreen()
+        DevPlaybackScreen(ownCorpusRepository)
     }
 }

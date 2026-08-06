@@ -35,6 +35,16 @@ interface OwnCorpusFiles {
 
     /** Best-effort delete; the caller doesn't distinguish "didn't exist" from "failed" (Backlog AC5). */
     fun deleteRecording(fileName: String)
+
+    /**
+     * Whether a recording's file is present, without reading its bytes
+     * (Backlog Eigen-Korpus Batch C, AC4): a cheap existence check for
+     * filtering text-only/gone-missing entries out of a training round --
+     * [readRecording] would work for the same check, but that means loading
+     * the whole WAV into memory just to throw it away for every entry on
+     * every screen entry.
+     */
+    fun recordingExists(fileName: String): Boolean
 }
 
 /** [dir] is an absolute directory path, as produced by the platform-specific `getOwnCorpusDir`. */

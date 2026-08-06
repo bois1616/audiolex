@@ -25,9 +25,9 @@ import de.hexenwoche.audiolex.core.audio.StereoGain
 import de.hexenwoche.audiolex.core.audio.WavFile
 import de.hexenwoche.audiolex.core.audio.createAudioSink
 import de.hexenwoche.audiolex.core.audio.createAudioSource
+import de.hexenwoche.audiolex.core.corpus.AudioRecording
 import de.hexenwoche.audiolex.core.corpus.LoadedCorpus
 import de.hexenwoche.audiolex.core.session.PlaybackQueue
-import de.hexenwoche.audiolex.generated.resources.Res
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -53,9 +53,18 @@ import kotlinx.coroutines.withContext
  * "Kakaffee" regression in the training screens (Autor-Finding 2026-07-13):
  * decoding first and only then calling `queue.play(buffer)` would still
  * leave the decode step racy.
+ *
+ * [ownCorpusRepository] exists here only so [decodeRecording]/
+ * [buildTwoWordsPerEar] can go through the same [readRecordingBytes] as the
+ * training screens (Backlog Eigen-Korpus Batch C, AC5) -- this screen's own
+ * [loadCorpus] call below stays unfiltered/mitgeliefert-only as it always
+ * has (no source switch here, that's the training screens' territory), so
+ * every recording this screen ever plays resolves as
+ * [de.hexenwoche.audiolex.core.corpus.RecordingSource.MITGELIEFERT] and the
+ * repository is never actually asked for bytes.
  */
 @Composable
-fun DevPlaybackScreen() {
+fun DevPlaybackScreen(ownCorpusRepository: OwnCorpusRepository) {
     var corpus by remember { mutableStateOf<LoadedCorpus?>(null) }
     var status by remember { mutableStateOf("Lade Korpus…") }
     val scope = rememberCoroutineScope()
@@ -117,7 +126,7 @@ fun DevPlaybackScreen() {
                     // Decode + mix happen inside the producer (AC1): a fast
                     // follow-up tap cancels this job, decode included,
                     // instead of two decodes racing to the sink.
-                    queue.play { buildTwoWordsPerEar(left.fileRef, right.fileRef, gain) }
+                    queue.play { buildTwoWordsPerEar(left, right, gain, ownCorpusRepository) }
                 },
             ) {
                 Text(label)
@@ -133,7 +142,7 @@ fun DevPlaybackScreen() {
                 onClick = {
                     val rec = recording ?: return@Button
                     status = "Spiele „${word.text}“ (${rec.voiceId})…"
-                    queue.play { decodeRecording(rec.fileRef) }
+                    queue.play { decodeRecording(rec, ownCorpusRepository) }
                 },
             ) {
                 Text(word.text)
@@ -281,27 +290,28 @@ private fun MikrofonRohtestSection(queue: PlaybackQueue) {
     }
 }
 
-private suspend fun decodeRecording(fileRef: String): PcmBuffer =
+private suspend fun decodeRecording(recording: AudioRecording, ownCorpusRepository: OwnCorpusRepository): PcmBuffer =
     withContext(Dispatchers.Default) {
-        val bytes = Res.readBytes("files/corpus/$fileRef")
+        val bytes = readRecordingBytes(recording, ownCorpusRepository)
         WavFile.decode(bytes)
     }
 
 /**
- * Builds a stereo buffer with [leftFileRef] panned to the left ear and
- * [rightFileRef] panned to the right ear at the same time, then applies
+ * Builds a stereo buffer with [leftRecording] panned to the left ear and
+ * [rightRecording] panned to the right ear at the same time, then applies
  * [gain] on top (so e.g. LEFT_ONLY silences the right word entirely,
  * proving the ear that hears something is the ear StereoGain intended).
  * Only builds the buffer -- playing it is the caller's (the queue's) job.
  */
 private suspend fun buildTwoWordsPerEar(
-    leftFileRef: String,
-    rightFileRef: String,
+    leftRecording: AudioRecording,
+    rightRecording: AudioRecording,
     gain: StereoGain,
+    ownCorpusRepository: OwnCorpusRepository,
 ): PcmBuffer =
     withContext(Dispatchers.Default) {
-        val left = WavFile.decode(Res.readBytes("files/corpus/$leftFileRef"))
-        val right = WavFile.decode(Res.readBytes("files/corpus/$rightFileRef"))
+        val left = WavFile.decode(readRecordingBytes(leftRecording, ownCorpusRepository))
+        val right = WavFile.decode(readRecordingBytes(rightRecording, ownCorpusRepository))
         require(left.sampleRate == right.sampleRate) { "sample rates differ" }
         require(left.channels == 1 && right.channels == 1) { "expected mono corpus recordings" }
 
