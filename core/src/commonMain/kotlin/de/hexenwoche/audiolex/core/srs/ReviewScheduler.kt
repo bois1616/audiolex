@@ -7,8 +7,7 @@ package de.hexenwoche.audiolex.core.srs
 interface ReviewScheduler {
     fun review(card: ReviewCard, rating: ReviewRating, nowEpochMillis: Long): ReviewCard
 
-    fun isDue(card: ReviewCard, nowEpochMillis: Long): Boolean =
-        card.dueAtEpochMillis <= nowEpochMillis
+    fun isDue(card: ReviewCard, nowEpochMillis: Long): Boolean = card.isDue(nowEpochMillis)
 }
 
 /** MVP scheduler: the manual rating selects the next interval directly. */

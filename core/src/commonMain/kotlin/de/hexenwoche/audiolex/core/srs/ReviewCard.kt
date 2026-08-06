@@ -11,3 +11,11 @@ data class ReviewCard(
     val lastRating: ReviewRating? = null,
     val repetitions: Int = 0,
 )
+
+/**
+ * Single source of truth for the due comparison (Backlog "Code-Qualität":
+ * previously duplicated between [ReviewScheduler.isDue] and [ReviewQueue]'s
+ * own inline filter). Both now delegate here instead of repeating
+ * `dueAtEpochMillis <= now` independently.
+ */
+fun ReviewCard.isDue(nowEpochMillis: Long): Boolean = dueAtEpochMillis <= nowEpochMillis

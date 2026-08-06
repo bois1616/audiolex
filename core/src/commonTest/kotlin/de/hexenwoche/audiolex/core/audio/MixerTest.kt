@@ -70,4 +70,30 @@ class MixerTest {
         val gain = noiseGainForSnr(speechRms = 1000.0, noiseRms = 1000.0, snrDb = 20.0)
         assertTrue(abs(gain - 0.1f) < 0.001f)
     }
+
+    @Test
+    fun noiseLoopPrecomputesSameRmsAsCallingRmsDirectly() {
+        val buffer = mono(10, -10, 20, -20)
+        val loop = NoiseLoop(buffer)
+        assertEquals(buffer.rms(), loop.rms)
+    }
+
+    @Test
+    fun mixingWithPrecomputedNoiseLoopRmsMatchesMixingWithLiveRms() {
+        // Regression for "Noise-RMS einmalig berechnen statt pro Wort": a mix
+        // using NoiseLoop's precomputed rms must be bit-identical to the old
+        // path of calling noiseBuffer.rms() fresh at mix time -- same buffer,
+        // same formula, only the *when* of the rms() call differs.
+        val speech = mono(500, -500, 500, -500)
+        val noise = mono(10, -10)
+        val loop = NoiseLoop(noise)
+
+        val gainFromLoop = noiseGainForSnr(speech.rms(), loop.rms, snrDb = 6.0)
+        val gainLive = noiseGainForSnr(speech.rms(), noise.rms(), snrDb = 6.0)
+        assertEquals(gainLive, gainFromLoop)
+
+        val mixedFromLoop = mixWithNoise(speech, loop.buffer, gainFromLoop)
+        val mixedLive = mixWithNoise(speech, noise, gainLive)
+        assertEquals(mixedLive.samples.toList(), mixedFromLoop.samples.toList())
+    }
 }

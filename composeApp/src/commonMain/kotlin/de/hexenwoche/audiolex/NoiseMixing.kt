@@ -1,5 +1,6 @@
 package de.hexenwoche.audiolex
 
+import de.hexenwoche.audiolex.core.audio.NoiseLoop
 import de.hexenwoche.audiolex.core.audio.NoiseScenario
 import de.hexenwoche.audiolex.core.audio.PcmBuffer
 import de.hexenwoche.audiolex.core.audio.WavFile
@@ -41,32 +42,40 @@ internal suspend fun loadNoiseScenarios(): List<NoiseScenario> =
  * (ADR-0010 point 4), never a crash. An unknown [noiseScenario] id (not in
  * the loaded catalog, e.g. a scenario removed since the setting was saved)
  * resolves to the catalog's first entry rather than failing outright.
+ *
+ * The returned [NoiseLoop] carries its RMS precomputed right here, once per
+ * load (Backlog "Code-Qualität": Noise-RMS einmalig berechnen statt pro
+ * Wort) -- the loop's PCM never changes afterwards, so [mixWithOptionalNoise]
+ * no longer recomputes it on every playback.
  */
-internal suspend fun loadNoiseBuffer(noiseEnabled: Boolean, noiseScenario: String): PcmBuffer? {
+internal suspend fun loadNoiseBuffer(noiseEnabled: Boolean, noiseScenario: String): NoiseLoop? {
     if (!noiseEnabled) return null
     return try {
         val scenarios = loadNoiseScenarios()
         val scenario = scenarios.firstOrNull { it.id == noiseScenario } ?: scenarios.firstOrNull() ?: return null
         val bytes = Res.readBytes("files/noise/${scenario.fileRef}")
-        WavFile.decode(bytes).toMono()
+        NoiseLoop(WavFile.decode(bytes).toMono())
     } catch (e: Exception) {
         null
     }
 }
 
 /**
- * Mixes [noiseBuffer] into [speech] at [snrDb] if present; otherwise (noise
+ * Mixes [noiseLoop] into [speech] at [snrDb] if present; otherwise (noise
  * disabled, or [loadNoiseBuffer] came back empty-handed) returns [speech]
  * unchanged. Also swallows a sample-rate/channel-count mismatch or a fully
  * silent signal (both would make [mixWithNoise]/[noiseGainForSnr] throw) --
  * the noise overlay is defensive by design (ADR-0010 point 4, "kein
  * Resampling in Code"): a mismatch means clean speech, not a crashed session.
+ * Speech RMS is still computed here, per word, since the speech signal
+ * changes every playback; only the noise side is precomputed (see
+ * [loadNoiseBuffer]).
  */
-internal fun mixWithOptionalNoise(speech: PcmBuffer, noiseBuffer: PcmBuffer?, snrDb: Int): PcmBuffer {
-    if (noiseBuffer == null) return speech
+internal fun mixWithOptionalNoise(speech: PcmBuffer, noiseLoop: NoiseLoop?, snrDb: Int): PcmBuffer {
+    if (noiseLoop == null) return speech
     return try {
-        val gain = noiseGainForSnr(speech.rms(), noiseBuffer.rms(), snrDb.toDouble())
-        mixWithNoise(speech, noiseBuffer, gain)
+        val gain = noiseGainForSnr(speech.rms(), noiseLoop.rms, snrDb.toDouble())
+        mixWithNoise(speech, noiseLoop.buffer, gain)
     } catch (e: IllegalArgumentException) {
         speech
     }

@@ -14,7 +14,7 @@ object ReviewQueue {
 
     fun due(cards: List<ReviewCard>, nowEpochMillis: Long): List<ReviewCard> =
         cards
-            .filter { it.dueAtEpochMillis <= nowEpochMillis }
+            .filter { it.isDue(nowEpochMillis) }
             .sortedWith(compareBy(ReviewCard::dueAtEpochMillis, ReviewCard::wordId))
 
     /**

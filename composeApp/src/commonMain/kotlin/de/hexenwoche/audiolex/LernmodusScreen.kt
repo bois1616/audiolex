@@ -22,7 +22,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import de.hexenwoche.audiolex.core.audio.PcmBuffer
+import de.hexenwoche.audiolex.core.audio.NoiseLoop
 import de.hexenwoche.audiolex.core.audio.WavFile
 import de.hexenwoche.audiolex.core.audio.createAudioSink
 import de.hexenwoche.audiolex.core.corpus.EntryKind
@@ -73,10 +73,13 @@ fun LernmodusScreen(
         })
     }
     var corpus by remember { mutableStateOf<LoadedCorpus?>(null) }
-    var noiseBuffer by remember { mutableStateOf<PcmBuffer?>(null) }
+    var noiseBuffer by remember { mutableStateOf<NoiseLoop?>(null) }
 
     DisposableEffect(Unit) {
-        onDispose { queue.stop() }
+        onDispose {
+            queue.stop()
+            sink.close()
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -231,7 +234,7 @@ private fun playCurrentWord(
     session: LearningSession,
     corpus: LoadedCorpus,
     queue: PlaybackQueue,
-    noiseBuffer: PcmBuffer?,
+    noiseBuffer: NoiseLoop?,
     snrDb: Int,
     onError: (String) -> Unit,
 ) {

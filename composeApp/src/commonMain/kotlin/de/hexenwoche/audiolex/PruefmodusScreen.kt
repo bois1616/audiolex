@@ -28,7 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import de.hexenwoche.audiolex.core.audio.PcmBuffer
+import de.hexenwoche.audiolex.core.audio.NoiseLoop
 import de.hexenwoche.audiolex.core.audio.WavFile
 import de.hexenwoche.audiolex.core.audio.createAudioSink
 import de.hexenwoche.audiolex.core.corpus.EntryKind
@@ -103,7 +103,7 @@ fun PruefmodusScreen(
         })
     }
     var corpus by remember { mutableStateOf<LoadedCorpus?>(null) }
-    var noiseBuffer by remember { mutableStateOf<PcmBuffer?>(null) }
+    var noiseBuffer by remember { mutableStateOf<NoiseLoop?>(null) }
     var ratedCount by remember { mutableStateOf(0) }
     var isRating by remember { mutableStateOf(false) }
     // Distribution and session start (Szenario S12, Sitzungshistorie) -- only
@@ -135,7 +135,10 @@ fun PruefmodusScreen(
     }
 
     DisposableEffect(Unit) {
-        onDispose { queue.stop() }
+        onDispose {
+            queue.stop()
+            sink.close()
+        }
     }
 
     LaunchedEffect(reloadKey) {
@@ -424,7 +427,7 @@ private fun playCurrentCard(
     session: ExamSession,
     corpus: LoadedCorpus,
     queue: PlaybackQueue,
-    noiseBuffer: PcmBuffer?,
+    noiseBuffer: NoiseLoop?,
     snrDb: Int,
     onError: (String) -> Unit,
 ) {

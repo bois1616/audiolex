@@ -36,6 +36,10 @@ interface ReviewCardDao {
     @Upsert
     suspend fun upsert(card: ReviewCardEntity)
 
+    /** Batch upsert in a single transaction, used by [allOrSeed]'s seeding step. */
+    @Upsert
+    suspend fun upsertAll(cards: List<ReviewCardEntity>)
+
     @Query("SELECT * FROM ReviewCardEntity")
     suspend fun all(): List<ReviewCardEntity>
 }

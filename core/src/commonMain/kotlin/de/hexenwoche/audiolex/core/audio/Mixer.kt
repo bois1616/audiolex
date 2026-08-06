@@ -55,6 +55,19 @@ fun PcmBuffer.rms(): Double {
 }
 
 /**
+ * A decoded noise loop paired with its RMS (Backlog "Code-Qualität": Noise-
+ * RMS einmalig berechnen statt pro Wort). The loop's samples never change
+ * after loading, so [rms] is computed once here -- at construction time,
+ * right after decode -- instead of being recomputed on every playback from
+ * the same never-mutated [buffer]. [noiseGainForSnr] callers use this [rms]
+ * in place of calling `buffer.rms()` themselves; the value and the formula
+ * are unchanged, only when it's computed.
+ */
+data class NoiseLoop(val buffer: PcmBuffer, val rms: Double) {
+    constructor(buffer: PcmBuffer) : this(buffer, buffer.rms())
+}
+
+/**
  * Gain to apply to the noise track so that speech vs. scaled noise
  * reaches the requested signal-to-noise ratio in dB.
  * SNR = 20 * log10(speechRms / (noiseRms * gain)).

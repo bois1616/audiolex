@@ -91,4 +91,24 @@ class ReviewCardRepositoryTest {
         assertEquals(ReviewRating.GOOD, cardA.lastRating)
         assertEquals(0L, cardB.dueAtEpochMillis)
     }
+
+    /**
+     * Many-seeds case (AC3): exercises the [ReviewCardDao.upsertAll] batch
+     * path with more than a handful of missing ids in one go -- every id
+     * gets an immediately-due card, the batch persists them all, and a
+     * second call sees them as already-existing (no duplicate/second seed).
+     */
+    @Test
+    fun allOrSeedBatchPersistsManyMissingCardsAtOnce() = runTest {
+        val repository = newRepository()
+        val wordIds = (1..50).map { "word-$it" }
+
+        val seeded = repository.allOrSeed(wordIds)
+
+        assertEquals(wordIds, seeded.map { it.wordId })
+        assertTrue(seeded.all { it.dueAtEpochMillis == 0L })
+        assertEquals(wordIds.size, repository.all().size)
+        // Second call sees them all as pre-existing -- no reseed, no drift.
+        assertEquals(seeded, repository.allOrSeed(wordIds))
+    }
 }
