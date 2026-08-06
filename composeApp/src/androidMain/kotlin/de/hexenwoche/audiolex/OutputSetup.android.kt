@@ -1,9 +1,11 @@
 package de.hexenwoche.audiolex
 
 import android.content.Context
+import android.media.AudioAttributes
 import android.media.AudioDeviceCallback
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
+import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -35,8 +37,7 @@ actual fun rememberOutputSetup(): OutputSetup {
         val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
         fun refresh() {
-            val devices = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
-            setup = resolveOutputSetup(devices.asList())
+            setup = currentOutputSetup(audioManager)
         }
         refresh()
 
@@ -55,6 +56,53 @@ actual fun rememberOutputSetup(): OutputSetup {
 }
 
 /**
+ * The attributes the training playback actually uses (`AndroidAudioSink`
+ * builds its `AudioTrack` with exactly these). Routing is per-attribute on
+ * Android, so asking with anything else could answer for a different route
+ * than the one the user will hear.
+ */
+private val MEDIA_SPEECH_ATTRIBUTES: AudioAttributes = AudioAttributes.Builder()
+    .setUsage(AudioAttributes.USAGE_MEDIA)
+    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+    .build()
+
+/**
+ * Asks *where media audio would actually go* rather than *what is plugged
+ * in* -- the distinction that the A53 device test of v0.18.0 forced
+ * (ADR-0011, Nachtrag 2026-08-06).
+ *
+ * The first cut enumerated connected devices and let a hearing aid win
+ * outright. That misread the situation the author is actually in: his
+ * hearing aid stays *connected* over Bluetooth essentially all the time, so
+ * plugging in headphones left the app reporting "Hörgerät" even though
+ * Android had already given the wired output priority and the hearing aid
+ * had gone silent. `getAudioDevicesForAttributes` reflects that priority,
+ * so no hearing-aid tie-break is needed here -- the routed set already *is*
+ * the answer.
+ *
+ * The API is public only from Android 13 (API 33) -- lint caught an initial
+ * guess of API 30, so the guard below is the toolchain's answer, not an
+ * assumption. Below that, the enumerating [resolveOutputSetup] stays as the
+ * fallback with its conservative tie-break; at minSdk 29 that covers API
+ * 29-32. The test device (A53, API 36) always takes the routing path.
+ *
+ * Known limit: the device callback that triggers this only fires on devices
+ * appearing/disappearing. Re-routing without a device change (picking
+ * another output in the system's media switcher) is not observed.
+ */
+private fun currentOutputSetup(audioManager: AudioManager): OutputSetup {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        val routed = audioManager.getAudioDevicesForAttributes(MEDIA_SPEECH_ATTRIBUTES)
+        if (routed.isNotEmpty()) {
+            val stereoRouted = routed.any { classifyOutputDeviceType(it.type) == OutputSetup.STEREO_KOPFHOERER }
+            return if (stereoRouted) OutputSetup.STEREO_KOPFHOERER else OutputSetup.HOERGERAET
+        }
+    }
+    return resolveOutputSetup(audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS).asList())
+}
+
+/**
+ * Fallback for API 29-32, where [currentOutputSetup] cannot ask about routing.
  * Combines every currently reported output device into the single
  * governing [OutputSetup]. Taking "the first" reported device doesn't work:
  * Android practically always reports the built-in speaker alongside any
@@ -89,7 +137,7 @@ internal fun resolveOutputSetup(devices: List<AudioDeviceInfo>): OutputSetup {
  * doing so would need a `Build.VERSION.SDK_INT` guard for zero behavioural
  * gain.
  */
-private fun classifyOutputDeviceType(type: Int): OutputSetup = when (type) {
+internal fun classifyOutputDeviceType(type: Int): OutputSetup = when (type) {
     AudioDeviceInfo.TYPE_WIRED_HEADPHONES,
     AudioDeviceInfo.TYPE_WIRED_HEADSET,
     AudioDeviceInfo.TYPE_USB_HEADSET,

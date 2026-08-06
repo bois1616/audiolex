@@ -1,7 +1,19 @@
 # ADR-0011: Zwei gleichrangige Ausgabe-Setups (Hörgerät / Stereo-Kopfhörer), automatisch erkannt
 
-- **Status:** akzeptiert (Autor-Entscheid 2026-08-06, Architektur durch Opus-Schärfung am selben Tag)
+- **Status:** akzeptiert (Autor-Entscheid 2026-08-06, Architektur durch Opus-Schärfung am selben Tag) · **Erkennungsregel korrigiert 2026-08-06 nach dem Gerätetest, siehe Nachtrag**
 - **Datum:** 2026-08-06
+
+> **Nachtrag 2026-08-06 (Gerätetest v0.18.0): Die Erkennung fragt nach dem Routing, nicht nach den verbundenen Geräten.**
+>
+> Die unten stehende Tabelle bleibt als *Klassifizierung eines einzelnen Gerätetyps* gültig. Falsch war die Ebene darüber: Punkt 2 ließ offen, wie mehrere gleichzeitig gemeldete Geräte zusammenzufassen sind, und die Zweifelsregel wurde folgerichtig so gelesen, dass ein Hörgerät auch gegen ein gleichzeitig vorhandenes Stereo-Gerät gewinnt. Der A53-Test hat gezeigt, warum das den Hauptanwendungsfall verfehlt: Das Hörgerät des Autors ist über Bluetooth praktisch dauerhaft **verbunden**. Steckt er Kopfhörer ein, gibt Android der Kabelausgabe die Priorität und das Hörgerät verstummt — in der Liste der verbundenen Geräte steht es aber weiter, also meldete die App unverändert „Hörgerät". Genau die Kanalarbeit, für die der Kopfhörer angeschafft wurde, wäre damit dauerhaft gesperrt geblieben. (Autor-Befund: „Die Statuszeile springt nicht um, aber der Kopfhörer wird erkannt und genutzt mit Priorität […] Das ist reversibel.")
+>
+> **Korrigierte Entscheidung:** Maßgeblich ist, **wohin Medien-Audio gerade geroutet würde**, nicht was angeschlossen ist. Abgefragt wird `AudioManager.getAudioDevicesForAttributes` mit exakt den `AudioAttributes`, die auch `AndroidAudioSink` für die Wiedergabe setzt (`USAGE_MEDIA` + `CONTENT_TYPE_SPEECH`) — Routing ist auf Android attributabhängig, eine Abfrage mit anderen Attributen könnte für einen anderen Pfad antworten als den, den der Nutzer hört. Enthält das Ergebnis ein stereofähiges Gerät, gilt das Kopfhörer-Setup, sonst das Hörgerät-Setup. Ein Vorrang für das Hörgerät ist dabei **nicht** mehr nötig und wäre schädlich: Die geroutete Menge *ist* bereits die Antwort.
+>
+> Die API ist erst ab **Android 13 (API 33)** öffentlich — eine erste Annahme von API 30 hat der Lint des Builds widerlegt, der Guard folgt also dem Werkzeug, nicht der Vermutung. Unterhalb davon (bei minSdk 29 also API 29–32) bleibt die ursprüngliche Aufzählung samt konservativem Vorrang als Rückfall bestehen; auf dem Testgerät (API 36) greift immer der Routing-Pfad. Preis der Korrektur: Auf Geräten zwischen 29 und 32 bleibt das ursprüngliche Fehlverhalten bestehen. Das ist hinnehmbar, solange das Testgerät die Referenz ist — würde die App je auf einem älteren Gerät ernsthaft genutzt, wäre dort die manuelle Umschaltung (siehe Alternativen) der Ausweg.
+>
+> **Was daraus zu lernen ist:** Die Zweifelsregel („im Zweifel Hörgerät") ist für *unbekannte Gerätetypen* richtig und bleibt es. Sie auf den Fall „zwei bekannte Geräte gleichzeitig" anzuwenden, war eine Übertragung auf eine Frage, die sie nie beantworten sollte — dort lautet die richtige Frage nicht „was ist da?", sondern „was ist aktiv?".
+>
+> **Offene Grenze:** Der auslösende Callback feuert nur beim Auftauchen/Verschwinden von Geräten. Eine Umleitung ohne Gerätewechsel (Ausgabe-Umschalter des Systems) wird nicht bemerkt.
 
 ## Kontext
 
