@@ -1,10 +1,14 @@
 package de.hexenwoche.audiolex
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -74,63 +78,76 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit) {
 
     AudioLexTheme(settings.themeMode) {
         Surface(modifier = Modifier.fillMaxSize()) {
-            var screen by remember { mutableStateOf<Screen>(Screen.Start) }
+            // The Surface above stays edge-to-edge -- it keeps painting its
+            // background color under the status/navigation bars, so the
+            // borderless look from MainActivity's enableEdgeToEdge() is
+            // unchanged. Only the *content* below insets from the system
+            // bars, so the bottom-pinned button on every screen
+            // (Sitzungshistorie "Zurück", Einstellungen "Zurück", StartScreen
+            // "App beenden"/version line) lands fully above the navigation
+            // bar instead of half under it (Backlog M2 "System-
+            // Navigationsleiste überlappt", A53-Befund 2026-08-06). One
+            // insets consumer at the root instead of per screen. On Desktop
+            // the insets are empty, so this is a no-op there.
+            Box(modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
+                var screen by remember { mutableStateOf<Screen>(Screen.Start) }
 
-            when (val current = screen) {
-                is Screen.Start -> StartScreen(
-                    onStartLernmodus = { screen = Screen.Lernmodus },
-                    onStartPruefmodus = { screen = Screen.Pruefmodus },
-                    onOpenEinstellungen = { screen = Screen.Einstellungen },
-                    onOpenSitzungshistorie = { screen = Screen.Sitzungshistorie },
-                    onOpenDevKanaltest = { screen = Screen.DevKanaltest },
-                    onExitApp = onExitApp,
-                )
-                is Screen.Lernmodus -> LernmodusScreen(
-                    corpusMode = settings.corpusMode,
-                    noiseEnabled = settings.noiseEnabled,
-                    snrDb = settings.snrDb,
-                    noiseScenario = settings.noiseScenario,
-                    onBeenden = { screen = Screen.Start },
-                )
-                is Screen.Pruefmodus -> PruefmodusScreen(
-                    repository = remember(database) { RoomReviewCardRepository(database.reviewCardDao()) },
-                    sessionRepository = remember(database) { RoomSessionRepository(database.sessionDao()) },
-                    clock = clock,
-                    corpusMode = settings.corpusMode,
-                    noiseEnabled = settings.noiseEnabled,
-                    snrDb = settings.snrDb,
-                    noiseScenario = settings.noiseScenario,
-                    onBeenden = { screen = Screen.Start },
-                    onZumLernmodus = { screen = Screen.Lernmodus },
-                )
-                is Screen.Einstellungen -> EinstellungenScreen(
-                    themeMode = settings.themeMode,
-                    onThemeModeChange = { newMode ->
-                        updateSettings { it.copy(themeMode = newMode) }
-                    },
-                    corpusMode = settings.corpusMode,
-                    onCorpusModeChange = { newMode ->
-                        updateSettings { it.copy(corpusMode = newMode) }
-                    },
-                    noiseEnabled = settings.noiseEnabled,
-                    onNoiseEnabledChange = { newEnabled ->
-                        updateSettings { it.copy(noiseEnabled = newEnabled) }
-                    },
-                    snrDb = settings.snrDb,
-                    onSnrDbChange = { newSnrDb ->
-                        updateSettings { it.copy(snrDb = newSnrDb) }
-                    },
-                    noiseScenario = settings.noiseScenario,
-                    onNoiseScenarioChange = { newScenario ->
-                        updateSettings { it.copy(noiseScenario = newScenario) }
-                    },
-                    onBeenden = { screen = Screen.Start },
-                )
-                is Screen.Sitzungshistorie -> SitzungshistorieScreen(
-                    repository = remember(database) { RoomSessionRepository(database.sessionDao()) },
-                    onBeenden = { screen = Screen.Start },
-                )
-                is Screen.DevKanaltest -> DevKanaltestScreen(onBeenden = { screen = Screen.Start })
+                when (val current = screen) {
+                    is Screen.Start -> StartScreen(
+                        onStartLernmodus = { screen = Screen.Lernmodus },
+                        onStartPruefmodus = { screen = Screen.Pruefmodus },
+                        onOpenEinstellungen = { screen = Screen.Einstellungen },
+                        onOpenSitzungshistorie = { screen = Screen.Sitzungshistorie },
+                        onOpenDevKanaltest = { screen = Screen.DevKanaltest },
+                        onExitApp = onExitApp,
+                    )
+                    is Screen.Lernmodus -> LernmodusScreen(
+                        corpusMode = settings.corpusMode,
+                        noiseEnabled = settings.noiseEnabled,
+                        snrDb = settings.snrDb,
+                        noiseScenario = settings.noiseScenario,
+                        onBeenden = { screen = Screen.Start },
+                    )
+                    is Screen.Pruefmodus -> PruefmodusScreen(
+                        repository = remember(database) { RoomReviewCardRepository(database.reviewCardDao()) },
+                        sessionRepository = remember(database) { RoomSessionRepository(database.sessionDao()) },
+                        clock = clock,
+                        corpusMode = settings.corpusMode,
+                        noiseEnabled = settings.noiseEnabled,
+                        snrDb = settings.snrDb,
+                        noiseScenario = settings.noiseScenario,
+                        onBeenden = { screen = Screen.Start },
+                        onZumLernmodus = { screen = Screen.Lernmodus },
+                    )
+                    is Screen.Einstellungen -> EinstellungenScreen(
+                        themeMode = settings.themeMode,
+                        onThemeModeChange = { newMode ->
+                            updateSettings { it.copy(themeMode = newMode) }
+                        },
+                        corpusMode = settings.corpusMode,
+                        onCorpusModeChange = { newMode ->
+                            updateSettings { it.copy(corpusMode = newMode) }
+                        },
+                        noiseEnabled = settings.noiseEnabled,
+                        onNoiseEnabledChange = { newEnabled ->
+                            updateSettings { it.copy(noiseEnabled = newEnabled) }
+                        },
+                        snrDb = settings.snrDb,
+                        onSnrDbChange = { newSnrDb ->
+                            updateSettings { it.copy(snrDb = newSnrDb) }
+                        },
+                        noiseScenario = settings.noiseScenario,
+                        onNoiseScenarioChange = { newScenario ->
+                            updateSettings { it.copy(noiseScenario = newScenario) }
+                        },
+                        onBeenden = { screen = Screen.Start },
+                    )
+                    is Screen.Sitzungshistorie -> SitzungshistorieScreen(
+                        repository = remember(database) { RoomSessionRepository(database.sessionDao()) },
+                        onBeenden = { screen = Screen.Start },
+                    )
+                    is Screen.DevKanaltest -> DevKanaltestScreen(onBeenden = { screen = Screen.Start })
+                }
             }
         }
     }

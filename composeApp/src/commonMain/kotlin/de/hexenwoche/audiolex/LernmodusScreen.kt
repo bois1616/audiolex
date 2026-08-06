@@ -2,12 +2,15 @@ package de.hexenwoche.audiolex
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -162,8 +165,21 @@ fun LernmodusScreen(
                 val isSentence = session.currentWord.kind == EntryKind.SENTENCE
                 TargetTextCard(text = session.currentWord.text, isSentence = isSentence)
 
-                Button(onClick = {
-                    val loaded = corpus ?: return@Button
+                // Pushes the action buttons to the bottom of the screen, into
+                // thumb reach on a one-handed phone grip (DESIGN.md Leitprinzip
+                // 4 "Große Ziele, eine Hand"; Muster StartScreen) -- progress
+                // line and card stay put above.
+                Spacer(modifier = Modifier.weight(1f))
+
+                // Hierarchy (DESIGN.md "Farbe trägt Bedeutung"): "Weiter" is
+                // the primary action and stays the filled Button; "Wiederholen"
+                // is secondary (OutlinedButton, same choice as Prüfmodus); and
+                // "Beenden" recedes as a TextButton in onSurfaceVariant, the
+                // same muted pattern the StartScreen already uses for "App
+                // beenden" -- filled everywhere used to mean the accent no
+                // longer signalled anything.
+                OutlinedButton(onClick = {
+                    val loaded = corpus ?: return@OutlinedButton
                     playCurrentWord(session, loaded, queue, noiseBuffer, snrDb) { message ->
                         state = LernmodusState.Error(message)
                     }
@@ -171,10 +187,10 @@ fun LernmodusScreen(
                     Text("Wiederholen")
                 }
 
-                Button(
+                OutlinedButton(
                     enabled = !session.isFirstWord,
                     onClick = {
-                        val previous = session.back() ?: return@Button
+                        val previous = session.back() ?: return@OutlinedButton
                         state = LernmodusState.Running(previous)
                     },
                 ) {
@@ -188,11 +204,14 @@ fun LernmodusScreen(
                     Text("Weiter")
                 }
 
-                Button(onClick = {
+                TextButton(onClick = {
                     queue.stop()
                     onBeenden()
                 }) {
-                    Text("Beenden")
+                    Text(
+                        "Beenden",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
         }

@@ -9,6 +9,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -68,7 +69,17 @@ fun SitzungshistorieScreen(repository: SessionRepository, onBeenden: () -> Unit)
                             .verticalScroll(rememberScrollState()),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        current.sessions.forEach { session -> SessionRow(session) }
+                        // Muted divider between entries, none after the last
+                        // one (Backlog P3 "Sitzungshistorie: Trennung
+                        // zwischen den Einträgen") -- the three text lines
+                        // per session used to blur into each other once the
+                        // list got long.
+                        current.sessions.forEachIndexed { index, session ->
+                            SessionRow(session)
+                            if (index < current.sessions.lastIndex) {
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                            }
+                        }
                     }
                 }
             }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -12,8 +13,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -245,13 +248,23 @@ fun PruefmodusScreen(
                     },
                 )
 
+                // Pushes the action buttons to the bottom of the screen, into
+                // thumb reach on a one-handed phone grip (DESIGN.md
+                // Leitprinzip 4 "Große Ziele, eine Hand"; Muster
+                // StartScreen/Lernmodus) -- progress line and card stay put
+                // above.
+                Spacer(modifier = Modifier.weight(1f))
+
                 // Only meaningful before reveal (replay the still-hidden
                 // word) -- once rated, "Nächstes" below is the way forward
                 // instead (Autor-Finding 2026-07-10: "Wiederholen" made no
-                // sense once the word was already visible).
+                // sense once the word was already visible). Secondary action
+                // (OutlinedButton, same choice as Lernmodus's "Wiederholen"),
+                // not the primary filled Button (DESIGN.md "Farbe trägt
+                // Bedeutung").
                 if (!current.rated) {
-                    Button(onClick = {
-                        val loaded = corpus ?: return@Button
+                    OutlinedButton(onClick = {
+                        val loaded = corpus ?: return@OutlinedButton
                         playCurrentCard(session, loaded, queue, noiseBuffer, snrDb) { message ->
                             state = PruefmodusState.Error(message)
                         }
@@ -307,7 +320,10 @@ fun PruefmodusScreen(
                     }
                 }
 
-                Button(onClick = {
+                // Recedes as a TextButton in onSurfaceVariant -- same muted
+                // pattern as StartScreen's "App beenden" and Lernmodus's
+                // "Beenden" (DESIGN.md "Sekundäres tritt zurück").
+                TextButton(onClick = {
                     queue.stop()
                     scope.launch {
                         // Szenario S5: leaving mid-session still counts as a
@@ -317,7 +333,10 @@ fun PruefmodusScreen(
                         onBeenden()
                     }
                 }) {
-                    Text("Beenden")
+                    Text(
+                        "Beenden",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
         }

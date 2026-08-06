@@ -152,19 +152,50 @@ fun EinstellungenScreen(
                 // meant dozens of Room writes per drag gesture (Backlog
                 // "Code-Qualität"). `remember(snrDb)` re-syncs the local
                 // value whenever the persisted one changes from outside the
-                // drag (initial load, next screen visit).
+                // drag (initial load, next screen visit). Persistence-on-
+                // release is unchanged by the axis flip below (Backlog M4
+                // AC3) -- only the mapping from slider position to dB value
+                // changed, not when it's saved.
                 var draggedSnrDb by remember(snrDb) { mutableStateOf(snrDb) }
                 val snrLabel = if (draggedSnrDb >= 0) "SNR: +$draggedSnrDb dB" else "SNR: $draggedSnrDb dB"
                 Text(snrLabel, style = MaterialTheme.typography.bodyLarge)
-                Slider(
-                    value = draggedSnrDb.toFloat(),
-                    onValueChange = { draggedSnrDb = it.roundToInt() },
-                    onValueChangeFinished = { onSnrDbChange(draggedSnrDb) },
-                    valueRange = SNR_DB_MIN.toFloat()..SNR_DB_MAX.toFloat(),
-                    // 26 integer values (-5..20 inclusive); `steps` excludes the
-                    // two endpoints, so 26 - 2 = 24.
-                    steps = SNR_DB_MAX - SNR_DB_MIN - 1,
-                )
+
+                // Axis mirrored against the raw SNR value (A53-Befund +
+                // Autor-Entscheid 2026-08-06): a higher SNR means *less*
+                // noise, but the author expects "further right" to mean
+                // "more noise". The slider's own position still runs
+                // SNR_DB_MIN..SNR_DB_MAX left-to-right like any Slider, so
+                // dragging is mirrored both ways -- `sliderPositionFor`
+                // reflects a dB value onto its on-screen position, and
+                // applying it again (position -> dB) undoes it, since the
+                // mapping is its own inverse. AppSettings.snrDb / the mixer
+                // never see the mirrored position, only the real dB value.
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        "leiser",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Slider(
+                        value = sliderPositionFor(draggedSnrDb).toFloat(),
+                        onValueChange = { draggedSnrDb = sliderPositionFor(it.roundToInt()) },
+                        onValueChangeFinished = { onSnrDbChange(draggedSnrDb) },
+                        valueRange = SNR_DB_MIN.toFloat()..SNR_DB_MAX.toFloat(),
+                        // 26 integer values (-5..20 inclusive); `steps` excludes
+                        // the two endpoints, so 26 - 2 = 24.
+                        steps = SNR_DB_MAX - SNR_DB_MIN - 1,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        "lauter",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
 
                 Text("Szenario", style = MaterialTheme.typography.titleMedium)
 
@@ -188,6 +219,16 @@ fun EinstellungenScreen(
         }
     }
 }
+
+/**
+ * Mirrors a dB value onto its on-screen slider position, and back again --
+ * the mapping is its own inverse, so this one function handles both
+ * directions: dB value -> slider position for [Slider]'s `value`, and raw
+ * slider position -> dB value inside `onValueChange` (Backlog M4
+ * "Störgeräusch-Regler: Achse umdrehen", A53-Befund + Autor-Entscheid
+ * 2026-08-06).
+ */
+private fun sliderPositionFor(snrDb: Int): Int = SNR_DB_MIN + SNR_DB_MAX - snrDb
 
 // The row itself carries the selectable semantics/click target (Material
 // guidance), not just the RadioButton -- tapping the label also switches the
