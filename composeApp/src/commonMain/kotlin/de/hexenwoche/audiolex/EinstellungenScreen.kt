@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import de.hexenwoche.audiolex.core.audio.NoiseScenario
+import de.hexenwoche.audiolex.core.audio.OutputSetup
 import de.hexenwoche.audiolex.core.settings.CorpusMode
 import de.hexenwoche.audiolex.core.settings.SNR_DB_MAX
 import de.hexenwoche.audiolex.core.settings.SNR_DB_MIN
@@ -43,7 +44,12 @@ import kotlin.math.roundToInt
  * setting picks the corpus entries the training screens work on (Wörter /
  * Sätze, ADR-0009 point 4 -- a plain setting, not a preset). The third is the
  * noise overlay shared by both training modes: a switch, and -- only while
- * on -- an SNR slider and a scenario choice loaded from `noise.json`.
+ * on -- an SNR slider and a scenario choice loaded from `noise.json`. The
+ * fourth is the read-only "Ausgabe" line (Backlog M4 "Kopfhörer-Bogen Batch
+ * A", ADR-0011): which [OutputSetup] is currently detected, so a wrong
+ * detection is at least visible to the user. Deliberately just a `Text`, no
+ * heading of its own yet -- Batch B adds a whole "Kanäle" section directly
+ * below it and is expected to put a heading above this line at that point.
  * Everything else (channel selection, presets) stays out of scope, own
  * backlog items. A dead end with "Zurück", same navigation pattern as the
  * other screens.
@@ -212,6 +218,23 @@ fun EinstellungenScreen(
                     }
                 }
             }
+
+            // Read-only, no control -- AC4 in the backlog item. Recedes in
+            // onSurfaceVariant (DESIGN.md "Sekundäres tritt zurück"); its
+            // sole purpose is making a wrong detection noticeable (ADR-0011),
+            // not offering anything to tap. Live-updates via
+            // rememberOutputSetup()'s own device-callback registration
+            // (ADR-0011 point 4) -- no extra state needed here.
+            val outputSetup = rememberOutputSetup()
+            val outputSetupLabel = when (outputSetup) {
+                OutputSetup.STEREO_KOPFHOERER -> "Stereo-Kopfhörer"
+                OutputSetup.HOERGERAET -> "Hörgerät"
+            }
+            Text(
+                "Ausgabe: $outputSetupLabel erkannt",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
 
         Button(onClick = onBeenden) {
