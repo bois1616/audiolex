@@ -44,6 +44,7 @@ private sealed interface Screen {
     data object Pruefmodus : Screen
     data object Einstellungen : Screen
     data object Sitzungshistorie : Screen
+    data object Impressum : Screen
     data object DevKanaltest : Screen
 }
 
@@ -98,6 +99,7 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit) {
                         onStartPruefmodus = { screen = Screen.Pruefmodus },
                         onOpenEinstellungen = { screen = Screen.Einstellungen },
                         onOpenSitzungshistorie = { screen = Screen.Sitzungshistorie },
+                        onOpenImpressum = { screen = Screen.Impressum },
                         onOpenDevKanaltest = { screen = Screen.DevKanaltest },
                         onExitApp = onExitApp,
                     )
@@ -146,6 +148,7 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit) {
                         repository = remember(database) { RoomSessionRepository(database.sessionDao()) },
                         onBeenden = { screen = Screen.Start },
                     )
+                    is Screen.Impressum -> ImpressumScreen(onBeenden = { screen = Screen.Start })
                     is Screen.DevKanaltest -> DevKanaltestScreen(onBeenden = { screen = Screen.Start })
                 }
             }
@@ -159,6 +162,7 @@ private fun StartScreen(
     onStartPruefmodus: () -> Unit,
     onOpenEinstellungen: () -> Unit,
     onOpenSitzungshistorie: () -> Unit,
+    onOpenImpressum: () -> Unit,
     onOpenDevKanaltest: () -> Unit,
     onExitApp: () -> Unit,
 ) {
@@ -199,6 +203,16 @@ private fun StartScreen(
         TextButton(onClick = onExitApp) {
             Text(
                 "App beenden",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        // Same quiet TextButton pattern as "App beenden" directly above --
+        // the entry point into Impressum/Datenschutz needs to exist, but
+        // must not compete with the training actions (Backlog M2
+        // "Impressum-/Datenschutz-Seite").
+        TextButton(onClick = onOpenImpressum) {
+            Text(
+                "Impressum & Datenschutz",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }

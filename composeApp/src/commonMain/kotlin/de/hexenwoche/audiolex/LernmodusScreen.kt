@@ -7,8 +7,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -173,13 +173,13 @@ fun LernmodusScreen(
 
                 // Hierarchy (DESIGN.md "Farbe trägt Bedeutung"): "Weiter" is
                 // the primary action and stays the filled Button; "Wiederholen"
-                // is secondary (OutlinedButton, same choice as Prüfmodus); and
-                // "Beenden" recedes as a TextButton in onSurfaceVariant, the
-                // same muted pattern the StartScreen already uses for "App
-                // beenden" -- filled everywhere used to mean the accent no
-                // longer signalled anything.
-                OutlinedButton(onClick = {
-                    val loaded = corpus ?: return@OutlinedButton
+                // is secondary (FilledTonalButton, same choice as Prüfmodus --
+                // an OutlinedButton read too close to the disabled state on
+                // device, A53-Befund 2026-08-06); and "Beenden" recedes as a
+                // TextButton in onSurfaceVariant, the same muted pattern the
+                // StartScreen already uses for "App beenden".
+                FilledTonalButton(onClick = {
+                    val loaded = corpus ?: return@FilledTonalButton
                     playCurrentWord(session, loaded, queue, noiseBuffer, snrDb) { message ->
                         state = LernmodusState.Error(message)
                     }
@@ -187,10 +187,10 @@ fun LernmodusScreen(
                     Text("Wiederholen")
                 }
 
-                OutlinedButton(
+                FilledTonalButton(
                     enabled = !session.isFirstWord,
                     onClick = {
-                        val previous = session.back() ?: return@OutlinedButton
+                        val previous = session.back() ?: return@FilledTonalButton
                         state = LernmodusState.Running(previous)
                     },
                 ) {

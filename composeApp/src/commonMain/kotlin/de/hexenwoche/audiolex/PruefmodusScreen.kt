@@ -12,8 +12,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -259,12 +259,13 @@ fun PruefmodusScreen(
                 // word) -- once rated, "Nächstes" below is the way forward
                 // instead (Autor-Finding 2026-07-10: "Wiederholen" made no
                 // sense once the word was already visible). Secondary action
-                // (OutlinedButton, same choice as Lernmodus's "Wiederholen"),
-                // not the primary filled Button (DESIGN.md "Farbe trägt
-                // Bedeutung").
+                // (FilledTonalButton, same choice as Lernmodus's "Wiederholen"
+                // -- an OutlinedButton read too close to the disabled state on
+                // device, A53-Befund 2026-08-06), not the primary filled
+                // Button (DESIGN.md "Farbe trägt Bedeutung").
                 if (!current.rated) {
-                    OutlinedButton(onClick = {
-                        val loaded = corpus ?: return@OutlinedButton
+                    FilledTonalButton(onClick = {
+                        val loaded = corpus ?: return@FilledTonalButton
                         playCurrentCard(session, loaded, queue, noiseBuffer, snrDb) { message ->
                             state = PruefmodusState.Error(message)
                         }
