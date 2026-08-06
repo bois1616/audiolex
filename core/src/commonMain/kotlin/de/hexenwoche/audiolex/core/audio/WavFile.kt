@@ -57,6 +57,57 @@ object WavFile {
 
         return PcmBuffer(samples, sampleRate, channels)
     }
+
+    /**
+     * Encodes [buffer] as a minimal canonical 16-bit PCM WAV (RIFF) --
+     * the mirror of [decode], writing exactly the chunk shape [decode]
+     * expects back out. Pure Kotlin, no platform I/O (ADR-0003): moved here
+     * from the JVM-only desktop sink (ADR-0012 point 3) so both platforms
+     * can turn a recorded [PcmBuffer] into WAV bytes; writing those bytes to
+     * a file is still a platform concern for the caller.
+     */
+    fun encode(buffer: PcmBuffer): ByteArray {
+        val dataSize = buffer.samples.size * 2
+        val blockAlign = buffer.channels * 2
+        val byteRate = buffer.sampleRate * blockAlign
+        val bytes = ByteArray(44 + dataSize)
+
+        var offset = 0
+        fun writeAscii(s: String) {
+            for (c in s) bytes[offset++] = c.code.toByte()
+        }
+        fun writeLe32(v: Int) {
+            bytes[offset++] = (v and 0xFF).toByte()
+            bytes[offset++] = ((v shr 8) and 0xFF).toByte()
+            bytes[offset++] = ((v shr 16) and 0xFF).toByte()
+            bytes[offset++] = ((v shr 24) and 0xFF).toByte()
+        }
+        fun writeLe16(v: Int) {
+            bytes[offset++] = (v and 0xFF).toByte()
+            bytes[offset++] = ((v shr 8) and 0xFF).toByte()
+        }
+
+        writeAscii("RIFF")
+        writeLe32(36 + dataSize)
+        writeAscii("WAVE")
+
+        writeAscii("fmt ")
+        writeLe32(16)
+        writeLe16(1) // PCM
+        writeLe16(buffer.channels)
+        writeLe32(buffer.sampleRate)
+        writeLe32(byteRate)
+        writeLe16(blockAlign)
+        writeLe16(16) // bits per sample
+
+        writeAscii("data")
+        writeLe32(dataSize)
+        for (sample in buffer.samples) {
+            writeLe16(sample.toInt() and 0xFFFF)
+        }
+
+        return bytes
+    }
 }
 
 private fun ByteArray.readAscii(offset: Int, length: Int): String =

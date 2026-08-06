@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Recording own words/sentences (ADR-0012, Eigen-Korpus Batch A). The
+         only permission this app requests; still no INTERNET permission, so
+         recordings stay on the device (enforced, not just declared). -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
     <application
         android:label="AudioLex"
         android:icon="@mipmap/ic_launcher"

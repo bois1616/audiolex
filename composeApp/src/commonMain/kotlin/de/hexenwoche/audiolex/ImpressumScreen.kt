@@ -27,10 +27,13 @@ import androidx.compose.ui.unit.dp
  * hit an unreachable "Zurück" before this pattern was in place, so this one
  * starts with it instead of risking the same bug a third time.
  *
- * The Datenschutz claim (no network access) is enforceable, not just
- * declared: `AndroidManifest.xml` has no `uses-permission` entry at all, not
- * even INTERNET, so the app cannot open a network connection -- verified
- * against the manifest before writing this text.
+ * The Datenschutz claim "no network access" is enforceable, not just
+ * declared: `AndroidManifest.xml` has no `INTERNET` `uses-permission` entry,
+ * so the app cannot open a network connection -- verified against the
+ * manifest before writing this text. That stays true as of Backlog
+ * Eigen-Korpus Batch A (ADR-0012), which adds the app's first-ever
+ * permission (`RECORD_AUDIO`, also in the manifest) -- the "no permissions
+ * at all" claim below is retired accordingly, the "no network" one isn't.
  */
 @Composable
 fun ImpressumScreen(onBeenden: () -> Unit) {
@@ -76,9 +79,10 @@ fun ImpressumScreen(onBeenden: () -> Unit) {
                 style = MaterialTheme.typography.bodyLarge,
             )
             Text(
-                "Die App fordert keine einzige Android-Berechtigung an — auch nicht die " +
-                    "Internet-Berechtigung. Ohne sie kann sie technisch nicht mit dem Netz " +
-                    "kommunizieren.",
+                "AudioLex fordert eine einzige Android-Berechtigung an: Mikrofon, nur für " +
+                    "selbst ausgelöste Aufnahmen eigener Wörter und Sätze. Eine " +
+                    "Internet-Berechtigung gibt es weiterhin nicht — Aufnahmen können das " +
+                    "Gerät technisch nicht verlassen.",
                 style = MaterialTheme.typography.bodyLarge,
             )
         }

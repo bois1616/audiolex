@@ -1,6 +1,7 @@
 package de.hexenwoche.audiolex
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,13 +19,20 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
 import de.hexenwoche.audiolex.core.audio.PcmBuffer
+import de.hexenwoche.audiolex.core.audio.RECORDING_CHANNELS
+import de.hexenwoche.audiolex.core.audio.RECORDING_SAMPLE_RATE
 import de.hexenwoche.audiolex.core.audio.StereoGain
 import de.hexenwoche.audiolex.core.audio.WavFile
 import de.hexenwoche.audiolex.core.audio.createAudioSink
+import de.hexenwoche.audiolex.core.audio.createAudioSource
 import de.hexenwoche.audiolex.core.corpus.LoadedCorpus
 import de.hexenwoche.audiolex.core.session.PlaybackQueue
 import de.hexenwoche.audiolex.generated.resources.Res
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
@@ -77,6 +85,8 @@ fun DevPlaybackScreen() {
 
     Text(status, style = MaterialTheme.typography.bodyMedium)
 
+    MikrofonRohtestSection(queue)
+
     val currentCorpus = corpus
     if (currentCorpus == null) {
         CircularProgressIndicator()
@@ -127,6 +137,145 @@ fun DevPlaybackScreen() {
                 },
             ) {
                 Text(word.text)
+            }
+        }
+    }
+}
+
+/**
+ * Mikrofon-Rohtest (Backlog Eigen-Korpus Batch A, AC5): record, then listen
+ * back -- nothing is saved, no text, no corpus link (explicit Nicht-Ziele).
+ * Purpose is narrower than it looks: this is where the recording *format*
+ * gets checked on a real device before Batch B builds persistence on top of
+ * it (ADR-0012 Konsequenzen).
+ *
+ * Playback goes through the caller's [queue] (same [PlaybackQueue] the rest
+ * of this screen uses, AC5), but recording has its own
+ * [de.hexenwoche.audiolex.core.audio.AudioSource]/scope -- record and
+ * playback are independent capabilities here, unlike the channel-test
+ * buttons above which only ever play.
+ */
+@Composable
+private fun MikrofonRohtestSection(queue: PlaybackQueue) {
+    val scope = rememberCoroutineScope()
+    val source = remember { createAudioSource() }
+    val permission = rememberRecordingPermissionState()
+
+    val chunks = remember { mutableListOf<ShortArray>() }
+    var recordingJob by remember { mutableStateOf<Job?>(null) }
+    var isRecording by remember { mutableStateOf(false) }
+    // True from "Stopp" tapped until the merge below has actually finished
+    // reading `chunks` -- without this, a fast "Stopp" then "Aufnehmen"
+    // could start clearing/refilling `chunks` while the previous stop's
+    // merge loop is still iterating it (both run on `scope`, but the merge
+    // is itself inside its own suspending `launch`, not synchronous with
+    // the button tap).
+    var isProcessingStop by remember { mutableStateOf(false) }
+    var recordedBuffer by remember { mutableStateOf<PcmBuffer?>(null) }
+    var recordStatus by remember { mutableStateOf("Noch keine Aufnahme.") }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            recordingJob?.cancel()
+            source.close()
+        }
+    }
+
+    fun startRecording() {
+        chunks.clear()
+        recordedBuffer = null
+        isRecording = true
+        recordStatus = "Nimmt auf…"
+        recordingJob = scope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    source.record { chunk -> chunks.add(chunk) }
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                isRecording = false
+                // Surfaced here, not swallowed or silently downgraded to
+                // another format (the whole point of this batch, ADR-0012
+                // Konsequenzen: a format mismatch or missing mic is a fact
+                // to report, not a detail to route around).
+                recordStatus = "Fehler bei der Aufnahme: ${e.message}"
+            }
+        }
+    }
+
+    fun stopRecording() {
+        val job = recordingJob ?: return
+        isRecording = false
+        isProcessingStop = true
+        recordStatus = "Verarbeite Aufnahme…"
+        scope.launch {
+            try {
+                job.cancelAndJoin()
+                recordingJob = null
+                val totalSamples = chunks.sumOf { it.size }
+                if (totalSamples == 0) {
+                    recordStatus = "Keine Aufnahme (kein Signal empfangen)."
+                    return@launch
+                }
+                val merged = ShortArray(totalSamples)
+                var offset = 0
+                for (chunk in chunks) {
+                    chunk.copyInto(merged, offset)
+                    offset += chunk.size
+                }
+                chunks.clear()
+                recordedBuffer = PcmBuffer(merged, RECORDING_SAMPLE_RATE, RECORDING_CHANNELS)
+                val seconds = totalSamples / RECORDING_SAMPLE_RATE
+                recordStatus = "Aufnahme fertig (~$seconds s, $totalSamples Samples)."
+            } finally {
+                isProcessingStop = false
+            }
+        }
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("Mikrofon-Rohtest", style = MaterialTheme.typography.titleMedium)
+
+        when (permission.status) {
+            RecordingPermissionStatus.GRANTED -> {
+                Text(recordStatus, style = MaterialTheme.typography.bodyMedium)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        enabled = !isProcessingStop,
+                        onClick = { if (isRecording) stopRecording() else startRecording() },
+                    ) {
+                        Text(if (isRecording) "Stopp" else "Aufnehmen")
+                    }
+                    Button(
+                        enabled = !isRecording && !isProcessingStop && recordedBuffer != null,
+                        onClick = { recordedBuffer?.let { queue.play(it) } },
+                    ) {
+                        Text("Anhören")
+                    }
+                }
+            }
+
+            RecordingPermissionStatus.PERMANENTLY_DENIED -> {
+                Text(
+                    "Mikrofonzugriff wurde dauerhaft abgelehnt. Zum Aufnehmen bitte in den " +
+                        "System-Einstellungen freigeben.",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Button(onClick = permission::openSystemSettings) {
+                    Text("Einstellungen öffnen")
+                }
+            }
+
+            RecordingPermissionStatus.NOT_REQUESTED, RecordingPermissionStatus.DENIED -> {
+                Text(
+                    "Zum Aufnehmen braucht AudioLex kurz Zugriff auf das Mikrofon -- nur für " +
+                        "selbst ausgelöste Aufnahmen, nichts läuft im Hintergrund mit.",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Button(onClick = permission::request) {
+                    Text("Mikrofon-Berechtigung anfragen")
+                }
             }
         }
     }
