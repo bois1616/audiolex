@@ -20,7 +20,11 @@ import androidx.sqlite.execSQL
     // (MIGRATION_6_7 below) instead of the destructive fallback that carried
     // every earlier one (v2 -> ... -> v6, see createAudioLexDatabase's doc
     // for why that stops here).
-    version = 7,
+    // v7 -> v8: corpusSource is replaced by excludedSpeakers (Backlog
+    // Eigen-Korpus Batch D, ADR-0012 Nachtrag "Die Quellentrennung wird
+    // durch Kontingente ersetzt") -- MIGRATION_7_8 below, the first jump
+    // that actually has to *remove* a column, not just append one.
+    version = 8,
     exportSchema = false,
 )
 @ConstructedBy(AudioLexDatabaseConstructor::class)
@@ -56,6 +60,64 @@ internal val MIGRATION_6_7 = object : Migration(startVersion = 6, endVersion = 7
 }
 
 /**
+ * v7 -> v8 (Backlog Eigen-Korpus Batch D, AC3): drops [SettingsEntity.corpusSource]
+ * and adds [SettingsEntity.excludedSpeakers] -- unlike [MIGRATION_6_7], this
+ * jump *removes* a column, and plain SQLite has no `ALTER TABLE ... DROP
+ * COLUMN` in the general case (only added in SQLite 3.35). Rather than lean
+ * on an assumed driver version for something this central to the schema --
+ * this project has had a build broken once already by an API level that
+ * turned out not to hold, see the Umsetzungslog -- this migration takes the
+ * classic, version-independent path instead. The portable fix is the table
+ * rebuild: build the new shape under a temporary name, copy the one settings row across
+ * (`excludedSpeakers` seeded to `'[]'`, the same "nothing excluded" default
+ * Kotlin already declares), drop the old table, rename the new one into its
+ * place. Single-row table, so the copy is cheap and there's no index/FK to
+ * carry over. The destructive fallback stays registered underneath for any
+ * *other* jump, same as it did for [MIGRATION_6_7] -- it must not be the one
+ * to carry 7 -> 8, or the settings row (and, more importantly on a real
+ * device, the SRS due-dates and session history in the other two tables)
+ * would be wiped instead of preserved.
+ */
+internal val MIGRATION_7_8 = object : Migration(startVersion = 7, endVersion = 8) {
+    override fun migrate(connection: SQLiteConnection) {
+        // Deliberately shaped exactly like Room's own generated DDL for this
+        // entity -- no DEFAULT clauses, because the entity declares no
+        // @ColumnInfo(defaultValue = ...) and Kotlin default parameter values
+        // produce none. Verified against the real v7 database pulled off the
+        // A53, whose Room-created table reads `id` INTEGER NOT NULL,
+        // `themeMode` TEXT NOT NULL, ... with defaults nowhere except on the
+        // column MIGRATION_6_7 appended. Room would tolerate extra DB-side
+        // defaults (its column comparison only checks the default when the
+        // *entity* declares one), so this isn't about passing validation --
+        // it's that a fresh install and an upgraded install must not end up
+        // with two different table shapes for the same schema version. That
+        // divergence goes unnoticed until some later migration behaves
+        // differently on the two. Every value is supplied explicitly by the
+        // INSERT below, so no DEFAULT is needed for correctness either.
+        connection.execSQL(
+            "CREATE TABLE `SettingsEntity_new` (" +
+                "`id` INTEGER NOT NULL, " +
+                "`themeMode` TEXT NOT NULL, " +
+                "`corpusMode` TEXT NOT NULL, " +
+                "`noiseEnabled` INTEGER NOT NULL, " +
+                "`snrDb` INTEGER NOT NULL, " +
+                "`noiseScenario` TEXT NOT NULL, " +
+                "`channelMode` TEXT NOT NULL, " +
+                "`excludedSpeakers` TEXT NOT NULL, " +
+                "PRIMARY KEY(`id`))",
+        )
+        connection.execSQL(
+            "INSERT INTO `SettingsEntity_new` " +
+                "(`id`, `themeMode`, `corpusMode`, `noiseEnabled`, `snrDb`, `noiseScenario`, `channelMode`, `excludedSpeakers`) " +
+                "SELECT `id`, `themeMode`, `corpusMode`, `noiseEnabled`, `snrDb`, `noiseScenario`, `channelMode`, '[]' " +
+                "FROM `SettingsEntity`",
+        )
+        connection.execSQL("DROP TABLE `SettingsEntity`")
+        connection.execSQL("ALTER TABLE `SettingsEntity_new` RENAME TO `SettingsEntity`")
+    }
+}
+
+/**
  * Builds the real database from a platform-supplied [RoomDatabase.Builder]
  * (Context-based on Android, file-path-based on jvm) -- :core stays
  * Context-free, the platform-specific builder is created in :composeApp.
@@ -67,15 +129,17 @@ internal val MIGRATION_6_7 = object : Migration(startVersion = 6, endVersion = 7
  * against empty/test databases. That stopped being true in the week of
  * v6 -> v7 (Backlog Eigen-Korpus Batch C, AC2): the author's A53 now carries
  * real SRS due-dates and a session history, so this bump ships an actual
- * [MIGRATION_6_7] via [RoomDatabase.Builder.addMigrations] instead. The
- * destructive fallback stays registered underneath as the safety net for
- * any *other* version jump (e.g. a skipped version, or a future schema
- * change this migration doesn't cover) -- it just no longer carries the
- * one jump this app is actually shipping right now.
+ * [MIGRATION_6_7] via [RoomDatabase.Builder.addMigrations] instead. v7 -> v8
+ * (Backlog Eigen-Korpus Batch D, AC3) adds [MIGRATION_7_8] alongside it, the
+ * first migration that has to rebuild the table rather than just append a
+ * column. The destructive fallback stays registered underneath as the
+ * safety net for any *other* version jump (e.g. a skipped version, or a
+ * future schema change neither migration covers) -- it just no longer
+ * carries either of the two jumps this app has actually shipped.
  */
 fun createAudioLexDatabase(builder: RoomDatabase.Builder<AudioLexDatabase>): AudioLexDatabase =
     builder
         .setDriver(BundledSQLiteDriver())
-        .addMigrations(MIGRATION_6_7)
+        .addMigrations(MIGRATION_6_7, MIGRATION_7_8)
         .fallbackToDestructiveMigration(true)
         .build()

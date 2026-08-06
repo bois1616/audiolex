@@ -77,34 +77,92 @@ private fun OwnEntry.toRecording(): AudioRecording = AudioRecording(
 
 /**
  * Merges the built-in corpus with the caller's own entries into one
- * [LoadedCorpus] (Backlog Eigen-Korpus Batch C, AC3). Which source(s) end up
- * represented is entirely up to what the caller passes in here -- an empty
- * [ownEntries] list is "nur mitgeliefert", an empty [builtInWords] is "nur
- * eigene", both non-empty is "beide". That's deliberate: it lets composeApp's
- * `loadCorpus` implement the `CorpusSource` choice by deciding *what to load
- * in the first place* (skipping the Compose-resource read entirely for
- * EIGENE, skipping the own-corpus read for MITGELIEFERT) without this
- * function ever needing to know the setting exists -- `core/corpus` stays
- * one-directional with respect to `core/settings` (which already depends on
- * `core/corpus` for [de.hexenwoche.audiolex.core.settings.entryKind], so the
- * reverse dependency would have made the two packages mutually dependent).
+ * [LoadedCorpus] (Backlog Eigen-Korpus Batch C, AC3). Both sides are always
+ * present here -- since Batch D (ADR-0012 Nachtrag "Die Quellentrennung wird
+ * durch Kontingente ersetzt") there is no `CorpusSource` switch left that
+ * would skip reading a side in the first place; composeApp's `loadCorpus`
+ * always reads both. An empty [ownEntries] list still yields "nur
+ * mitgeliefert" in practice (nothing recorded yet), but that's a fact about
+ * the caller's data, not a mode this function branches on.
  *
  * [kind] filters the merged word list exactly like [parseCorpus] does for
  * the built-in one alone -- applied *after* merging, so it treats both
  * sources identically (Backlog AC3: the kind filter is orthogonal to which
- * source(s) are present, not a special case of it). [builtInRecordings] is
- * never filtered by [kind], same as [parseCorpus]'s recordings -- an
- * unreachable recording for a word the [kind] filter dropped is simply never
- * looked up.
+ * source(s) are present, not a special case of it).
+ *
+ * [excludedSpeakers] is the Batch D contingent filter (AC7): recordings
+ * whose [AudioRecording.voiceId] is in the set drop out, and so do words
+ * that are left with *no* recording at all as a result -- an unplayable
+ * card would otherwise sit in the round, exactly what Batch C AC4 already
+ * avoids for missing recordings in general. Words that never had a
+ * recording to begin with, unrelated to any exclusion, are untouched: with
+ * an empty [excludedSpeakers] (the default) this function takes an early
+ * return and the result is bit-identical to calling it without the
+ * parameter at all (AC7) -- a stored exclusion set only ever removes
+ * entries, it can't be the reason one was already missing.
  */
 fun mergeCorpus(
     builtInWords: List<Word>,
     builtInRecordings: List<AudioRecording>,
     ownEntries: List<OwnEntry>,
     kind: EntryKind? = null,
+    excludedSpeakers: Set<String> = emptySet(),
 ): LoadedCorpus {
     val allWords = builtInWords + ownEntries.map { it.toWord() }
-    val words = if (kind == null) allWords else allWords.filter { it.kind == kind }
-    val recordings = builtInRecordings + ownEntries.map { it.toRecording() }
+    val kindFilteredWords = if (kind == null) allWords else allWords.filter { it.kind == kind }
+    val allRecordings = builtInRecordings + ownEntries.map { it.toRecording() }
+
+    if (excludedSpeakers.isEmpty()) return LoadedCorpus(kindFilteredWords, allRecordings)
+
+    val recordings = allRecordings.filter { it.voiceId !in excludedSpeakers }
+    // A word only drops out if excluding a speaker actually orphaned it --
+    // one that already had zero recordings before this filter ran stays,
+    // so the empty-set early return above and this branch agree on every
+    // word that isn't touched by the exclusion.
+    val wordIdsWithRecordingBefore = allRecordings.map { it.wordId }.toSet()
+    val wordIdsWithRecordingAfter = recordings.map { it.wordId }.toSet()
+    val words = kindFilteredWords.filter { it.id !in wordIdsWithRecordingBefore || it.id in wordIdsWithRecordingAfter }
     return LoadedCorpus(words, recordings)
+}
+
+/**
+ * One row of the Kontingent-Auswahl (Backlog Eigen-Korpus Batch D, AC4): a
+ * speaker/[AudioRecording.voiceId] together with how many trainable words
+ * and sentences it currently contributes. Purely derived, never persisted or
+ * hand-maintained -- a speaker with nothing playable never becomes a key in
+ * [LoadedCorpus.speakerContingents]'s grouping, so it can't show up here
+ * (AC4: "kann gar nicht erst auftauchen"). [speaker] can be the empty string
+ * (Batch B allows an unset speaker field) -- callers label that case
+ * themselves ("Ohne Sprecher", AC4), this type stays UI-text-free like the
+ * rest of `:core`.
+ */
+data class SpeakerContingent(val speaker: String, val wordCount: Int, val sentenceCount: Int)
+
+/**
+ * Derives the Kontingent-Liste (Backlog Eigen-Korpus Batch D, AC4) from a
+ * [LoadedCorpus] that's unfiltered by [EntryKind]/exclusion -- callers pass
+ * the result of [mergeCorpus] called *without* `kind`/`excludedSpeakers`, so
+ * both counts stay visible regardless of the current Wörter/Sätze setting or
+ * the persisted exclusion ("Beide Zahlen immer anzeigen", AC4: the list
+ * shouldn't wobble as the user (de)selects contingents). Counted is what's
+ * actually playable: every [AudioRecording] is joined against the [Word] it
+ * belongs to, so a recording pointing at a word this corpus doesn't carry
+ * (dropped upstream, e.g. by
+ * [de.hexenwoche.audiolex.OwnCorpusRepository.trainable]'s "hat noch keinen
+ * Text" filter) is silently not counted, same bar as Batch C AC4.
+ */
+fun LoadedCorpus.speakerContingents(): List<SpeakerContingent> {
+    val wordsById = words.associateBy { it.id }
+    val counts = mutableMapOf<String, Pair<Int, Int>>()
+    for (recording in recordings) {
+        val kind = wordsById[recording.wordId]?.kind ?: continue
+        val (wordCount, sentenceCount) = counts.getOrDefault(recording.voiceId, 0 to 0)
+        counts[recording.voiceId] = when (kind) {
+            EntryKind.WORD -> (wordCount + 1) to sentenceCount
+            EntryKind.SENTENCE -> wordCount to (sentenceCount + 1)
+        }
+    }
+    return counts
+        .map { (speaker, wordAndSentenceCount) -> SpeakerContingent(speaker, wordAndSentenceCount.first, wordAndSentenceCount.second) }
+        .sortedBy { it.speaker }
 }

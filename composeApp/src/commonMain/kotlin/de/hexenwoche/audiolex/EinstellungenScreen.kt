@@ -11,11 +11,13 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -28,9 +30,10 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import de.hexenwoche.audiolex.core.audio.NoiseScenario
 import de.hexenwoche.audiolex.core.audio.OutputSetup
+import de.hexenwoche.audiolex.core.corpus.SpeakerContingent
+import de.hexenwoche.audiolex.core.corpus.speakerContingents
 import de.hexenwoche.audiolex.core.settings.ChannelMode
 import de.hexenwoche.audiolex.core.settings.CorpusMode
-import de.hexenwoche.audiolex.core.settings.CorpusSource
 import de.hexenwoche.audiolex.core.settings.SNR_DB_MAX
 import de.hexenwoche.audiolex.core.settings.SNR_DB_MIN
 import de.hexenwoche.audiolex.core.settings.ThemeMode
@@ -55,13 +58,16 @@ import kotlin.math.roundToInt
  * whenever the detected setup is [OutputSetup.HOERGERAET] -- a channel
  * choice would be wirkungslos there (ADR-0007), and the disabled state says
  * so instead of just hiding the control. Presets stay out of scope, own
- * backlog items. The sixth, "Quelle" (Backlog Eigen-Korpus Batch C,
- * ADR-0012), sits directly below "Trainingsinhalt" -- both settings answer
- * "what does the training screen even draw from", [corpusSource] picking
- * mitgeliefert/eigene/beide, [corpusMode] picking Wörter/Sätze within that.
- * Default [CorpusSource.MITGELIEFERT] so an existing install trains exactly
- * as before until the author opts in. A dead end with "Zurück", same
- * navigation pattern as the other screens.
+ * backlog items. The sixth, "Korpus" (Backlog Eigen-Korpus Batch D, ADR-0012
+ * Nachtrag "Die Quellentrennung wird durch Kontingente ersetzt"), sits
+ * directly below "Trainingsinhalt" -- both settings answer "what does the
+ * training screen even draw from", the checkbox list picking *which*
+ * speaker contingents (the mitgelieferte Stimme `thorsten` is just one of
+ * them, no special status), [corpusMode] picking Wörter/Sätze within that.
+ * This replaces Batch C's `CorpusSource` radio group ("Quelle") outright,
+ * not alongside it -- see the ADR Nachtrag for why a mitgeliefert/eigene/
+ * beide choice was really just a two-bucket special case of this. A dead
+ * end with "Zurück", same navigation pattern as the other screens.
  *
  * Title and "Zurück" stay pinned; only the settings content between them
  * scrolls (same `Modifier.weight(1f).verticalScroll(rememberScrollState())`
@@ -84,8 +90,9 @@ fun EinstellungenScreen(
     onNoiseScenarioChange: (String) -> Unit,
     channelMode: ChannelMode,
     onChannelModeChange: (ChannelMode) -> Unit,
-    corpusSource: CorpusSource,
-    onCorpusSourceChange: (CorpusSource) -> Unit,
+    excludedSpeakers: Set<String>,
+    onExcludedSpeakersChange: (Set<String>) -> Unit,
+    ownCorpusRepository: OwnCorpusRepository,
     onBeenden: () -> Unit,
 ) {
     // Loaded once when the screen is entered, just for the scenario labels --
@@ -93,6 +100,16 @@ fun EinstellungenScreen(
     var scenarios by remember { mutableStateOf<List<NoiseScenario>>(emptyList()) }
     LaunchedEffect(Unit) {
         scenarios = loadNoiseScenarios()
+    }
+
+    // The Kontingent-Liste (Backlog Eigen-Korpus Batch D, AC4): loaded fully
+    // unfiltered (no `kind`, no `excludedSpeakers`) so both word/sentence
+    // counts stay visible and stable no matter what's currently
+    // selected/excluded -- the list itself must not wobble while the user
+    // (de)selects contingents.
+    var contingents by remember { mutableStateOf<List<SpeakerContingent>>(emptyList()) }
+    LaunchedEffect(Unit) {
+        contingents = loadCorpus(ownCorpusRepository = ownCorpusRepository).speakerContingents()
     }
 
     Column(
@@ -154,27 +171,49 @@ fun EinstellungenScreen(
                 )
             }
 
-            Text("Quelle", style = MaterialTheme.typography.titleMedium)
+            Text("Korpus", style = MaterialTheme.typography.titleMedium)
 
-            Column(
-                modifier = Modifier.fillMaxWidth().selectableGroup(),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                RadioOption(
-                    label = "Mitgeliefert",
-                    selected = corpusSource == CorpusSource.MITGELIEFERT,
-                    onSelect = { onCorpusSourceChange(CorpusSource.MITGELIEFERT) },
+            if (contingents.isEmpty()) {
+                // Only reachable if the built-in corpus itself somehow
+                // shipped without a single playable entry -- `thorsten`
+                // always contributes at least one, so this is a defensive
+                // fallback, not an expected state.
+                Text(
+                    "Kein Kontingent verfügbar.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                RadioOption(
-                    label = "Eigene Aufnahmen",
-                    selected = corpusSource == CorpusSource.EIGENE,
-                    onSelect = { onCorpusSourceChange(CorpusSource.EIGENE) },
-                )
-                RadioOption(
-                    label = "Beide",
-                    selected = corpusSource == CorpusSource.BEIDE,
-                    onSelect = { onCorpusSourceChange(CorpusSource.BEIDE) },
-                )
+            } else {
+                val allSpeakers = contingents.map { it.speaker }.toSet()
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(onClick = { onExcludedSpeakersChange(excludedSpeakers - allSpeakers) }) {
+                        Text("Alle auswählen")
+                    }
+                    TextButton(onClick = { onExcludedSpeakersChange(excludedSpeakers + allSpeakers) }) {
+                        Text("Alle abwählen")
+                    }
+                }
+
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    for (contingent in contingents) {
+                        ContingentOption(
+                            contingent = contingent,
+                            included = contingent.speaker !in excludedSpeakers,
+                            onIncludedChange = { included ->
+                                // AC2, bindend: the *exclusion* is what's
+                                // persisted, not the selection -- unchecking
+                                // adds the name, checking removes it. Ghost
+                                // names (excluded once, not in `contingents`
+                                // anymore) are never touched here, since this
+                                // callback only ever names a speaker that's
+                                // currently visible (AC5).
+                                onExcludedSpeakersChange(
+                                    if (included) excludedSpeakers - contingent.speaker else excludedSpeakers + contingent.speaker,
+                                )
+                            },
+                        )
+                    }
+                }
             }
 
             Text("Störgeräusch", style = MaterialTheme.typography.titleMedium)
@@ -355,3 +394,38 @@ private fun RadioOption(label: String, selected: Boolean, enabled: Boolean = tru
         Text(label, style = MaterialTheme.typography.bodyLarge)
     }
 }
+
+// Same selectable-row/single-click-handler pattern as RadioOption above,
+// Checkbox instead of RadioButton since any number of contingents can be
+// included at once (Backlog Eigen-Korpus Batch D, AC5). The index line
+// (word/sentence counts) is secondary text under the label, same visual
+// weight as the "Ohne Wirkung am Hörgerät" explanations elsewhere on this
+// screen (DESIGN.md "Sekundäres tritt zurück").
+@Composable
+private fun ContingentOption(contingent: SpeakerContingent, included: Boolean, onIncludedChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .selectable(selected = included, onClick = { onIncludedChange(!included) }, role = Role.Checkbox)
+            .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Checkbox(checked = included, onCheckedChange = null)
+        Column {
+            Text(speakerLabel(contingent.speaker), style = MaterialTheme.typography.bodyLarge)
+            Text(
+                "${wordCountLabel(contingent.wordCount)}, ${sentenceCountLabel(contingent.sentenceCount)}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/** An unset speaker field (Batch B allows this) is its own visible contingent (AC4), not a blank label. */
+private fun speakerLabel(speaker: String): String = speaker.ifBlank { "Ohne Sprecher" }
+
+private fun wordCountLabel(count: Int): String = if (count == 1) "1 Wort" else "$count Wörter"
+
+private fun sentenceCountLabel(count: Int): String = if (count == 1) "1 Satz" else "$count Sätze"

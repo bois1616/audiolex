@@ -25,13 +25,17 @@ import androidx.room.Upsert
  * [channelMode] (Backlog M4 "Kopfhörer-Bogen Batch B", ADR-0011) stores the
  * `ChannelMode` enum name, same pattern as [themeMode]/[corpusMode].
  *
- * [corpusSource] (Backlog Eigen-Korpus Batch C, ADR-0012) stores the
- * `CorpusSource` enum name, same pattern again -- the column added by
- * [MIGRATION_6_7][de.hexenwoche.audiolex.core.persistence.MIGRATION_6_7]
- * instead of the destructive fallback that carried every earlier column
- * (see [de.hexenwoche.audiolex.core.persistence.createAudioLexDatabase]):
- * existing SRS cards and session history are no longer disposable test
- * data, so this is the first schema bump that must actually preserve them.
+ * [excludedSpeakers] (Backlog Eigen-Korpus Batch D, ADR-0012 Nachtrag)
+ * replaces Batch C's `corpusSource` column with a JSON array of excluded
+ * speaker names -- a plain string, not an enum, since which speakers exist
+ * is data, not a compile-time type (same rationale as [noiseScenario]).
+ * Default `"[]"` means "nothing excluded" = "alle", matching
+ * [de.hexenwoche.audiolex.core.settings.AppSettings.excludedSpeakers]'s
+ * empty-set default. The column swap is carried by
+ * [MIGRATION_7_8][de.hexenwoche.audiolex.core.persistence.MIGRATION_7_8],
+ * not the destructive fallback -- same reasoning as
+ * [MIGRATION_6_7][de.hexenwoche.audiolex.core.persistence.MIGRATION_6_7]:
+ * existing SRS cards and session history must survive the jump.
  */
 @Entity
 data class SettingsEntity(
@@ -42,7 +46,7 @@ data class SettingsEntity(
     val snrDb: Int = 5,
     val noiseScenario: String = "restaurant",
     val channelMode: String = "BEIDE",
-    val corpusSource: String = "MITGELIEFERT",
+    val excludedSpeakers: String = "[]",
 )
 
 @Dao

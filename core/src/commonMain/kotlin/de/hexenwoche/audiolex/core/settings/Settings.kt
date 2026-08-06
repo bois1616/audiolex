@@ -2,6 +2,9 @@ package de.hexenwoche.audiolex.core.settings
 
 import de.hexenwoche.audiolex.core.corpus.EntryKind
 import de.hexenwoche.audiolex.core.persistence.SettingsEntity
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 /**
  * Manual theme override (Backlog M4 "Settings-Persistenz-Fundament"): the
@@ -32,25 +35,13 @@ enum class CorpusMode { WOERTER, SAETZE }
  */
 enum class ChannelMode { BEIDE, NUR_LINKS, NUR_RECHTS }
 
-/**
- * Which corpus the training screens draw from (Backlog Eigen-Korpus Batch C,
- * ADR-0012): [MITGELIEFERT] is the default so an existing install behaves
- * exactly as before this setting existed -- the new source is opted into,
- * never switched on silently by an update. The merge itself (mapping
- * [de.hexenwoche.audiolex.core.corpus.OwnEntry] onto the shared
- * [de.hexenwoche.audiolex.core.corpus.Word]/[de.hexenwoche.audiolex.core.corpus.AudioRecording]
- * model, combining both sources) lives in `core/corpus/CorpusLoader.kt`, not
- * here -- this enum only ever gets compared, never interpreted, on the
- * `:core` side (see [de.hexenwoche.audiolex.core.corpus.mergeCorpus]'s doc
- * for why the merge function stays unaware of this type entirely).
- */
-enum class CorpusSource { MITGELIEFERT, EIGENE, BEIDE }
-
 /** Valid SNR slider range in dB (Backlog M4 AC4); a stored value outside this falls back to [DEFAULT_SNR_DB]. */
 const val SNR_DB_MIN = -5
 const val SNR_DB_MAX = 20
 private const val DEFAULT_SNR_DB = 5
 private const val DEFAULT_NOISE_SCENARIO = "restaurant"
+
+private val excludedSpeakersJson = Json { ignoreUnknownKeys = true }
 
 /**
  * Persisted app-wide settings, Room-free like the other domain types
@@ -59,8 +50,9 @@ private const val DEFAULT_NOISE_SCENARIO = "restaurant"
  * the corpus mode, the noise overlay (Backlog M4 "Störgeräusch-Overlay",
  * ADR-0010, [noiseEnabled]/[snrDb]/[noiseScenario] shared by both training
  * modes), the channel selection (Backlog M4 "Kopfhörer-Bogen Batch B",
- * ADR-0011, [channelMode]), and the corpus source (Backlog Eigen-Korpus
- * Batch C, ADR-0012, [corpusSource]).
+ * ADR-0011, [channelMode]), and the speaker/contingent selection (Backlog
+ * Eigen-Korpus Batch D, ADR-0012 Nachtrag "Die Quellentrennung wird durch
+ * Kontingente ersetzt", [excludedSpeakers]).
  */
 data class AppSettings(
     val themeMode: ThemeMode,
@@ -69,7 +61,19 @@ data class AppSettings(
     val snrDb: Int = DEFAULT_SNR_DB,
     val noiseScenario: String = DEFAULT_NOISE_SCENARIO,
     val channelMode: ChannelMode = ChannelMode.BEIDE,
-    val corpusSource: CorpusSource = CorpusSource.MITGELIEFERT,
+    /**
+     * Which speaker contingents (Batch D replaces the Batch C `CorpusSource`
+     * choice with this) are left *out* of training -- not which ones are
+     * picked. Storing the exclusion, not the selection, is deliberate and
+     * bindend (ADR-0012 Nachtrag): an empty set means "alle", so a
+     * contingent that didn't exist yet when this was last saved is
+     * automatically included instead of silently muted, and "alle abwählen"
+     * has a state to reach (with a stored *selection* set, "leer" would
+     * have to mean "alles" and the button would visibly do nothing).
+     * `thorsten` (the built-in corpus) is just one entry in here like any
+     * other -- no special-cased default.
+     */
+    val excludedSpeakers: Set<String> = emptySet(),
 )
 
 /**
@@ -90,7 +94,7 @@ fun SettingsEntity.toDomain(): AppSettings =
         snrDb = snrDb.takeIf { it in SNR_DB_MIN..SNR_DB_MAX } ?: DEFAULT_SNR_DB,
         noiseScenario = noiseScenario.takeIf { it.isNotBlank() } ?: DEFAULT_NOISE_SCENARIO,
         channelMode = ChannelMode.entries.firstOrNull { it.name == channelMode } ?: ChannelMode.BEIDE,
-        corpusSource = CorpusSource.entries.firstOrNull { it.name == corpusSource } ?: CorpusSource.MITGELIEFERT,
+        excludedSpeakers = parseExcludedSpeakers(excludedSpeakers),
     )
 
 fun AppSettings.toEntity(): SettingsEntity =
@@ -101,8 +105,31 @@ fun AppSettings.toEntity(): SettingsEntity =
         snrDb = snrDb,
         noiseScenario = noiseScenario,
         channelMode = channelMode.name,
-        corpusSource = corpusSource.name,
+        excludedSpeakers = encodeExcludedSpeakers(excludedSpeakers),
     )
+
+/**
+ * Parses the [SettingsEntity.excludedSpeakers] column (Backlog Eigen-Korpus
+ * Batch D, AC2): a JSON array of speaker names, same "datengetriebene Werte
+ * als String, nicht als Enum" precedent as [SettingsEntity.noiseScenario].
+ * Same defensive posture as [de.hexenwoche.audiolex.core.corpus.parseOwnCorpus]:
+ * anything that isn't a valid JSON array of strings -- truncated, hand-
+ * edited, a stray `null` -- yields the empty set rather than throwing. That's
+ * deliberately also the harmless outcome (an empty exclusion set means
+ * "alle", the exact fallback [AppSettings.excludedSpeakers] already defaults
+ * to), not a special "corrupted" state that needs its own handling.
+ */
+fun parseExcludedSpeakers(json: String): Set<String> =
+    try {
+        excludedSpeakersJson.decodeFromString<Set<String>>(json)
+    } catch (e: SerializationException) {
+        emptySet()
+    } catch (e: IllegalArgumentException) {
+        emptySet()
+    }
+
+/** Counterpart to [parseExcludedSpeakers] -- serializes the set back to the column's JSON-array text. */
+fun encodeExcludedSpeakers(speakers: Set<String>): String = excludedSpeakersJson.encodeToString(speakers)
 
 /**
  * The corpus entry kind a mode admits (Backlog M2 Satz-Bogen Batch B, AC3) --

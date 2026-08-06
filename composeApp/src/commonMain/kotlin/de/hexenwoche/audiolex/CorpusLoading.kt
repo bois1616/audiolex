@@ -6,7 +6,6 @@ import de.hexenwoche.audiolex.core.corpus.LoadedCorpus
 import de.hexenwoche.audiolex.core.corpus.RecordingSource
 import de.hexenwoche.audiolex.core.corpus.mergeCorpus
 import de.hexenwoche.audiolex.core.corpus.parseCorpus
-import de.hexenwoche.audiolex.core.settings.CorpusSource
 import de.hexenwoche.audiolex.generated.resources.Res
 
 /**
@@ -18,40 +17,33 @@ import de.hexenwoche.audiolex.generated.resources.Res
  * `NoiseMixing.kt`: composeApp reads resources, core does the logic).
  *
  * [kind] filters entries by their [EntryKind]; null loads everything
- * unfiltered (the dev channel test lists all entries). Every screen entry
- * loads fresh -- no caching across screens, at this corpus size reloading
- * two small JSON files is trivial.
+ * unfiltered (the dev channel test lists all entries, and the speaker index
+ * needs both kinds' counts, Backlog Eigen-Korpus Batch D AC4). Every screen
+ * entry loads fresh -- no caching across screens, at this corpus size
+ * reloading two small JSON files is trivial.
  *
- * [source] decides *which side even gets loaded* (Backlog Eigen-Korpus
- * Batch C, AC3): the packed Compose resources are skipped entirely for
- * [CorpusSource.EIGENE], and [ownCorpusRepository] is never asked for
- * [de.hexenwoche.audiolex.OwnCorpusRepository.trainable] for
- * [CorpusSource.MITGELIEFERT] -- there's no point loading a side the caller
- * didn't select. [de.hexenwoche.audiolex.core.corpus.mergeCorpus] itself
- * stays unaware of [CorpusSource] entirely; see its doc for why. The dev
- * channel test doesn't pass [source]/[ownCorpusRepository] at all, so it
- * keeps loading exactly the mitgeliefert corpus it always has.
+ * Both sides are always read now (Backlog Eigen-Korpus Batch D, ADR-0012
+ * Nachtrag "Die Quellentrennung wird durch Kontingente ersetzt"): the Batch C
+ * `CorpusSource` switch that used to skip a side entirely is gone, replaced
+ * by the [excludedSpeakers] contingent filter that [mergeCorpus] applies
+ * *after* merging -- reading two small JSON files unconditionally was
+ * already the accepted cost above, this just makes it the only path.
+ * [ownCorpusRepository] stays nullable and defaults to null so the dev
+ * channel test (which never passes it) keeps loading exactly the
+ * mitgeliefert corpus it always has, unaffected by this batch.
  */
 suspend fun loadCorpus(
     kind: EntryKind? = null,
-    source: CorpusSource = CorpusSource.MITGELIEFERT,
     ownCorpusRepository: OwnCorpusRepository? = null,
+    excludedSpeakers: Set<String> = emptySet(),
 ): LoadedCorpus {
-    val builtIn = if (source == CorpusSource.EIGENE) {
-        LoadedCorpus(emptyList(), emptyList())
-    } else {
-        parseCorpus(
-            wordsJson = Res.readBytes("files/corpus/words.json").decodeToString(),
-            recordingsJson = Res.readBytes("files/corpus/recordings.json").decodeToString(),
-            kind = null,
-        )
-    }
-    val ownEntries = if (source == CorpusSource.MITGELIEFERT) {
-        emptyList()
-    } else {
-        ownCorpusRepository?.trainable() ?: emptyList()
-    }
-    return mergeCorpus(builtIn.words, builtIn.recordings, ownEntries, kind)
+    val builtIn = parseCorpus(
+        wordsJson = Res.readBytes("files/corpus/words.json").decodeToString(),
+        recordingsJson = Res.readBytes("files/corpus/recordings.json").decodeToString(),
+        kind = null,
+    )
+    val ownEntries = ownCorpusRepository?.trainable() ?: emptyList()
+    return mergeCorpus(builtIn.words, builtIn.recordings, ownEntries, kind, excludedSpeakers)
 }
 
 /**
@@ -80,17 +72,34 @@ suspend fun readRecordingBytes(recording: AudioRecording, ownCorpusRepository: O
     }
 
 /**
- * Explains *why* the corpus came back empty (Backlog Eigen-Korpus Batch C,
- * AC7). The pre-existing text only ever pointed at the Wörter/Sätze switch
- * -- accurate as long as [CorpusSource.MITGELIEFERT] was the only possible
- * source. An empty result can now just as well mean "Eigene Aufnahmen" is
- * selected but nothing trainable has been recorded yet (AC4: text-only
- * entries and entries whose file has gone missing don't count) -- an
- * unrelated cause the old text would have misdescribed.
+ * Explains *why* the corpus came back empty (Backlog Eigen-Korpus Batch D,
+ * AC6, extends Batch C AC7). `CorpusSource` is gone, so this no longer keys
+ * off a fixed enum -- [excludedSpeakers] is the persisted exclusion,
+ * [availableSpeakers] is every [AudioRecording.voiceId] the *unfiltered*
+ * corpus currently has to offer (the same set [de.hexenwoche.audiolex.core.corpus.speakerContingents]
+ * is derived from). Comparing the two tells apart the three causes a caller
+ * only ever reaches this for once its own [LoadedCorpus] came back empty:
+ *
+ * - **Nothing selected**: [availableSpeakers] isn't empty, but every one of
+ *   them is in [excludedSpeakers] -- the training screens have nothing to
+ *   draw from because every contingent was deselected, not because the
+ *   corpus itself is short of entries.
+ * - **Selected, but not for this Wörter/Sätze setting**: an exclusion is
+ *   active and not blanket (at least one contingent remains selected), yet
+ *   still nothing came through -- e.g. only a Sätze-only speaker survived
+ *   the exclusion while the training mode is set to Wörter.
+ * - **Neither**: the pre-existing, generic text (Batch C AC7). An empty
+ *   [excludedSpeakers] -- the AC7 bit-identical baseline -- always lands
+ *   here, same as before this batch existed.
  */
-fun emptyCorpusHint(source: CorpusSource): String = when (source) {
-    CorpusSource.EIGENE ->
-        "Für „Eigene Aufnahmen“ liegt noch kein trainierbarer Eintrag vor. " +
-            "Neue Aufnahmen entstehen unter „Eigene Aufnahmen“ auf dem Start-Screen."
-    CorpusSource.MITGELIEFERT, CorpusSource.BEIDE -> "Kein Wort im Korpus vorhanden."
+fun emptyCorpusHint(excludedSpeakers: Set<String>, availableSpeakers: Set<String>): String {
+    val selected = availableSpeakers - excludedSpeakers
+    return when {
+        availableSpeakers.isNotEmpty() && selected.isEmpty() ->
+            "Kein Kontingent ausgewählt. Wähle mindestens eines in den Einstellungen unter „Korpus“ aus."
+        excludedSpeakers.isNotEmpty() ->
+            "Für die ausgewählten Kontingente gibt es dafür aktuell nichts zu trainieren. " +
+                "Passe die Auswahl unter „Korpus“ oder den Trainingsinhalt in den Einstellungen an."
+        else -> "Kein Wort im Korpus vorhanden."
+    }
 }

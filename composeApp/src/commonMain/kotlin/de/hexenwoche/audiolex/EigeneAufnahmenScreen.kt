@@ -109,6 +109,14 @@ fun EigeneAufnahmenScreen(repository: OwnCorpusRepository, clock: Clock, onBeend
         newSpeaker = entries.maxByOrNull { it.createdAtEpochMillis }?.speaker ?: ""
     }
 
+    // AC8 (Backlog Eigen-Korpus Batch D): every speaker name already used at
+    // least once, offered as a pick instead of only ever prefilling the most
+    // recent one -- this is the field's Batch D promotion from Beschriftung
+    // to Struktur (ADR-0012 Nachtrag), so a typo here would silently split
+    // one contingent into two. Blank stays out of the suggestion list: it's
+    // already the default for "kein Sprecher", nothing to suggest there.
+    val knownSpeakers = entries.map { it.speaker }.filter { it.isNotBlank() }.distinct().sorted()
+
     val recorder = rememberRecorderController()
 
     // AC4: derived from the text (a space means a sentence), but only until
@@ -164,6 +172,21 @@ fun EigeneAufnahmenScreen(repository: OwnCorpusRepository, clock: Clock, onBeend
                 label = { Text("Sprecher (optional)") },
                 modifier = Modifier.fillMaxWidth(),
             )
+
+            // AC8: a tap fills the field with the exact existing spelling --
+            // free typing above stays possible for a genuinely new speaker.
+            // FlowRow so the list wraps instead of clipping once there are
+            // more than a couple of speakers (same overflow fix as the
+            // per-entry action row below, A53-Befund 2026-08-06).
+            if (knownSpeakers.isNotEmpty()) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    for (speaker in knownSpeakers) {
+                        FilledTonalButton(onClick = { newSpeaker = speaker }) {
+                            Text(speaker)
+                        }
+                    }
+                }
+            }
 
             // AC3: "Anhören" is available before "Speichern" -- the point
             // where a mistyped or mis-spoken entry is most likely to be

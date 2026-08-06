@@ -32,12 +32,12 @@ import de.hexenwoche.audiolex.core.session.LearningSession
 import de.hexenwoche.audiolex.core.session.PlaybackQueue
 import de.hexenwoche.audiolex.core.settings.ChannelMode
 import de.hexenwoche.audiolex.core.settings.CorpusMode
-import de.hexenwoche.audiolex.core.settings.CorpusSource
 import de.hexenwoche.audiolex.core.settings.entryKind
 
 private sealed interface LernmodusState {
     data object Loading : LernmodusState
-    data object EmptyCorpus : LernmodusState
+    /** [hint] is computed once, at load time (Backlog Eigen-Korpus Batch D, AC6) -- see [emptyCorpusHint]. */
+    data class EmptyCorpus(val hint: String) : LernmodusState
     data class Running(val session: LearningSession) : LernmodusState
     data object Finished : LernmodusState
     data class Error(val message: String) : LernmodusState
@@ -63,11 +63,15 @@ private sealed interface LernmodusState {
  * after the noise mix -- a no-op unless the live [rememberOutputSetup] result
  * is the stereo-headphone setup.
  *
- * [corpusSource] and [ownCorpusRepository] select and supply the second
- * corpus source (Backlog Eigen-Korpus Batch C, ADR-0012): passed straight
- * through to [loadCorpus] and, for a recording that turns out to be
+ * [ownCorpusRepository] supplies the second corpus source (Backlog
+ * Eigen-Korpus Batch C, ADR-0012): passed straight through to [loadCorpus]
+ * and, for a recording that turns out to be
  * [de.hexenwoche.audiolex.core.corpus.RecordingSource.EIGEN], to
- * [readRecordingBytes] inside [playCurrentWord].
+ * [readRecordingBytes] inside [playCurrentWord]. [excludedSpeakers] is the
+ * Batch D contingent filter (ADR-0012 Nachtrag) that replaces Batch C's
+ * `CorpusSource` -- applied inside [loadCorpus]/
+ * [de.hexenwoche.audiolex.core.corpus.mergeCorpus], this screen only ever
+ * passes it through.
  */
 @Composable
 fun LernmodusScreen(
@@ -76,7 +80,7 @@ fun LernmodusScreen(
     snrDb: Int,
     noiseScenario: String,
     channelMode: ChannelMode,
-    corpusSource: CorpusSource,
+    excludedSpeakers: Set<String>,
     ownCorpusRepository: OwnCorpusRepository,
     onBeenden: () -> Unit,
 ) {
@@ -106,14 +110,20 @@ fun LernmodusScreen(
             // falls through to the existing EmptyCorpus state below.
             // Loading lives in loadCorpus/parseCorpus (Backlog
             // "Code-Qualität"), shared with Prüf- and Dev-Screen.
-            val loaded = loadCorpus(corpusMode.entryKind(), corpusSource, ownCorpusRepository)
+            val loaded = loadCorpus(corpusMode.entryKind(), ownCorpusRepository, excludedSpeakers)
             corpus = loaded
             // Loaded once per screen entry, not per word (AC6) -- a missing/
             // mismatched file or noise disabled all resolve to null, which
             // mixWithOptionalNoise treats as "play clean speech".
             noiseBuffer = loadNoiseBuffer(noiseEnabled, noiseScenario)
             state = if (loaded.words.isEmpty()) {
-                LernmodusState.EmptyCorpus
+                // AC6: only computed on this rare path, a second (unfiltered)
+                // load to find out *why* it's empty -- excludedSpeakers vs.
+                // availableSpeakers (Batch D) rather than the plain "kein
+                // Wort im Korpus" text Batch C left behind.
+                val availableSpeakers = loadCorpus(ownCorpusRepository = ownCorpusRepository)
+                    .recordings.map { it.voiceId }.toSet()
+                LernmodusState.EmptyCorpus(emptyCorpusHint(excludedSpeakers, availableSpeakers))
             } else {
                 // Shuffled once per session start, then fixed for the rest of
                 // the session (Autor-Requirement 2026-07-12) -- so the word
@@ -152,7 +162,7 @@ fun LernmodusScreen(
             is LernmodusState.Loading -> CircularProgressIndicator()
 
             is LernmodusState.EmptyCorpus -> {
-                Text(emptyCorpusHint(corpusSource), style = MaterialTheme.typography.bodyLarge)
+                Text(current.hint, style = MaterialTheme.typography.bodyLarge)
                 Button(onClick = onBeenden) { Text("Zurück zum Start") }
             }
 

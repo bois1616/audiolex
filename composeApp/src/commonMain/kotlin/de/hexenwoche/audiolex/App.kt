@@ -122,7 +122,7 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit, ownCorp
                         snrDb = settings.snrDb,
                         noiseScenario = settings.noiseScenario,
                         channelMode = settings.channelMode,
-                        corpusSource = settings.corpusSource,
+                        excludedSpeakers = settings.excludedSpeakers,
                         ownCorpusRepository = ownCorpusRepository,
                         onBeenden = { screen = Screen.Start },
                     )
@@ -135,7 +135,7 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit, ownCorp
                         snrDb = settings.snrDb,
                         noiseScenario = settings.noiseScenario,
                         channelMode = settings.channelMode,
-                        corpusSource = settings.corpusSource,
+                        excludedSpeakers = settings.excludedSpeakers,
                         ownCorpusRepository = ownCorpusRepository,
                         onBeenden = { screen = Screen.Start },
                         onZumLernmodus = { screen = Screen.Lernmodus },
@@ -165,10 +165,11 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit, ownCorp
                         onChannelModeChange = { newMode ->
                             updateSettings { it.copy(channelMode = newMode) }
                         },
-                        corpusSource = settings.corpusSource,
-                        onCorpusSourceChange = { newSource ->
-                            updateSettings { it.copy(corpusSource = newSource) }
+                        excludedSpeakers = settings.excludedSpeakers,
+                        onExcludedSpeakersChange = { newExcludedSpeakers ->
+                            updateSettings { it.copy(excludedSpeakers = newExcludedSpeakers) }
                         },
+                        ownCorpusRepository = ownCorpusRepository,
                         onBeenden = { screen = Screen.Start },
                     )
                     is Screen.Sitzungshistorie -> SitzungshistorieScreen(

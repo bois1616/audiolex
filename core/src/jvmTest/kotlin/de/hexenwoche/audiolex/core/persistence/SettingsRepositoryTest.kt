@@ -5,7 +5,6 @@ import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import de.hexenwoche.audiolex.core.settings.AppSettings
 import de.hexenwoche.audiolex.core.settings.ChannelMode
 import de.hexenwoche.audiolex.core.settings.CorpusMode
-import de.hexenwoche.audiolex.core.settings.CorpusSource
 import de.hexenwoche.audiolex.core.settings.ThemeMode
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -157,28 +156,28 @@ class SettingsRepositoryTest {
     }
 
     @Test
-    fun loadReturnsMitgeliefertCorpusSourceDefaultForFreshDatabase() = runTest {
-        assertEquals(CorpusSource.MITGELIEFERT, newRepository().load().corpusSource)
+    fun loadReturnsEmptyExcludedSpeakersDefaultForFreshDatabase() = runTest {
+        assertEquals(emptySet(), newRepository().load().excludedSpeakers)
     }
 
     @Test
-    fun savedCorpusSourceRoundtrips() = runTest {
+    fun savedExcludedSpeakersRoundtrip() = runTest {
         val repository = newRepository()
 
-        repository.save(AppSettings(ThemeMode.SYSTEM, corpusSource = CorpusSource.BEIDE))
+        repository.save(AppSettings(ThemeMode.SYSTEM, excludedSpeakers = setOf("kerstin", "")))
 
-        assertEquals(CorpusSource.BEIDE, repository.load().corpusSource)
+        assertEquals(setOf("kerstin", ""), repository.load().excludedSpeakers)
     }
 
     @Test
-    fun unknownStoredCorpusSourceFallsBackToMitgeliefert() = runTest {
+    fun corruptStoredExcludedSpeakersFallsBackToEmptySet() = runTest {
         val db = newDatabase()
-        db.settingsDao().upsert(SettingsEntity(themeMode = "DARK", corpusSource = "NUR_FREUNDE"))
+        db.settingsDao().upsert(SettingsEntity(themeMode = "DARK", excludedSpeakers = "kaputt, kein JSON"))
 
         val loaded = newRepository(db).load()
 
-        assertEquals(CorpusSource.MITGELIEFERT, loaded.corpusSource)
-        // The corpusSource fallback must not take the other field down with it.
+        assertEquals(emptySet(), loaded.excludedSpeakers)
+        // The excludedSpeakers fallback must not take the other field down with it.
         assertEquals(ThemeMode.DARK, loaded.themeMode)
     }
 }

@@ -42,7 +42,6 @@ import de.hexenwoche.audiolex.core.session.PlaybackQueue
 import de.hexenwoche.audiolex.core.session.Session
 import de.hexenwoche.audiolex.core.settings.ChannelMode
 import de.hexenwoche.audiolex.core.settings.CorpusMode
-import de.hexenwoche.audiolex.core.settings.CorpusSource
 import de.hexenwoche.audiolex.core.settings.entryKind
 import de.hexenwoche.audiolex.core.srs.FixedIntervalScheduler
 import de.hexenwoche.audiolex.core.srs.ReviewQueue
@@ -57,9 +56,10 @@ private sealed interface PruefmodusState {
     /**
      * No cards at all to show. Since a round tops up with not-yet-due cards
      * (Autor-Entscheid 2026-07-13), this now only happens when the corpus
-     * itself is empty -- not merely when nothing is due.
+     * itself is empty -- not merely when nothing is due. [hint] is computed
+     * once, at load time (Backlog Eigen-Korpus Batch D, AC6) -- see [emptyCorpusHint].
      */
-    data object EmptyCorpus : PruefmodusState
+    data class EmptyCorpus(val hint: String) : PruefmodusState
     /**
      * [rated] separates rating from advancing (Autor-Finding 2026-07-10):
      * once true, the screen stays on this revealed card showing "Nächstes"
@@ -89,14 +89,16 @@ private sealed interface PruefmodusState {
  * after the noise mix -- a no-op unless the live [rememberOutputSetup] result
  * is the stereo-headphone setup.
  *
- * [corpusSource] and [ownCorpusRepository] select and supply the second
- * corpus source (Backlog Eigen-Korpus Batch C, ADR-0012), same role as in
- * [LernmodusScreen]: passed through to [loadCorpus] and, for
+ * [ownCorpusRepository] supplies the second corpus source (Backlog
+ * Eigen-Korpus Batch C, ADR-0012), same role as in [LernmodusScreen]: passed
+ * through to [loadCorpus] and, for
  * [de.hexenwoche.audiolex.core.corpus.RecordingSource.EIGEN] recordings, to
  * [readRecordingBytes] inside [playCurrentCard]. Own entries feed
  * [ReviewCardRepository.allOrSeed] exactly like built-in ones (Backlog AC6)
  * -- their `own-` prefixed ids are collision-free with the built-in ones, so
- * no extra seeding logic is needed here.
+ * no extra seeding logic is needed here. [excludedSpeakers] is the Batch D
+ * contingent filter (ADR-0012 Nachtrag) that replaces Batch C's
+ * `CorpusSource`, same role as in [LernmodusScreen].
  */
 @Composable
 fun PruefmodusScreen(
@@ -108,7 +110,7 @@ fun PruefmodusScreen(
     snrDb: Int,
     noiseScenario: String,
     channelMode: ChannelMode,
-    corpusSource: CorpusSource,
+    excludedSpeakers: Set<String>,
     ownCorpusRepository: OwnCorpusRepository,
     onBeenden: () -> Unit,
     onZumLernmodus: () -> Unit,
@@ -178,7 +180,7 @@ fun PruefmodusScreen(
             // EmptyCorpus state below. Loading lives in
             // loadCorpus/parseCorpus (Backlog "Code-Qualität"), shared
             // with Lern- and Dev-Screen.
-            val loaded = loadCorpus(corpusMode.entryKind(), corpusSource, ownCorpusRepository)
+            val loaded = loadCorpus(corpusMode.entryKind(), ownCorpusRepository, excludedSpeakers)
             corpus = loaded
             // Loaded once per round, not per card (AC6) -- same defensive
             // fallback to null (clean speech) as Lernmodus.
@@ -191,7 +193,12 @@ fun PruefmodusScreen(
             // has no cards -- then there's genuinely nothing to show.
             val round = ReviewQueue.roundOf(cards, clock.nowEpochMillis())
             state = if (round.isEmpty()) {
-                PruefmodusState.EmptyCorpus
+                // AC6: same reasoning as Lernmodus -- only computed on this
+                // rare path, a second (unfiltered) load to tell "nothing
+                // selected" apart from "selected, but empty for this mode".
+                val availableSpeakers = loadCorpus(ownCorpusRepository = ownCorpusRepository)
+                    .recordings.map { it.voiceId }.toSet()
+                PruefmodusState.EmptyCorpus(emptyCorpusHint(excludedSpeakers, availableSpeakers))
             } else {
                 startedAtEpochMillis = clock.nowEpochMillis()
                 PruefmodusState.Running(ExamSession(round))
@@ -227,7 +234,7 @@ fun PruefmodusScreen(
             is PruefmodusState.Loading -> CircularProgressIndicator()
 
             is PruefmodusState.EmptyCorpus -> {
-                Text(emptyCorpusHint(corpusSource), style = MaterialTheme.typography.headlineSmall)
+                Text(current.hint, style = MaterialTheme.typography.headlineSmall)
                 Text(
                     "Es gibt noch keine Karten zum Üben.",
                     style = MaterialTheme.typography.bodyLarge,
