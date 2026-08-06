@@ -1,7 +1,9 @@
 # ADR-0007: Referenz-Trainings-Setup — BT-Hörgerät, linkes Ohr
 
-- **Status:** akzeptiert
+- **Status:** akzeptiert · **ergänzt durch ADR-0011** (2026-08-06)
 - **Datum:** 2026-07-08
+
+> **Nachtrag 2026-08-06 (ADR-0011):** Der Kern dieses ADRs bleibt gültig — Referenz-Setup ist das BT-Hörgerät am linken Ohr, maßgeblich sind Pegel und Verständlichkeit am trainierten Ohr, und die UI darf eine Kanalwahl dort nicht als wirksam suggerieren. Geändert hat sich die Rolle der Kanaltrennung: Aus der „Setup-Option für Alternativ-Hardware" (Entscheidung 2 unten) wird ein **zweites, gleichrangig unterstütztes Ausgabe-Setup** mit eigener Trainingsqualität, das die App automatisch erkennt. Details, Erkennungsregel und die dabei bewusst eingegangenen Risiken stehen in ADR-0011. Der unter „Konsequenzen" notierte Satz „Ändert sich die Versorgung […], ist nur UI-/Preset-Arbeit nötig" hat sich als zutreffend erwiesen: `StereoGain` und das Datenmodell mussten nicht angefasst werden.
 
 ## Kontext
 
