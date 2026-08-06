@@ -2,6 +2,7 @@ package de.hexenwoche.audiolex
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -169,6 +170,21 @@ fun EigeneAufnahmenScreen(repository: OwnCorpusRepository, clock: Clock, onBeend
             // caught (ADR-0012 point 5), not a convenience.
             RecorderControls(recorder = recorder, permission = permission, queue = queue)
 
+            // Saving audio without a text stays *allowed* (the text can be
+            // added later), but it's worth a word: an untranscribed entry
+            // is unusable for training until the text exists, and the
+            // author asked for the warning after hitting exactly that case
+            // (A53-Befund 2026-08-06). A quiet hint, not a dialog and not a
+            // block -- the decision stays the user's.
+            if (recorder.buffer != null && newText.isBlank()) {
+                Text(
+                    "Ohne Text lässt sich der Eintrag nicht trainieren. " +
+                        "Du kannst ihn später über „Text ändern“ nachtragen.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
             // AC3: disabled only while *both* a recording and a non-blank
             // text are missing -- either one alone is enough to save.
             Button(
@@ -315,7 +331,17 @@ private fun EntryRow(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            // FlowRow, not a fixed Row (A53-Befund 2026-08-06): the four
+            // actions overflow the phone's width, which didn't just look
+            // bad -- "Neu aufnehmen" wrapped mid-label and "Löschen" was
+            // pushed off-screen entirely, so the author reported delete as
+            // missing. A plain Row clips its overflow instead of wrapping.
+            // Same fix and same precedent as the RatingBar overflow
+            // (Autor-Befund 2026-07-12).
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
                 FilledTonalButton(onClick = {
                     scope.launch {
                         val audio = repository.audioFor(entry)
