@@ -45,6 +45,7 @@ private sealed interface Screen {
     data object Einstellungen : Screen
     data object Sitzungshistorie : Screen
     data object Impressum : Screen
+    data object EigeneAufnahmen : Screen
     data object DevKanaltest : Screen
 }
 
@@ -52,10 +53,21 @@ private sealed interface Screen {
 // [database] and [clock] are created once per process by the platform entry
 // point (MainActivity/main) and handed down -- the SQLite file isn't reopened
 // on every screen visit, and the time source stays injectable (ADR-0008).
+// [ownCorpusDir] is the same pattern for the own-corpus WAVs + metadata JSON
+// (Backlog Eigen-Korpus Batch B, ADR-0012 Nachtrag) -- a plain absolute path
+// from the platform-specific `getOwnCorpusDir`, not the database itself,
+// since the own corpus deliberately isn't in Room (Nachtrag "JSON statt
+// Datenbank").
 @Composable
-fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit) {
+fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit, ownCorpusDir: String) {
     val scope = rememberCoroutineScope()
     val settingsRepository = remember(database) { RoomSettingsRepository(database.settingsDao()) }
+    // JSON-backed, not Room (ADR-0012 Nachtrag) -- created once per process
+    // like the other repositories above, from the directory the platform
+    // entry point resolved.
+    val ownCorpusRepository = remember(ownCorpusDir) {
+        OwnCorpusRepository(createOwnCorpusFiles(ownCorpusDir), clock)
+    }
     // One state object for all persisted settings (Backlog "Code-Qualität":
     // five separate states + five near-identical save blocks used to mean
     // every new field had to be maintained in 6+ places). Renders on the
@@ -100,6 +112,7 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit) {
                         onOpenEinstellungen = { screen = Screen.Einstellungen },
                         onOpenSitzungshistorie = { screen = Screen.Sitzungshistorie },
                         onOpenImpressum = { screen = Screen.Impressum },
+                        onOpenEigeneAufnahmen = { screen = Screen.EigeneAufnahmen },
                         onOpenDevKanaltest = { screen = Screen.DevKanaltest },
                         onExitApp = onExitApp,
                     )
@@ -155,6 +168,11 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit) {
                         onBeenden = { screen = Screen.Start },
                     )
                     is Screen.Impressum -> ImpressumScreen(onBeenden = { screen = Screen.Start })
+                    is Screen.EigeneAufnahmen -> EigeneAufnahmenScreen(
+                        repository = ownCorpusRepository,
+                        clock = clock,
+                        onBeenden = { screen = Screen.Start },
+                    )
                     is Screen.DevKanaltest -> DevKanaltestScreen(onBeenden = { screen = Screen.Start })
                 }
             }
@@ -169,6 +187,7 @@ private fun StartScreen(
     onOpenEinstellungen: () -> Unit,
     onOpenSitzungshistorie: () -> Unit,
     onOpenImpressum: () -> Unit,
+    onOpenEigeneAufnahmen: () -> Unit,
     onOpenDevKanaltest: () -> Unit,
     onExitApp: () -> Unit,
 ) {
@@ -193,6 +212,11 @@ private fun StartScreen(
         }
         Button(onClick = onOpenEinstellungen) {
             Text("Einstellungen")
+        }
+        // Eigen-Korpus Batch B (ADR-0012): entry point for the own-recordings
+        // maske + management list, alongside the other hub navigation.
+        Button(onClick = onOpenEigeneAufnahmen) {
+            Text("Eigene Aufnahmen")
         }
         Button(onClick = onOpenDevKanaltest) {
             Text("Kanaltest (Dev)")

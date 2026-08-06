@@ -13,8 +13,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         val database = createAudioLexDatabase(getDatabaseBuilder(applicationContext))
         val clock = systemClock()
+        val ownCorpusDir = getOwnCorpusDir(applicationContext).absolutePath
         setContent {
-            App(database, clock, onExitApp = { finishAndRemoveTask() })
+            App(database, clock, onExitApp = { finishAndRemoveTask() }, ownCorpusDir = ownCorpusDir)
         }
     }
 }
