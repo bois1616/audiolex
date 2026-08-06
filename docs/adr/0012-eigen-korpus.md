@@ -1,7 +1,19 @@
 # ADR-0012: Eigen-Korpus — selbst eingesprochene Einträge als zweite, schreibbare Quelle
 
-- **Status:** vorgeschlagen (Autor-Entscheide 2026-08-06, Architektur durch Opus-Schärfung am selben Tag)
+- **Status:** akzeptiert (Autor-Entscheide 2026-08-06, Architektur durch Opus-Schärfung am selben Tag) · **Entscheidung 1/2 revidiert am 2026-08-06 vor der Umsetzung, siehe Nachtrag**
 - **Datum:** 2026-08-06
+
+> **Nachtrag 2026-08-06: Die Metadaten liegen als JSON neben den Aufnahmen, nicht in der Datenbank.**
+>
+> Ursprünglich waren die Metadaten (Text, Eintragsart, Dateiname) für eine Room-Tabelle vorgesehen — konsistent zum übrigen Persistenz-Aufbau. Beim Schärfen von Batch B fiel auf, dass das mit einer bestehenden Festlegung kollidiert: `createAudioLexDatabase` setzt `fallbackToDestructiveMigration(true)`, **jede** Schema-Änderung löscht also alle Tabellen. Bisher war das folgenlos, weil nur SRS-Fälligkeiten und Einstellungen betroffen waren — beides regenerierbar oder trivial neu zu setzen. Eigene Aufnahmen sind das nicht: Sie sind der einzige Datenbestand der App, der **nicht wiederherstellbar** ist. Ein Versionssprung hätte die WAV-Dateien als Waisen zurückgelassen — vorhanden, aber ohne Text und Eintragsart wertlos. Ausgelöst wurde die Prüfung durch den Autor-Bericht, dass bereits eine zweite Person eingesprochen hat: Der Bestand ist nicht mehr hypothetisch.
+>
+> **Revidierte Entscheidung (Autor 2026-08-06):** Text, Eintragsart, Sprecher-Kontingent und Zeitstempel stehen in **einer JSON-Datei im selben Verzeichnis wie die WAVs** — dasselbe Muster wie beim mitgelieferten Korpus (`words.json` + `recordings.json` + WAVs). Room bleibt für SRS, Sitzungen und Einstellungen zuständig und behält dort seinen destruktiven Fallback; der Eigen-Korpus ist von Datenbank-Sprüngen schlicht nicht betroffen, weil er nicht in der Datenbank liegt.
+>
+> Was das zusätzlich löst: **Sicherung** ist das Kopieren eines Ordners (die unter „Konsequenzen" offen gelassene Frage), und der Bestand ist **selbstbeschreibend** — bei einer falschen Verschriftlichung genügt im Notfall ein Texteditor. Für ein System, dessen ausdrückliche Schwachstelle die Verschriftlichung ist (Punkt 5), ist das kein Nebeneffekt, sondern ein Sicherheitsnetz.
+>
+> Preis: keine Transaktionen und kein Abfrage-Optimierer. Bei einem Einzelnutzer-Bestand in der Größenordnung von zehn bis wenigen hundert Einträgen, der ohnehin komplett in den Speicher geladen wird, ist beides gegenstandslos. Die Datei wird bei jeder Änderung vollständig neu geschrieben.
+>
+> **Nachtrag 2026-08-06: Sprecher-Kontingente.** Der Autor hat eine zweite Person (weiblich) einsprechen lassen — mit gutem Ergebnis — und daraus zwei Folgerungen gezogen: Die seit Juli offene Frage nach einer **zweiten Stimme** (M1, an der TTS gescheitert) ist damit ohne TTS gelöst, und der **Dialekt** aus M5 lässt sich am einfachsten ebenso einsprechen. Vorgesehen sind daher benannte Kontingente (z. B. männlich, weiblich, Dialekt), nach denen sich später filtern lässt. Umgesetzt als **freies Textfeld** je Eintrag, nicht als festes Enum: Welche Kontingente entstehen, weiß heute niemand, und ein Enum müsste für jedes neue geändert werden. Mehrsprachigkeit ließe sich über denselben Weg abbilden — der Autor stellt das ausdrücklich zurück, das bestehende `Word.language`-Feld bleibt dafür der vorgesehene Ort (Sprach-Bogen).
 
 ## Kontext
 
