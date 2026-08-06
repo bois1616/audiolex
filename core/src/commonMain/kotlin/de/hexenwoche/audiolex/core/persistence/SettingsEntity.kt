@@ -21,6 +21,9 @@ import androidx.room.Upsert
  * as a plain string, not an enum -- the catalog is data, not a compile-time
  * type -- so the "unknown id" fallback (resolve to the first catalog entry)
  * lives where the catalog is loaded (composeApp), not in this mapper.
+ *
+ * [channelMode] (Backlog M4 "Kopfhörer-Bogen Batch B", ADR-0011) stores the
+ * `ChannelMode` enum name, same pattern as [themeMode]/[corpusMode].
  */
 @Entity
 data class SettingsEntity(
@@ -30,6 +33,7 @@ data class SettingsEntity(
     val noiseEnabled: Boolean = false,
     val snrDb: Int = 5,
     val noiseScenario: String = "restaurant",
+    val channelMode: String = "BEIDE",
 )
 
 @Dao

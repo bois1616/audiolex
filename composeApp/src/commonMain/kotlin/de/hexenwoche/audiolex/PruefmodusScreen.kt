@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import de.hexenwoche.audiolex.core.audio.NoiseLoop
+import de.hexenwoche.audiolex.core.audio.OutputSetup
 import de.hexenwoche.audiolex.core.audio.WavFile
 import de.hexenwoche.audiolex.core.audio.createAudioSink
 import de.hexenwoche.audiolex.core.corpus.EntryKind
@@ -39,6 +40,7 @@ import de.hexenwoche.audiolex.core.persistence.allOrSeed
 import de.hexenwoche.audiolex.core.session.ExamSession
 import de.hexenwoche.audiolex.core.session.PlaybackQueue
 import de.hexenwoche.audiolex.core.session.Session
+import de.hexenwoche.audiolex.core.settings.ChannelMode
 import de.hexenwoche.audiolex.core.settings.CorpusMode
 import de.hexenwoche.audiolex.core.settings.entryKind
 import de.hexenwoche.audiolex.core.srs.FixedIntervalScheduler
@@ -81,6 +83,11 @@ private sealed interface PruefmodusState {
  * [LernmodusScreen] (Backlog M4 "Störgeräusch-Overlay", ADR-0010) -- both
  * modes share one setting, and the mixing happens in the [PlaybackQueue]
  * producer via the same [mixWithOptionalNoise] helper.
+ *
+ * [channelMode] drives the channel selection (Backlog M4 "Kopfhörer-Bogen
+ * Batch B", ADR-0011): applied via [applyChannelMode] in the same producer,
+ * after the noise mix -- a no-op unless the live [rememberOutputSetup] result
+ * is the stereo-headphone setup.
  */
 @Composable
 fun PruefmodusScreen(
@@ -91,11 +98,13 @@ fun PruefmodusScreen(
     noiseEnabled: Boolean,
     snrDb: Int,
     noiseScenario: String,
+    channelMode: ChannelMode,
     onBeenden: () -> Unit,
     onZumLernmodus: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     val sink = remember { createAudioSink() }
+    val outputSetup = rememberOutputSetup()
     var state by remember { mutableStateOf<PruefmodusState>(PruefmodusState.Loading) }
     val queue = remember {
         PlaybackQueue(sink, scope, onError = { e ->
@@ -191,7 +200,7 @@ fun PruefmodusScreen(
     LaunchedEffect(runningCardWordId) {
         val running = state as? PruefmodusState.Running ?: return@LaunchedEffect
         val loaded = corpus ?: return@LaunchedEffect
-        playCurrentCard(running.session, loaded, queue, noiseBuffer, snrDb) { message ->
+        playCurrentCard(running.session, loaded, queue, noiseBuffer, snrDb, channelMode, outputSetup) { message ->
             state = PruefmodusState.Error(message)
         }
     }
@@ -269,7 +278,7 @@ fun PruefmodusScreen(
                 if (!current.rated) {
                     FilledTonalButton(onClick = {
                         val loaded = corpus ?: return@FilledTonalButton
-                        playCurrentCard(session, loaded, queue, noiseBuffer, snrDb) { message ->
+                        playCurrentCard(session, loaded, queue, noiseBuffer, snrDb, channelMode, outputSetup) { message ->
                             state = PruefmodusState.Error(message)
                         }
                     }) {
@@ -429,6 +438,8 @@ private fun playCurrentCard(
     queue: PlaybackQueue,
     noiseBuffer: NoiseLoop?,
     snrDb: Int,
+    channelMode: ChannelMode,
+    outputSetup: OutputSetup,
     onError: (String) -> Unit,
 ) {
     val word = corpus.wordById(session.currentCard.wordId)
@@ -447,6 +458,7 @@ private fun playCurrentCard(
     queue.play {
         val bytes = Res.readBytes("files/corpus/${recording.fileRef}")
         val speech = WavFile.decode(bytes)
-        mixWithOptionalNoise(speech, noiseBuffer, snrDb)
+        val mixed = mixWithOptionalNoise(speech, noiseBuffer, snrDb)
+        applyChannelMode(mixed, channelMode, outputSetup)
     }
 }

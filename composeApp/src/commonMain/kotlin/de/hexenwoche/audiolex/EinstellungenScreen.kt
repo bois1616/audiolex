@@ -28,6 +28,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import de.hexenwoche.audiolex.core.audio.NoiseScenario
 import de.hexenwoche.audiolex.core.audio.OutputSetup
+import de.hexenwoche.audiolex.core.settings.ChannelMode
 import de.hexenwoche.audiolex.core.settings.CorpusMode
 import de.hexenwoche.audiolex.core.settings.SNR_DB_MAX
 import de.hexenwoche.audiolex.core.settings.SNR_DB_MIN
@@ -45,12 +46,14 @@ import kotlin.math.roundToInt
  * Sätze, ADR-0009 point 4 -- a plain setting, not a preset). The third is the
  * noise overlay shared by both training modes: a switch, and -- only while
  * on -- an SNR slider and a scenario choice loaded from `noise.json`. The
- * fourth is the read-only "Ausgabe" line (Backlog M4 "Kopfhörer-Bogen Batch
- * A", ADR-0011): which [OutputSetup] is currently detected, so a wrong
- * detection is at least visible to the user. Deliberately just a `Text`, no
- * heading of its own yet -- Batch B adds a whole "Kanäle" section directly
- * below it and is expected to put a heading above this line at that point.
- * Everything else (channel selection, presets) stays out of scope, own
+ * fourth is the "Ausgabe" section (Backlog M4 "Kopfhörer-Bogen Batch A",
+ * ADR-0011): which [OutputSetup] is currently detected, so a wrong detection
+ * is at least visible to the user. The fifth is "Kanäle" (Backlog M4
+ * "Kopfhörer-Bogen Batch B", ADR-0011 point 5), directly below it: a radio
+ * group for [ChannelMode], `enabled = false` with an explanatory line
+ * whenever the detected setup is [OutputSetup.HOERGERAET] -- a channel
+ * choice would be wirkungslos there (ADR-0007), and the disabled state says
+ * so instead of just hiding the control. Presets stay out of scope, own
  * backlog items. A dead end with "Zurück", same navigation pattern as the
  * other screens.
  *
@@ -73,6 +76,8 @@ fun EinstellungenScreen(
     onSnrDbChange: (Int) -> Unit,
     noiseScenario: String,
     onNoiseScenarioChange: (String) -> Unit,
+    channelMode: ChannelMode,
+    onChannelModeChange: (ChannelMode) -> Unit,
     onBeenden: () -> Unit,
 ) {
     // Loaded once when the screen is entered, just for the scenario labels --
@@ -219,7 +224,9 @@ fun EinstellungenScreen(
                 }
             }
 
-            // Read-only, no control -- AC4 in the backlog item. Recedes in
+            Text("Ausgabe", style = MaterialTheme.typography.titleMedium)
+
+            // Read-only, no control -- AC4 of Batch A. Recedes in
             // onSurfaceVariant (DESIGN.md "Sekundäres tritt zurück"); its
             // sole purpose is making a wrong detection noticeable (ADR-0011),
             // not offering anything to tap. Live-updates via
@@ -231,10 +238,54 @@ fun EinstellungenScreen(
                 OutputSetup.HOERGERAET -> "Hörgerät"
             }
             Text(
-                "Ausgabe: $outputSetupLabel erkannt",
+                "$outputSetupLabel erkannt",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+
+            Text("Kanäle", style = MaterialTheme.typography.titleMedium)
+
+            // Wirksam nur im Kopfhörer-Setup (Backlog M4 "Kopfhörer-Bogen
+            // Batch B" AC2/AC3, ADR-0011 point 5): the radio group itself
+            // stays visible either way -- disabling it, rather than hiding
+            // it, is what makes the connection to the "Ausgabe" line above
+            // legible instead of the option just quietly not being there.
+            val channelSelectionEnabled = outputSetup == OutputSetup.STEREO_KOPFHOERER
+            Column(
+                modifier = Modifier.fillMaxWidth().selectableGroup(),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                RadioOption(
+                    label = "Beide",
+                    selected = channelMode == ChannelMode.BEIDE,
+                    enabled = channelSelectionEnabled,
+                    onSelect = { onChannelModeChange(ChannelMode.BEIDE) },
+                )
+                RadioOption(
+                    label = "Nur links",
+                    selected = channelMode == ChannelMode.NUR_LINKS,
+                    enabled = channelSelectionEnabled,
+                    onSelect = { onChannelModeChange(ChannelMode.NUR_LINKS) },
+                )
+                RadioOption(
+                    label = "Nur rechts",
+                    selected = channelMode == ChannelMode.NUR_RECHTS,
+                    enabled = channelSelectionEnabled,
+                    onSelect = { onChannelModeChange(ChannelMode.NUR_RECHTS) },
+                )
+            }
+
+            if (!channelSelectionEnabled) {
+                // Sachliche Begründung, keine Fehlermeldung (SOUL.md
+                // Tonalität) -- erklärt die Physik (das Hörgerät summiert
+                // Stereo zu Mono, ADR-0007/ADR-0011), nicht ein Problem.
+                Text(
+                    "Ohne Wirkung am Hörgerät: Es summiert Stereo automatisch zu Mono. " +
+                        "Verfügbar mit Stereo-Kopfhörern.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
 
         Button(onClick = onBeenden) {
@@ -256,18 +307,20 @@ private fun sliderPositionFor(snrDb: Int): Int = SNR_DB_MIN + SNR_DB_MAX - snrDb
 // The row itself carries the selectable semantics/click target (Material
 // guidance), not just the RadioButton -- tapping the label also switches the
 // mode. RadioButton's own onClick stays null so there's exactly one click
-// handler, not two racing ones.
+// handler, not two racing ones. [enabled] (Backlog M4 "Kopfhörer-Bogen Batch
+// B" AC2): sichtbar-inaktiv, not hidden -- Material's own disabled styling on
+// RadioButton/selectable already dims and blocks taps, no extra state needed.
 @Composable
-private fun RadioOption(label: String, selected: Boolean, onSelect: () -> Unit) {
+private fun RadioOption(label: String, selected: Boolean, enabled: Boolean = true, onSelect: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .selectable(selected = selected, onClick = onSelect, role = Role.RadioButton)
+            .selectable(selected = selected, enabled = enabled, onClick = onSelect, role = Role.RadioButton)
             .padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        RadioButton(selected = selected, onClick = null)
+        RadioButton(selected = selected, enabled = enabled, onClick = null)
         Text(label, style = MaterialTheme.typography.bodyLarge)
     }
 }

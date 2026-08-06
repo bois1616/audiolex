@@ -23,12 +23,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import de.hexenwoche.audiolex.core.audio.NoiseLoop
+import de.hexenwoche.audiolex.core.audio.OutputSetup
 import de.hexenwoche.audiolex.core.audio.WavFile
 import de.hexenwoche.audiolex.core.audio.createAudioSink
 import de.hexenwoche.audiolex.core.corpus.EntryKind
 import de.hexenwoche.audiolex.core.corpus.LoadedCorpus
 import de.hexenwoche.audiolex.core.session.LearningSession
 import de.hexenwoche.audiolex.core.session.PlaybackQueue
+import de.hexenwoche.audiolex.core.settings.ChannelMode
 import de.hexenwoche.audiolex.core.settings.CorpusMode
 import de.hexenwoche.audiolex.core.settings.entryKind
 import de.hexenwoche.audiolex.generated.resources.Res
@@ -55,6 +57,11 @@ private sealed interface LernmodusState {
  * [PlaybackQueue] producer, after WAV decode, so both training modes get the
  * same treatment through the same mixer. The noise loop is loaded once in
  * the load block below (not per word) and cached in [noiseBuffer].
+ *
+ * [channelMode] drives the channel selection (Backlog M4 "Kopfhörer-Bogen
+ * Batch B", ADR-0011): applied via [applyChannelMode] in the same producer,
+ * after the noise mix -- a no-op unless the live [rememberOutputSetup] result
+ * is the stereo-headphone setup.
  */
 @Composable
 fun LernmodusScreen(
@@ -62,10 +69,12 @@ fun LernmodusScreen(
     noiseEnabled: Boolean,
     snrDb: Int,
     noiseScenario: String,
+    channelMode: ChannelMode,
     onBeenden: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
     val sink = remember { createAudioSink() }
+    val outputSetup = rememberOutputSetup()
     var state by remember { mutableStateOf<LernmodusState>(LernmodusState.Loading) }
     val queue = remember {
         PlaybackQueue(sink, scope, onError = { e ->
@@ -119,7 +128,7 @@ fun LernmodusScreen(
     LaunchedEffect(runningWordIndex) {
         val running = state as? LernmodusState.Running ?: return@LaunchedEffect
         val loaded = corpus ?: return@LaunchedEffect
-        playCurrentWord(running.session, loaded, queue, noiseBuffer, snrDb) { message ->
+        playCurrentWord(running.session, loaded, queue, noiseBuffer, snrDb, channelMode, outputSetup) { message ->
             state = LernmodusState.Error(message)
         }
     }
@@ -183,7 +192,7 @@ fun LernmodusScreen(
                 // StartScreen already uses for "App beenden".
                 FilledTonalButton(onClick = {
                     val loaded = corpus ?: return@FilledTonalButton
-                    playCurrentWord(session, loaded, queue, noiseBuffer, snrDb) { message ->
+                    playCurrentWord(session, loaded, queue, noiseBuffer, snrDb, channelMode, outputSetup) { message ->
                         state = LernmodusState.Error(message)
                     }
                 }) {
@@ -236,6 +245,8 @@ private fun playCurrentWord(
     queue: PlaybackQueue,
     noiseBuffer: NoiseLoop?,
     snrDb: Int,
+    channelMode: ChannelMode,
+    outputSetup: OutputSetup,
     onError: (String) -> Unit,
 ) {
     val recording = corpus.recordingFor(session.currentWord.id)
@@ -246,6 +257,7 @@ private fun playCurrentWord(
     queue.play {
         val bytes = Res.readBytes("files/corpus/${recording.fileRef}")
         val speech = WavFile.decode(bytes)
-        mixWithOptionalNoise(speech, noiseBuffer, snrDb)
+        val mixed = mixWithOptionalNoise(speech, noiseBuffer, snrDb)
+        applyChannelMode(mixed, channelMode, outputSetup)
     }
 }

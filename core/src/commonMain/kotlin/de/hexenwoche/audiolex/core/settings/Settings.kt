@@ -20,6 +20,18 @@ enum class ThemeMode { SYSTEM, LIGHT, DARK }
  */
 enum class CorpusMode { WOERTER, SAETZE }
 
+/**
+ * Which ear(s) the trained signal reaches (Backlog M4 "Kopfhörer-Bogen Batch
+ * B", ADR-0011 point 5): makes the already-existing, already-tested
+ * [de.hexenwoche.audiolex.core.audio.StereoGain] productive for the first
+ * time. [BEIDE] is the default so existing installs keep today's plain-mono
+ * playback unchanged. Only ever *wirksam* in the detected stereo-headphone
+ * setup -- in the hearing-aid setup it is stored like any other setting, but
+ * the training screens leave the buffer mono regardless of its value (ADR-0007,
+ * ADR-0011 point 5), and the settings UI shows the options disabled there.
+ */
+enum class ChannelMode { BEIDE, NUR_LINKS, NUR_RECHTS }
+
 /** Valid SNR slider range in dB (Backlog M4 AC4); a stored value outside this falls back to [DEFAULT_SNR_DB]. */
 const val SNR_DB_MIN = -5
 const val SNR_DB_MAX = 20
@@ -30,9 +42,10 @@ private const val DEFAULT_NOISE_SCENARIO = "restaurant"
  * Persisted app-wide settings, Room-free like the other domain types
  * ([de.hexenwoche.audiolex.core.session.Session]) -- persistence mapping
  * happens at the boundary via [toEntity]/[toDomain]. Currently the theme,
- * the corpus mode, and the noise overlay (Backlog M4 "Störgeräusch-Overlay",
- * ADR-0010): [noiseEnabled]/[snrDb]/[noiseScenario] are shared by both
- * training modes, not per-mode settings.
+ * the corpus mode, the noise overlay (Backlog M4 "Störgeräusch-Overlay",
+ * ADR-0010, [noiseEnabled]/[snrDb]/[noiseScenario] shared by both training
+ * modes), and the channel selection (Backlog M4 "Kopfhörer-Bogen Batch B",
+ * ADR-0011, [channelMode]).
  */
 data class AppSettings(
     val themeMode: ThemeMode,
@@ -40,6 +53,7 @@ data class AppSettings(
     val noiseEnabled: Boolean = false,
     val snrDb: Int = DEFAULT_SNR_DB,
     val noiseScenario: String = DEFAULT_NOISE_SCENARIO,
+    val channelMode: ChannelMode = ChannelMode.BEIDE,
 )
 
 /**
@@ -59,6 +73,7 @@ fun SettingsEntity.toDomain(): AppSettings =
         noiseEnabled = noiseEnabled,
         snrDb = snrDb.takeIf { it in SNR_DB_MIN..SNR_DB_MAX } ?: DEFAULT_SNR_DB,
         noiseScenario = noiseScenario.takeIf { it.isNotBlank() } ?: DEFAULT_NOISE_SCENARIO,
+        channelMode = ChannelMode.entries.firstOrNull { it.name == channelMode } ?: ChannelMode.BEIDE,
     )
 
 fun AppSettings.toEntity(): SettingsEntity =
@@ -68,6 +83,7 @@ fun AppSettings.toEntity(): SettingsEntity =
         noiseEnabled = noiseEnabled,
         snrDb = snrDb,
         noiseScenario = noiseScenario,
+        channelMode = channelMode.name,
     )
 
 /**

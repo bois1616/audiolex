@@ -12,10 +12,10 @@ import androidx.sqlite.driver.bundled.BundledSQLiteDriver
  */
 @Database(
     entities = [ReviewCardEntity::class, SessionEntity::class, SettingsEntity::class],
-    // v4 -> v5: noiseEnabled/snrDb/noiseScenario columns on SettingsEntity
-    // (Backlog M4 "Störgeräusch-Overlay", ADR-0010); the destructive fallback
-    // carries the bump like v2 -> v3 -> v4 did.
-    version = 5,
+    // v5 -> v6: channelMode column on SettingsEntity (Backlog M4
+    // "Kopfhörer-Bogen Batch B", ADR-0011); the destructive fallback carries
+    // the bump like v2 -> v3 -> v4 -> v5 did.
+    version = 6,
     exportSchema = false,
 )
 @ConstructedBy(AudioLexDatabaseConstructor::class)

@@ -108,6 +108,7 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit) {
                         noiseEnabled = settings.noiseEnabled,
                         snrDb = settings.snrDb,
                         noiseScenario = settings.noiseScenario,
+                        channelMode = settings.channelMode,
                         onBeenden = { screen = Screen.Start },
                     )
                     is Screen.Pruefmodus -> PruefmodusScreen(
@@ -118,6 +119,7 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit) {
                         noiseEnabled = settings.noiseEnabled,
                         snrDb = settings.snrDb,
                         noiseScenario = settings.noiseScenario,
+                        channelMode = settings.channelMode,
                         onBeenden = { screen = Screen.Start },
                         onZumLernmodus = { screen = Screen.Lernmodus },
                     )
@@ -141,6 +143,10 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit) {
                         noiseScenario = settings.noiseScenario,
                         onNoiseScenarioChange = { newScenario ->
                             updateSettings { it.copy(noiseScenario = newScenario) }
+                        },
+                        channelMode = settings.channelMode,
+                        onChannelModeChange = { newMode ->
+                            updateSettings { it.copy(channelMode = newMode) }
                         },
                         onBeenden = { screen = Screen.Start },
                     )

@@ -3,6 +3,7 @@ package de.hexenwoche.audiolex.core.persistence
 import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import de.hexenwoche.audiolex.core.settings.AppSettings
+import de.hexenwoche.audiolex.core.settings.ChannelMode
 import de.hexenwoche.audiolex.core.settings.CorpusMode
 import de.hexenwoche.audiolex.core.settings.ThemeMode
 import kotlinx.coroutines.test.runTest
@@ -126,5 +127,31 @@ class SettingsRepositoryTest {
         val loaded = newRepository(db).load()
 
         assertEquals("restaurant", loaded.noiseScenario)
+    }
+
+    @Test
+    fun loadReturnsBeideChannelModeDefaultForFreshDatabase() = runTest {
+        assertEquals(ChannelMode.BEIDE, newRepository().load().channelMode)
+    }
+
+    @Test
+    fun savedChannelModeRoundtrips() = runTest {
+        val repository = newRepository()
+
+        repository.save(AppSettings(ThemeMode.SYSTEM, channelMode = ChannelMode.NUR_LINKS))
+
+        assertEquals(ChannelMode.NUR_LINKS, repository.load().channelMode)
+    }
+
+    @Test
+    fun unknownStoredChannelModeFallsBackToBeide() = runTest {
+        val db = newDatabase()
+        db.settingsDao().upsert(SettingsEntity(themeMode = "DARK", channelMode = "MITTE"))
+
+        val loaded = newRepository(db).load()
+
+        assertEquals(ChannelMode.BEIDE, loaded.channelMode)
+        // The channelMode fallback must not take the other field down with it.
+        assertEquals(ThemeMode.DARK, loaded.themeMode)
     }
 }
