@@ -34,6 +34,17 @@ import androidx.compose.ui.unit.dp
  * Eigen-Korpus Batch A (ADR-0012), which adds the app's first-ever
  * permission (`RECORD_AUDIO`, also in the manifest) -- the "no permissions
  * at all" claim below is retired accordingly, the "no network" one isn't.
+ *
+ * ADR-0013 forced a correction here rather than an addition. The earlier
+ * wording -- "Aufnahmen können das Gerät technisch nicht verlassen" -- was
+ * false while `allowBackup="true"` stood in the manifest: Android's
+ * Auto-Backup was free to upload app-private files to a Google account, and
+ * it needs no INTERNET permission of ours to do it. The claim is now scoped
+ * to what it can actually cover ("die App kann von sich aus nichts
+ * übertragen") and the manifest was changed in the same version to make even
+ * that true. The two backup paragraphs below are the honest remainder: an
+ * export exists, the user triggers it, and whoever never uses it has no copy
+ * at all now that the system backup is gone (Backlog AC5/AC6).
  */
 @Composable
 fun ImpressumScreen(onBeenden: () -> Unit) {
@@ -81,8 +92,21 @@ fun ImpressumScreen(onBeenden: () -> Unit) {
             Text(
                 "AudioLex fordert eine einzige Android-Berechtigung an: Mikrofon, nur für " +
                     "selbst ausgelöste Aufnahmen eigener Wörter und Sätze. Eine " +
-                    "Internet-Berechtigung gibt es weiterhin nicht — Aufnahmen können das " +
-                    "Gerät technisch nicht verlassen.",
+                    "Internet-Berechtigung gibt es nicht. Die App kann von sich aus nichts " +
+                    "übertragen.",
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Text(
+                "Eigene Aufnahmen lassen sich sichern: Auf Tastendruck schreibt AudioLex sie " +
+                    "als ZIP-Datei in deine Dokumente. Das geschieht nur, wenn du es auslöst. " +
+                    "Was danach mit der Datei passiert — kopieren, weitergeben, in eine Cloud " +
+                    "laden — entscheidest du.",
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Text(
+                "Androids automatische Sicherung ist für AudioLex abgeschaltet, weil sie die " +
+                    "Aufnahmen ungefragt in ein Google-Konto übertragen hätte. Das hat eine " +
+                    "Kehrseite: Ohne eigenen Export gibt es keine Kopie.",
                 style = MaterialTheme.typography.bodyLarge,
             )
         }

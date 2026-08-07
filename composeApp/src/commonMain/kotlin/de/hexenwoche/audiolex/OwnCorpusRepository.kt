@@ -2,10 +2,15 @@ package de.hexenwoche.audiolex
 
 import de.hexenwoche.audiolex.core.audio.PcmBuffer
 import de.hexenwoche.audiolex.core.audio.WavFile
+import de.hexenwoche.audiolex.core.corpus.BackupContents
 import de.hexenwoche.audiolex.core.corpus.EntryKind
 import de.hexenwoche.audiolex.core.corpus.OwnEntry
+import de.hexenwoche.audiolex.core.corpus.buildBackup
 import de.hexenwoche.audiolex.core.corpus.encodeOwnCorpus
+import de.hexenwoche.audiolex.core.corpus.packArchive
 import de.hexenwoche.audiolex.core.corpus.parseOwnCorpus
+import de.hexenwoche.audiolex.core.corpus.readBackup
+import de.hexenwoche.audiolex.core.corpus.unpackArchive
 import de.hexenwoche.audiolex.core.time.Clock
 import kotlin.random.Random
 import kotlinx.coroutines.Dispatchers
@@ -138,6 +143,50 @@ class OwnCorpusRepository(
         files.readRecording(entry.fileName)?.let { WavFile.decode(it) }
     }
 
+    /**
+     * Packs the whole collection into a backup archive (ADR-0013 point 1).
+     * Only the bytes are produced here -- where they land is
+     * [BackupActions.saveToDocuments]'s job.
+     */
+    suspend fun exportArchive(): ArchiveExport = withContext(Dispatchers.IO) {
+        val plan = buildBackup(allBlocking(), clock.nowEpochMillis()) { files.readRecording(it) }
+        ArchiveExport(
+            bytes = packArchive(plan.files),
+            exported = plan.exported,
+            skippedWithoutRecording = plan.skippedWithoutRecording,
+        )
+    }
+
+    /**
+     * Merges a backup into the collection (ADR-0013 point 5: adds, never
+     * overwrites, never deletes).
+     *
+     * The whole archive is read and judged before anything is written, so an
+     * unreadable file cannot leave a half-imported state behind (AC3). Within
+     * the write, each WAV goes down before the metadata that references it --
+     * the same order as [add], and for the same reason: a failure in between
+     * leaves an unreferenced file, never an entry pointing at nothing.
+     */
+    suspend fun importArchive(bytes: ByteArray): ArchiveImport = withContext(Dispatchers.IO) {
+        val archive = unpackArchive(bytes) ?: return@withContext ArchiveImport.Unreadable
+        when (val contents = readBackup(archive, allBlocking())) {
+            BackupContents.Unreadable -> ArchiveImport.Unreadable
+            is BackupContents.Readable -> {
+                for (pending in contents.toAdd) {
+                    files.writeRecording(pending.entry.fileName, pending.audio)
+                }
+                if (contents.toAdd.isNotEmpty()) {
+                    saveAllBlocking(allBlocking() + contents.toAdd.map { it.entry })
+                }
+                ArchiveImport.Merged(
+                    added = contents.toAdd.size,
+                    alreadyPresent = contents.alreadyPresent,
+                    unusable = contents.unusable,
+                )
+            }
+        }
+    }
+
     private fun allBlocking(): List<OwnEntry> = parseOwnCorpus(files.readMetadata())
 
     private fun saveAllBlocking(entries: List<OwnEntry>) = files.writeMetadataAtomic(encodeOwnCorpus(entries))
@@ -150,4 +199,23 @@ class OwnCorpusRepository(
      * hundred entries) without adding a UUID dependency.
      */
     private fun newId(): String = "own-${clock.nowEpochMillis()}-${Random.nextInt(1_000_000)}"
+}
+
+/**
+ * A packed backup plus what it does and doesn't contain.
+ * [skippedWithoutRecording] are entries that have a text but no recording
+ * yet -- reported rather than silently omitted, so "12 Aufnahmen gesichert"
+ * out of 13 entries never looks like a loss.
+ */
+class ArchiveExport(
+    val bytes: ByteArray,
+    val exported: Int,
+    val skippedWithoutRecording: Int,
+)
+
+sealed interface ArchiveImport {
+    class Merged(val added: Int, val alreadyPresent: Int, val unusable: Int) : ArchiveImport
+
+    /** Not an AudioLex backup, or damaged (AC3) -- nothing was written. */
+    data object Unreadable : ArchiveImport
 }

@@ -3,7 +3,17 @@
 
     <!-- Recording own words/sentences (ADR-0012, Eigen-Korpus Batch A). The
          only permission this app requests; still no INTERNET permission, so
-         recordings stay on the device (enforced, not just declared). -->
+         recordings stay on the device (enforced, not just declared).
+
+         That claim only became true with allowBackup="false" below (ADR-0013):
+         Android's Auto-Backup was uploading app-private files, the own
+         recordings among them, into the user's Google account without ever
+         asking. No INTERNET permission of ours is required for that, because
+         a system service does the transfer. Turning it off is half of the
+         decision; the other half is the user-triggered ZIP export that
+         replaces it, and the two ship in the same version on purpose
+         (ADR-0013 point 3). Do not set this back to "true" without removing
+         that export first. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <application
@@ -11,7 +21,7 @@
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:supportsRtl="true">
         <activity
             android:name=".MainActivity"

@@ -82,6 +82,7 @@ fun EigeneAufnahmenScreen(repository: OwnCorpusRepository, clock: Clock, onBeend
         PlaybackQueue(sink, scope, onError = { e -> status = "Wiedergabe fehlgeschlagen: ${e.message}" })
     }
     val permission = rememberRecordingPermissionState()
+    val backup = rememberBackupActions()
 
     DisposableEffect(Unit) {
         onDispose {
@@ -129,6 +130,11 @@ fun EigeneAufnahmenScreen(repository: OwnCorpusRepository, clock: Clock, onBeend
     var editedText by remember { mutableStateOf("") }
     var reRecordingId by remember { mutableStateOf<String?>(null) }
     var pendingDeleteId by remember { mutableStateOf<String?>(null) }
+
+    // Guards both backup buttons while one is running: an export of a large
+    // collection takes a moment, and a second tap mid-write would be a
+    // second archive of the same data at best.
+    var isBackupBusy by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier.fillMaxSize().padding(20.dp),
@@ -269,6 +275,58 @@ fun EigeneAufnahmenScreen(repository: OwnCorpusRepository, clock: Clock, onBeend
                     if (index < sorted.lastIndex) {
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     }
+                }
+            }
+
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+            Text("Sicherung", style = MaterialTheme.typography.titleMedium)
+
+            // AC6: after this version the system backup is off (AC4), so a
+            // user who never exports has *less* protection than before. That
+            // has to be visible -- but as one quiet line, not a dialog and
+            // not a recurring nag: ADR-0013 hands the decision to the user
+            // on purpose.
+            Text(
+                "Eigene Aufnahmen liegen sonst nur auf diesem Gerät. " +
+                    "Der Export legt sie als ZIP-Datei in deinen Dokumenten ab — was danach damit geschieht, entscheidest du.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    enabled = !isBackupBusy && entries.isNotEmpty(),
+                    onClick = {
+                        scope.launch {
+                            isBackupBusy = true
+                            status = runExport(repository, backup, clock)
+                            isBackupBusy = false
+                        }
+                    },
+                ) {
+                    Text("Exportieren")
+                }
+                Button(
+                    enabled = !isBackupBusy,
+                    onClick = {
+                        isBackupBusy = true
+                        backup.pickArchive { bytes ->
+                            if (bytes == null) {
+                                // Cancelling the picker is not a failure and
+                                // gets no message -- the user knows what they did.
+                                isBackupBusy = false
+                            } else {
+                                scope.launch {
+                                    status = runImport(repository, bytes)
+                                    reload()
+                                    isBackupBusy = false
+                                }
+                            }
+                        }
+                    },
+                ) {
+                    Text("Importieren")
                 }
             }
         }
@@ -485,6 +543,57 @@ private fun RecorderControls(
         }
     }
 }
+
+/**
+ * Exports and reports the outcome as the screen's status line (AC1). Every
+ * path ends in a sentence the user can act on -- including the one where the
+ * file couldn't be written, which is otherwise indistinguishable from a
+ * successful backup that simply isn't there when it's needed.
+ */
+private suspend fun runExport(repository: OwnCorpusRepository, backup: BackupActions, clock: Clock): String {
+    val export = repository.exportArchive()
+    if (export.exported == 0) {
+        return "Nichts zu sichern: Es gibt noch keine Aufnahme, nur Einträge ohne Ton."
+    }
+    val location = backup.saveToDocuments(backupFileName(clock.nowEpochMillis()), export.bytes)
+        ?: return "Sicherung fehlgeschlagen — die Datei konnte nicht geschrieben werden."
+    val skipped = if (export.skippedWithoutRecording > 0) {
+        " ${export.skippedWithoutRecording} Eintrag/Einträge ohne Aufnahme sind nicht enthalten."
+    } else {
+        ""
+    }
+    return "${export.exported} Aufnahme(n) gesichert nach $location.$skipped"
+}
+
+/**
+ * Imports and reports the outcome (AC2/AC3). The counts are spelled out
+ * rather than reduced to "fertig": on a restore the difference between
+ * "12 hinzugefügt" and "12 waren schon da" is the whole information.
+ */
+private suspend fun runImport(repository: OwnCorpusRepository, bytes: ByteArray): String =
+    when (val result = repository.importArchive(bytes)) {
+        ArchiveImport.Unreadable ->
+            "Diese Datei ist keine AudioLex-Sicherung oder beschädigt. Es wurde nichts verändert."
+
+        is ArchiveImport.Merged -> buildString {
+            append(
+                when {
+                    result.added == 0 && result.alreadyPresent > 0 ->
+                        "Nichts hinzugefügt — alle ${result.alreadyPresent} Einträge der Sicherung sind bereits vorhanden."
+
+                    result.added == 0 -> "Nichts hinzugefügt."
+                    else -> "${result.added} Eintrag/Einträge übernommen"
+                },
+            )
+            if (result.added > 0) {
+                if (result.alreadyPresent > 0) append(", ${result.alreadyPresent} waren schon vorhanden")
+                append(".")
+            }
+            if (result.unusable > 0) {
+                append(" ${result.unusable} Eintrag/Einträge der Sicherung waren unvollständig und wurden übersprungen.")
+            }
+        }
+    }
 
 private fun germanKindLabel(kind: EntryKind): String = when (kind) {
     EntryKind.WORD -> "Wort"

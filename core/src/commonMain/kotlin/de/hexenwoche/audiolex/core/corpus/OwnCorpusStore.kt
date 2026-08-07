@@ -31,13 +31,28 @@ private val ownCorpusJson = Json { ignoreUnknownKeys = true }
  */
 fun parseOwnCorpus(json: String?): List<OwnEntry> {
     if (json == null) return emptyList()
-    return try {
-        ownCorpusJson.decodeFromString<List<OwnEntry>>(json)
-    } catch (e: SerializationException) {
-        emptyList()
-    } catch (e: IllegalArgumentException) {
-        emptyList()
-    }
+    return parseOwnCorpusOrNull(json) ?: emptyList()
+}
+
+/**
+ * The same parse as [parseOwnCorpus], but telling "damaged" apart from
+ * "empty" by returning null instead of an empty list (Backlog "Sicherung
+ * eigener Aufnahmen", AC3).
+ *
+ * [parseOwnCorpus]'s leniency is right for the on-device file, where an
+ * empty collection is the honest reading of "nothing usable here" and the
+ * screen's whole job is damage control. It is wrong when reading a *backup*:
+ * a damaged metadata file would import zero entries and report success,
+ * telling the user their backup was empty when it was in fact broken. That
+ * is the one outcome a restore path must never produce, so the backup reader
+ * takes the strict variant and says "unlesbar" out loud.
+ */
+fun parseOwnCorpusOrNull(json: String): List<OwnEntry>? = try {
+    ownCorpusJson.decodeFromString<List<OwnEntry>>(json)
+} catch (e: SerializationException) {
+    null
+} catch (e: IllegalArgumentException) {
+    null
 }
 
 /**
