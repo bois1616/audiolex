@@ -686,6 +686,13 @@ Befunde aus einer vollständigen Code-Durchsicht (`:core` + `:composeApp`). Kein
 
   **Was vorher entschieden sein will:** (1) **Der Marktplatz ist keine App-Funktion.** AudioLex hat keine Netzberechtigung und soll nach ADR-0013 auch keine bekommen — Austausch heißt Datei plus eine Stelle außerhalb der App (Website, Repo, Cloud-Ordner des Nutzers). Das ist konsistent mit der bisherigen Haltung: Die App schreibt eine Datei, was danach damit geschieht, gehört dem Nutzer. (2) **Fremde Stimmen sind personenbezogene Daten.** Eine weitergegebene Aufnahme trägt die Stimme einer identifizierbaren Person; wer ein Deck veröffentlicht, braucht deren Einverständnis. Keine Formalie, sondern der Kern der Sache, sobald aus „meine Sicherung" ein Verteilweg wird. (3) Kuratierung — ein Deck mit unbrauchbaren Aufnahmen ist schlimmer als keines.
 
+  **Zur Zustimmungs-Checkbox (Autor-Vorschlag 2026-08-07, Einschätzung Opus — keine Rechtsberatung):** Richtig gedacht, aber sie gehört an den Deck-Export, **nicht** an die Sicherung, und sie ist eine Behauptung, keine Zustimmung.
+
+  - **Wer klickt, ist nicht, wessen Stimme es ist.** Der Aufnehmende hakt an, die Sprecherin hat das Gerät nie berührt. Die Checkbox erzeugt damit eine *Zusicherung des Weitergebenden* — genau das Modell, mit dem jede Plattform arbeitet, die fremde Inhalte annimmt, und für die App-Seite ausreichend. Sie ersetzt aber nicht, dass die Zustimmung außerhalb tatsächlich existiert.
+  - **Nicht an den Sicherungs-Export.** Dort ist niemand Drittes im Spiel, und ADR-0013 legt für diesen Weg ausdrücklich fest: kein Dialog, keine Warnkaskade. Eine Checkbox, die bei jeder Sicherung erscheint, wird weggeklickt und ist beim einen Mal, an dem sie zählt, wertlos.
+  - **Als Feld ins Archiv, nicht nur in die UI.** Ein Häkchen, das bloß einen Knopf freischaltet, hinterlässt keine Spur. Die Erklärung (wer, wann, für welche Stimme) gehört in die Deck-Metadaten, damit sie mit der Datei reist und drei Weitergaben später noch prüfbar ist.
+  - **Ungelöst bleibt der Widerruf:** Zustimmung lässt sich zurückziehen, eine verteilte Datei nicht. Dagegen hilft keine Checkbox — aber es spricht dafür, Sprechername und eine Kontaktmöglichkeit mitzuführen, damit ein Widerruf überhaupt eine Adresse hat.
+
   **Hier verdient „Deck" seinen Namen** (siehe Begriffs-Item darunter): Was weitergegeben wird, ist genau das, was ein Deck ausmacht — ein Bündel, das man auswählt und trainiert.
 - [ ] [P3] [PROP] [UI] **Begriffe entschärfen: „Korpus" und vor allem „Kontingent" in sichtbaren Texten** (Autor-Frage 2026-08-07: „Wäre es sinnvoll, vom Begriff Korpus auf Deck umzusteigen?"). **Einschätzung (Opus): kein pauschales Umbenennen jetzt — die Frage trifft aber ein echtes Problem, nur an leicht anderer Stelle.**
 
