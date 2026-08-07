@@ -2,8 +2,10 @@ package de.hexenwoche.audiolex
 
 import android.content.ContentValues
 import android.content.Context
+import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
+import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
@@ -48,6 +50,27 @@ actual fun rememberBackupActions(): BackupActions {
         onResult?.invoke(bytes)
     }
 
+    // Second picker for the own-noise WAV import (Backlog M4 "Eigene
+    // Störgeräusche", AC4), same OpenDocument pattern as pickArchive. It has
+    // its own parked continuation because the hand-off type differs (bytes +
+    // display name, not bare bytes).
+    val pendingWav = remember { mutableStateOf<((PickedFile?) -> Unit)?>(null) }
+    val wavLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        val onResult = pendingWav.value
+        pendingWav.value = null
+        val picked = uri?.let {
+            try {
+                val bytes = context.contentResolver.openInputStream(it)?.use { stream -> stream.readBytes() }
+                bytes?.let { b -> PickedFile(b, queryDisplayName(context, it)) }
+            } catch (e: IOException) {
+                null
+            } catch (e: SecurityException) {
+                null
+            }
+        }
+        onResult?.invoke(picked)
+    }
+
     return remember(context) {
         object : BackupActions {
             override suspend fun saveToDocuments(fileName: String, bytes: ByteArray): String? =
@@ -62,9 +85,36 @@ actual fun rememberBackupActions(): BackupActions {
                 // answers a wrong file with a quiet message.
                 launcher.launch(arrayOf("*/*"))
             }
+
+            override fun pickWav(onResult: (PickedFile?) -> Unit) {
+                pendingWav.value = onResult
+                // "*/*" for the same reason as pickArchive: providers tag
+                // .wav inconsistently (audio/wav, audio/x-wav, octet-stream),
+                // and a greyed-out file the user means to pick is worse than
+                // letting a wrong one through -- checkOwnNoiseImport answers
+                // that with a clear message afterwards (AC4).
+                wavLauncher.launch(arrayOf("*/*"))
+            }
         }
     }
 }
+
+/**
+ * The picked file's display name via [OpenableColumns], or null when the
+ * provider doesn't expose it -- a missing name only costs the label
+ * suggestion, never the import itself (Backlog M4 "Eigene Störgeräusche",
+ * AC4). `OpenableColumns.DISPLAY_NAME` is `since=1`, comfortably below
+ * minSdk; no new permission is involved.
+ */
+private fun queryDisplayName(context: Context, uri: Uri): String? =
+    try {
+        context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            if (index >= 0 && cursor.moveToFirst()) cursor.getString(index) else null
+        }
+    } catch (e: Exception) {
+        null
+    }
 
 /**
  * Writes through `IS_PENDING`, so the file only becomes visible to other apps

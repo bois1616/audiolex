@@ -1,5 +1,6 @@
 package de.hexenwoche.audiolex
 
+import de.hexenwoche.audiolex.core.audio.OwnNoise
 import de.hexenwoche.audiolex.core.audio.PcmBuffer
 import de.hexenwoche.audiolex.core.audio.WavFile
 import de.hexenwoche.audiolex.core.corpus.BackupContents
@@ -143,15 +144,29 @@ class OwnCorpusRepository(
     }
 
     /**
-     * Builds the archive's contents (ADR-0013 point 1). [sessions] arrives as
-     * plain data rather than as a repository on purpose: this class owns the
-     * own corpus, not the session history, and it should stay that way even
-     * though both end up in the same file. The coordination lives in
-     * `Backup.kt` (Backlog "Sitzungshistorie mitsichern", AC4).
+     * Builds the archive's contents (ADR-0013 point 1). [sessions] and
+     * [noises] arrive as plain data rather than as repositories on purpose:
+     * this class owns the own corpus, not the session history nor the own
+     * noises (Backlog M4 "Eigene Störgeräusche", AC5), and it should stay
+     * that way even though all three end up in the same file. The
+     * coordination lives in `Backup.kt`; [noiseBytes] resolves an
+     * [de.hexenwoche.audiolex.core.audio.OwnNoise.fileName] to its WAV
+     * bytes, resolved there before this call.
      */
-    suspend fun buildArchive(nowEpochMillis: Long, sessions: List<Session>): BackupPlan =
+    suspend fun buildArchive(
+        nowEpochMillis: Long,
+        sessions: List<Session>,
+        noises: List<OwnNoise> = emptyList(),
+        noiseBytes: (String) -> ByteArray? = { null },
+    ): BackupPlan =
         withContext(Dispatchers.IO) {
-            buildBackup(allBlocking(), nowEpochMillis, sessions) { files.readRecording(it) }
+            buildBackup(
+                entries = allBlocking(),
+                nowEpochMillis = nowEpochMillis,
+                sessions = sessions,
+                noises = noises,
+                noiseBytes = noiseBytes,
+            ) { files.readRecording(it) }
         }
 
     /**
@@ -192,13 +207,17 @@ class OwnCorpusRepository(
  * A packed backup plus what it does and doesn't contain.
  * [skippedWithoutRecording] are entries that have a text but no recording
  * yet -- reported rather than silently omitted, so "12 Aufnahmen gesichert"
- * out of 13 entries never looks like a loss.
+ * out of 13 entries never looks like a loss. [noises] counts the own noises
+ * in the archive (Backlog M4 "Eigene Störgeräusche", AC5); the export
+ * message names them apart from the recordings and stays silent about them
+ * when there are none.
  */
 class ArchiveExport(
     val bytes: ByteArray,
     val exported: Int,
     val skippedWithoutRecording: Int,
     val sessions: Int,
+    val noises: Int = 0,
 )
 
 sealed interface ArchiveImport {
@@ -206,7 +225,9 @@ sealed interface ArchiveImport {
      * [sessionsAlreadyPresent] is counted against what the *archive* carried,
      * so an old backup without a `sitzungen/` folder reports zero on both
      * session counts and the message stays silent about them rather than
-     * claiming "0 Sitzungen".
+     * claiming "0 Sitzungen". The noise counts (AC5) follow the same rule:
+     * an archive without a `stoergeraeusche/` folder reports zero on both,
+     * and the import message stays silent about noises.
      */
     class Merged(
         val added: Int,
@@ -214,6 +235,9 @@ sealed interface ArchiveImport {
         val unusable: Int,
         val sessionsAdded: Int,
         val sessionsAlreadyPresent: Int,
+        val noisesAdded: Int = 0,
+        val noisesAlreadyPresent: Int = 0,
+        val noisesUnusable: Int = 0,
     ) : ArchiveImport
 
     /** Not an AudioLex backup, or damaged (AC3) -- nothing was written. */

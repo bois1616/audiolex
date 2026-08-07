@@ -33,24 +33,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import de.hexenwoche.audiolex.core.audio.AudioSource
-import de.hexenwoche.audiolex.core.audio.PcmBuffer
-import de.hexenwoche.audiolex.core.audio.RECORDING_CHANNELS
-import de.hexenwoche.audiolex.core.audio.RECORDING_SAMPLE_RATE
 import de.hexenwoche.audiolex.core.audio.createAudioSink
-import de.hexenwoche.audiolex.core.audio.createAudioSource
 import de.hexenwoche.audiolex.core.corpus.EntryKind
 import de.hexenwoche.audiolex.core.corpus.OwnEntry
 import de.hexenwoche.audiolex.core.persistence.SessionRepository
 import de.hexenwoche.audiolex.core.session.PlaybackQueue
 import de.hexenwoche.audiolex.core.time.Clock
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 /**
  * Own-corpus management (Backlog Eigen-Korpus Batch B, ADR-0012 point 5):
@@ -63,11 +52,12 @@ import kotlinx.coroutines.withContext
  * same flat-navigation pattern as every other screen) -- the two parts
  * never need to be visited independently.
  *
- * Recording reimplements the record-and-merge-chunks flow from
- * [DevPlaybackScreen]'s Mikrofon-Rohtest rather than sharing it: that
- * screen is explicitly frozen for this batch. [RecorderController] is this
- * file's own reusable piece, used both for the "Neue Aufnahme" section and,
- * inline, for re-recording an existing entry.
+ * Recording uses the shared [RecorderController] (extracted into
+ * `RecorderControls.kt` when the own-noise screen, Backlog M4 "Eigene
+ * Störgeräusche", AC3, needed the same recorder): one controller drives the
+ * "Neue Aufnahme" section and, inline, a row's re-record panel. The flow
+ * itself reimplements [DevPlaybackScreen]'s Mikrofon-Rohtest rather than
+ * sharing it -- that screen stays frozen.
  *
  * Title and "Zurück" stay pinned; only the content between them scrolls
  * (same `Modifier.weight(1f).verticalScroll(...)` pattern as
@@ -78,6 +68,7 @@ import kotlinx.coroutines.withContext
 fun EigeneAufnahmenScreen(
     repository: OwnCorpusRepository,
     sessionRepository: SessionRepository,
+    ownNoiseRepository: OwnNoiseRepository,
     clock: Clock,
     onBeenden: () -> Unit,
 ) {
@@ -99,9 +90,15 @@ fun EigeneAufnahmenScreen(
 
     var entries by remember { mutableStateOf<List<OwnEntry>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
+    // Read alongside the entries for the export button's enabled state (AC5):
+    // a backup is worth taking once any content kind exists, not only
+    // entries. Kept fresh in [reload] so an import that adds noises flips
+    // the button without a screen re-entry.
+    var hasNoises by remember { mutableStateOf(false) }
 
     suspend fun reload() {
         entries = repository.all()
+        hasNoises = ownNoiseRepository.all().isNotEmpty()
     }
 
     var newText by remember { mutableStateOf("") }
@@ -294,19 +291,21 @@ fun EigeneAufnahmenScreen(
             // not a recurring nag: ADR-0013 hands the decision to the user
             // on purpose.
             Text(
-                "Eigene Aufnahmen und dein Sitzungsverlauf liegen sonst nur auf diesem Gerät. " +
-                    "Der Export legt beides als ZIP-Datei in deinen Dokumenten ab — was danach damit geschieht, entscheidest du.",
+                "Eigene Aufnahmen, eigene Störgeräusche und dein Sitzungsverlauf liegen sonst nur auf diesem Gerät. " +
+                    "Der Export legt alles als ZIP-Datei in deinen Dokumenten ab — was danach damit geschieht, entscheidest du.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(
-                    enabled = !isBackupBusy && entries.isNotEmpty(),
+                    // A backup is worth taking once any of the three content
+                    // kinds exists (AC5) -- not only when entries do.
+                    enabled = !isBackupBusy && (entries.isNotEmpty() || hasNoises),
                     onClick = {
                         scope.launch {
                             isBackupBusy = true
-                            status = runExport(repository, sessionRepository, backup, clock)
+                            status = runExport(repository, ownNoiseRepository, sessionRepository, backup, clock)
                             isBackupBusy = false
                         }
                     },
@@ -324,7 +323,7 @@ fun EigeneAufnahmenScreen(
                                 isBackupBusy = false
                             } else {
                                 scope.launch {
-                                    status = runImport(repository, sessionRepository, bytes)
+                                    status = runImport(repository, ownNoiseRepository, sessionRepository, bytes)
                                     reload()
                                     isBackupBusy = false
                                 }
@@ -495,62 +494,6 @@ private fun KindOption(label: String, selected: Boolean, onSelect: () -> Unit) {
 }
 
 /**
- * "Aufnehmen"/"Stopp" + "Anhören", permission-gated -- the same three
- * [RecordingPermissionStatus] branches as [DevPlaybackScreen]'s
- * Mikrofon-Rohtest, reused by both the "Neue Aufnahme" section and a row's
- * inline re-record panel.
- */
-@Composable
-private fun RecorderControls(
-    recorder: RecorderController,
-    permission: RecordingPermissionState,
-    queue: PlaybackQueue,
-    recordLabel: String = "Aufnehmen",
-) {
-    Text(recorder.status, style = MaterialTheme.typography.bodyMedium)
-
-    when (permission.status) {
-        RecordingPermissionStatus.GRANTED -> {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilledTonalButton(
-                    enabled = !recorder.isBusy,
-                    onClick = { if (recorder.isRecording) recorder.stop() else recorder.start() },
-                ) {
-                    Text(if (recorder.isRecording) "Stopp" else recordLabel)
-                }
-                FilledTonalButton(
-                    enabled = !recorder.isRecording && !recorder.isBusy && recorder.buffer != null,
-                    onClick = { recorder.buffer?.let { queue.play(it) } },
-                ) {
-                    Text("Anhören")
-                }
-            }
-        }
-
-        RecordingPermissionStatus.PERMANENTLY_DENIED -> {
-            Text(
-                "Mikrofonzugriff wurde dauerhaft abgelehnt. Zum Aufnehmen bitte in den " +
-                    "System-Einstellungen freigeben.",
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            FilledTonalButton(onClick = permission::openSystemSettings) {
-                Text("Einstellungen öffnen")
-            }
-        }
-
-        RecordingPermissionStatus.NOT_REQUESTED, RecordingPermissionStatus.DENIED -> {
-            Text(
-                "Zum Aufnehmen braucht AudioLex kurz Zugriff auf das Mikrofon.",
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            FilledTonalButton(onClick = permission::request) {
-                Text("Mikrofon-Berechtigung anfragen")
-            }
-        }
-    }
-}
-
-/**
  * Exports and reports the outcome as the screen's status line (AC1). Every
  * path ends in a sentence the user can act on -- including the one where the
  * file couldn't be written, which is otherwise indistinguishable from a
@@ -558,24 +501,27 @@ private fun RecorderControls(
  */
 private suspend fun runExport(
     repository: OwnCorpusRepository,
+    ownNoises: OwnNoiseRepository,
     sessions: SessionRepository,
     backup: BackupActions,
     clock: Clock,
 ): String {
     val now = clock.nowEpochMillis()
-    val export = exportBackup(repository, sessions, now)
-    if (export.exported == 0 && export.sessions == 0) {
-        return "Nichts zu sichern: Es gibt noch keine Aufnahme und keine Sitzung."
+    val export = exportBackup(repository, ownNoises, sessions, now)
+    if (export.exported == 0 && export.sessions == 0 && export.noises == 0) {
+        return "Nichts zu sichern: Es gibt noch keine Aufnahme, kein Geräusch und keine Sitzung."
     }
     val location = backup.saveToDocuments(backupFileName(now), export.bytes)
         ?: return "Sicherung fehlgeschlagen — die Datei konnte nicht geschrieben werden."
 
-    // AC5: both kinds named separately. A backup that holds recordings but no
-    // sessions yet says so by staying silent about them, not by claiming "0".
+    // AC5: all three kinds named separately. A backup that holds recordings
+    // but no noises/sessions yet says so by staying silent about them, not
+    // by claiming "0".
     val what = buildList {
         if (export.exported > 0) add("${export.exported} Aufnahme(n)")
+        if (export.noises > 0) add("${export.noises} Geräusch(e)")
         if (export.sessions > 0) add("${export.sessions} Sitzung(en)")
-    }.joinToString(" und ")
+    }.joinToString(", ").let { joinLastWithUnd(it) }
     val skipped = if (export.skippedWithoutRecording > 0) {
         " ${export.skippedWithoutRecording} Eintrag/Einträge ohne Aufnahme sind nicht enthalten."
     } else {
@@ -591,146 +537,61 @@ private suspend fun runExport(
  */
 private suspend fun runImport(
     repository: OwnCorpusRepository,
+    ownNoises: OwnNoiseRepository,
     sessions: SessionRepository,
     bytes: ByteArray,
 ): String =
-    when (val result = importBackup(bytes, repository, sessions)) {
+    when (val result = importBackup(bytes, repository, ownNoises, sessions)) {
         ArchiveImport.Unreadable ->
             "Diese Datei ist keine AudioLex-Sicherung oder beschädigt. Es wurde nichts verändert."
 
         is ArchiveImport.Merged -> buildString {
-            // AC5: the two kinds are reported separately, and each stays
+            // AC5: the three kinds are reported separately, and each stays
             // silent when the archive carried none of it -- an old backup
-            // without a sitzungen/ folder must not read as "0 Sitzungen".
+            // without a sitzungen/ or stoergeraeusche/ folder must not read
+            // as "0 Sitzungen"/"0 Geräusche".
             val added = buildList {
                 if (result.added > 0) add("${result.added} Eintrag/Einträge")
+                if (result.noisesAdded > 0) add("${result.noisesAdded} Geräusch(e)")
                 if (result.sessionsAdded > 0) add("${result.sessionsAdded} Sitzung(en)")
             }
             val known = buildList {
                 if (result.alreadyPresent > 0) add("${result.alreadyPresent} Eintrag/Einträge")
+                if (result.noisesAlreadyPresent > 0) add("${result.noisesAlreadyPresent} Geräusch(e)")
                 if (result.sessionsAlreadyPresent > 0) add("${result.sessionsAlreadyPresent} Sitzung(en)")
             }
             when {
                 added.isNotEmpty() -> {
-                    append("${added.joinToString(" und ")} übernommen")
-                    if (known.isNotEmpty()) append(", ${known.joinToString(" und ")} waren schon vorhanden")
+                    append("${joinLastWithUnd(added.joinToString(", "))} übernommen")
+                    if (known.isNotEmpty()) append(", ${joinLastWithUnd(known.joinToString(", "))} waren schon vorhanden")
                     append(".")
                 }
 
                 known.isNotEmpty() ->
-                    append("Nichts hinzugefügt — ${known.joinToString(" und ")} der Sicherung sind bereits vorhanden.")
+                    append("Nichts hinzugefügt — ${joinLastWithUnd(known.joinToString(", "))} der Sicherung sind bereits vorhanden.")
 
                 else -> append("Nichts hinzugefügt.")
             }
             if (result.unusable > 0) {
                 append(" ${result.unusable} Eintrag/Einträge der Sicherung waren unvollständig und wurden übersprungen.")
             }
+            if (result.noisesUnusable > 0) {
+                append(" ${result.noisesUnusable} Geräusch(e) der Sicherung waren unvollständig und wurden übersprungen.")
+            }
         }
     }
+
+/** "a, b, c" -> "a, b und c" -- the house style these messages already used for two items, extended to three. */
+private fun joinLastWithUnd(joined: String): String {
+    val parts = joined.split(", ")
+    return when (parts.size) {
+        0, 1 -> joined
+        else -> parts.dropLast(1).joinToString(", ") + " und " + parts.last()
+    }
+}
 
 private fun germanKindLabel(kind: EntryKind): String = when (kind) {
     EntryKind.WORD -> "Wort"
     EntryKind.SENTENCE -> "Satz"
 }
 
-/**
- * Records via [AudioSource] into a single merged [PcmBuffer], reimplementing
- * (not sharing) the record-and-merge flow from [DevPlaybackScreen]'s
- * Mikrofon-Rohtest -- that screen is explicitly frozen for this batch. Holds
- * its own Compose [androidx.compose.runtime.State] so both call sites
- * ("Neue Aufnahme" and a row's re-record panel) can drive their own
- * record/stop/listen UI off the same small piece of logic.
- */
-private class RecorderController(
-    private val source: AudioSource,
-    private val scope: CoroutineScope,
-) {
-    private val chunks = mutableListOf<ShortArray>()
-    private var job: Job? = null
-
-    var isRecording by mutableStateOf(false)
-        private set
-    var isBusy by mutableStateOf(false)
-        private set
-    var buffer by mutableStateOf<PcmBuffer?>(null)
-        private set
-    var status by mutableStateOf("Noch keine Aufnahme.")
-        private set
-
-    fun start() {
-        chunks.clear()
-        buffer = null
-        isRecording = true
-        status = "Nimmt auf…"
-        job = scope.launch {
-            try {
-                // record() blocks its calling thread between chunks (see the
-                // android/jvm actuals) rather than truly suspending, so this
-                // must run off the composition's own dispatcher -- otherwise
-                // it freezes the UI thread for as long as the recording runs.
-                withContext(Dispatchers.IO) {
-                    source.record { chunk -> chunks.add(chunk) }
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                isRecording = false
-                // Surfaced, not swallowed (same posture as the Batch A dev
-                // screen): a format mismatch or missing mic is a fact to
-                // report, not a detail to route around.
-                status = "Fehler bei der Aufnahme: ${e.message}"
-            }
-        }
-    }
-
-    fun stop() {
-        val currentJob = job ?: return
-        isRecording = false
-        isBusy = true
-        status = "Verarbeite Aufnahme…"
-        scope.launch {
-            try {
-                currentJob.cancelAndJoin()
-                job = null
-                val totalSamples = chunks.sumOf { it.size }
-                if (totalSamples == 0) {
-                    status = "Keine Aufnahme (kein Signal empfangen)."
-                    return@launch
-                }
-                val merged = ShortArray(totalSamples)
-                var offset = 0
-                for (chunk in chunks) {
-                    chunk.copyInto(merged, offset)
-                    offset += chunk.size
-                }
-                chunks.clear()
-                buffer = PcmBuffer(merged, RECORDING_SAMPLE_RATE, RECORDING_CHANNELS)
-                val seconds = totalSamples / RECORDING_SAMPLE_RATE
-                status = "Aufnahme fertig (~$seconds s)."
-            } finally {
-                isBusy = false
-            }
-        }
-    }
-
-    /** Clears the current take (e.g. right after it was saved), back to the initial "nothing recorded" state. */
-    fun reset() {
-        buffer = null
-        status = "Noch keine Aufnahme."
-    }
-
-    fun dispose() {
-        job?.cancel()
-        source.close()
-    }
-}
-
-@Composable
-private fun rememberRecorderController(): RecorderController {
-    val scope = rememberCoroutineScope()
-    val controller = remember { RecorderController(createAudioSource(), scope) }
-    DisposableEffect(controller) {
-        onDispose { controller.dispose() }
-    }
-    return controller
-}

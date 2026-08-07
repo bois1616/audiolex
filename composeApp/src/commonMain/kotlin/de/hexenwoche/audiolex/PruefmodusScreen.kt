@@ -112,6 +112,7 @@ fun PruefmodusScreen(
     channelMode: ChannelMode,
     excludedSpeakers: Set<String>,
     ownCorpusRepository: OwnCorpusRepository,
+    ownNoiseRepository: OwnNoiseRepository,
     onBeenden: () -> Unit,
     onZumLernmodus: () -> Unit,
 ) {
@@ -183,8 +184,11 @@ fun PruefmodusScreen(
             val loaded = loadCorpus(corpusMode.entryKind(), ownCorpusRepository, excludedSpeakers)
             corpus = loaded
             // Loaded once per round, not per card (AC6) -- same defensive
-            // fallback to null (clean speech) as Lernmodus.
-            noiseBuffer = loadNoiseBuffer(noiseEnabled, noiseScenario)
+            // fallback to null (clean speech) as Lernmodus. The merged
+            // catalog (bundled + own noises, Backlog M4 "Eigene
+            // Störgeräusche", AC2) needs the noise repository to read an own
+            // scenario's bytes.
+            noiseBuffer = loadNoiseBuffer(noiseEnabled, noiseScenario, ownNoiseRepository)
 
             val cards = repository.allOrSeed(loaded.words.map { it.id })
             // A round is up to 15 cards: due ones first, topped up with random

@@ -82,6 +82,7 @@ fun LernmodusScreen(
     channelMode: ChannelMode,
     excludedSpeakers: Set<String>,
     ownCorpusRepository: OwnCorpusRepository,
+    ownNoiseRepository: OwnNoiseRepository,
     onBeenden: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
@@ -114,8 +115,11 @@ fun LernmodusScreen(
             corpus = loaded
             // Loaded once per screen entry, not per word (AC6) -- a missing/
             // mismatched file or noise disabled all resolve to null, which
-            // mixWithOptionalNoise treats as "play clean speech".
-            noiseBuffer = loadNoiseBuffer(noiseEnabled, noiseScenario)
+            // mixWithOptionalNoise treats as "play clean speech". The merged
+            // catalog (bundled + own noises, Backlog M4 "Eigene
+            // Störgeräusche", AC2) needs the noise repository to read an own
+            // scenario's bytes.
+            noiseBuffer = loadNoiseBuffer(noiseEnabled, noiseScenario, ownNoiseRepository)
             state = if (loaded.words.isEmpty()) {
                 // AC6: only computed on this rare path, a second (unfiltered)
                 // load to find out *why* it's empty -- excludedSpeakers vs.

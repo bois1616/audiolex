@@ -58,7 +58,10 @@ import kotlin.math.roundToInt
  * setting picks the corpus entries the training screens work on (Wörter /
  * Sätze, ADR-0009 point 4 -- a plain setting, not a preset). The third is the
  * noise overlay shared by both training modes: a switch, and -- only while
- * on -- an SNR slider and a scenario choice loaded from `noise.json`. The
+ * on -- an SNR slider and a scenario choice drawn from the merged catalog
+ * (bundled `noise.json` plus the user's own noises, Backlog M4 "Eigene
+ * Störgeräusche", AC2); under the scenario choice a TextButton opens the
+ * own-noise management screen (AC3). The
  * fourth is the "Ausgabe" section (Backlog M4 "Kopfhörer-Bogen Batch A",
  * ADR-0011): which [OutputSetup] is currently detected, so a wrong detection
  * is at least visible to the user. The fifth is "Kanäle" (Backlog M4
@@ -104,13 +107,18 @@ fun EinstellungenScreen(
     excludedSpeakers: Set<String>,
     onExcludedSpeakersChange: (Set<String>) -> Unit,
     ownCorpusRepository: OwnCorpusRepository,
+    ownNoiseRepository: OwnNoiseRepository,
+    onOpenEigeneStoergeraeusche: () -> Unit,
     onBeenden: () -> Unit,
 ) {
     // Loaded once when the screen is entered, just for the scenario labels --
     // the training screens separately (re-)load the actual WAV for mixing.
+    // The merged catalog (bundled + own noises, Backlog M4 "Eigene
+    // Störgeräusche", AC2): what can be chosen here and what the training
+    // screens can play is the same list.
     var scenarios by remember { mutableStateOf<List<NoiseScenario>>(emptyList()) }
     LaunchedEffect(Unit) {
-        scenarios = loadNoiseScenarios()
+        scenarios = loadAllNoiseScenarios(ownNoiseRepository)
     }
 
     // The Kontingent-Liste (Backlog Eigen-Korpus Batch D, AC4): loaded fully
@@ -343,6 +351,14 @@ fun EinstellungenScreen(
                             onSelect = { onNoiseScenarioChange(scenario.id) },
                         )
                     }
+                }
+
+                // AC3: the way into the own-noise screen -- a quiet
+                // TextButton directly under the scenario choice, the place
+                // where a missing sound is noticed. Own noises show up in
+                // the radio list above like bundled ones (AC2).
+                TextButton(onClick = onOpenEigeneStoergeraeusche) {
+                    Text("Eigene Störgeräusche")
                 }
             }
 

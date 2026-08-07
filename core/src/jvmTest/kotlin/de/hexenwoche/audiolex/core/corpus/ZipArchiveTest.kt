@@ -1,5 +1,7 @@
 package de.hexenwoche.audiolex.core.corpus
 
+import de.hexenwoche.audiolex.core.audio.OwnNoise
+import de.hexenwoche.audiolex.core.audio.OwnNoiseSource
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -87,5 +89,36 @@ class ZipArchiveTest {
         )
 
         assertEquals(BackupContents.Unreadable, readBackup(unpackArchive(foreign)!!, existing = emptyList()))
+    }
+
+    @Test
+    fun `export then import restores own noises byte for byte alongside the entries`() {
+        // The full roundtrip for the third content kind (Backlog M4 "Eigene
+        // Störgeräusche", AC5): pack -> unpack -> read, entries and noises
+        // each restored with their own audio.
+        val entries = listOf(entry("own-1"))
+        val noises = listOf(
+            OwnNoise("noise-1", "Baustelle", "noise-1.wav", 2_000L, OwnNoiseSource.AUFNAHME),
+            OwnNoise("noise-2", "Regen", "noise-2.wav", 3_000L, OwnNoiseSource.IMPORT),
+        )
+        val entryAudio = entries.associate { it.fileName to Random(it.id.hashCode()).nextBytes(512) }
+        val noiseAudio = noises.associate { it.fileName to Random(it.id.hashCode()).nextBytes(8192) }
+
+        val zip = packArchive(
+            buildBackup(
+                entries,
+                nowEpochMillis = 5_000L,
+                noises = noises,
+                noiseBytes = { noiseAudio[it] },
+            ) { entryAudio[it] }.files,
+        )
+        val contents = readBackup(unpackArchive(zip)!!, existing = emptyList())
+
+        val readable = assertIs<BackupContents.Readable>(contents)
+        assertEquals(entries, readable.toAdd.map { it.entry })
+        assertEquals(noises, readable.noisesToAdd.map { it.noise })
+        for (pending in readable.noisesToAdd) {
+            assertContentEquals(noiseAudio.getValue(pending.noise.fileName), pending.audio)
+        }
     }
 }

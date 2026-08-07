@@ -56,6 +56,31 @@ actual fun rememberBackupActions(): BackupActions {
                     onResult(bytes)
                 }
             }
+
+            override fun pickWav(onResult: (PickedFile?) -> Unit) {
+                // Own-noise WAV import (Backlog M4 "Eigene Störgeräusche",
+                // AC4), same chooser pattern as pickArchive; the display name
+                // the label suggestion lives on is just the file's name here.
+                val chooser = JFileChooser(documentsDir()).apply {
+                    dialogTitle = "WAV-Datei wählen"
+                    fileFilter = FileNameExtensionFilter("WAV-Dateien (*.wav)", "wav")
+                }
+                if (chooser.showOpenDialog(null) != JFileChooser.APPROVE_OPTION) {
+                    onResult(null)
+                    return
+                }
+                val file = chooser.selectedFile
+                scope.launch {
+                    val bytes = withContext(Dispatchers.IO) {
+                        try {
+                            file.readBytes()
+                        } catch (e: IOException) {
+                            null
+                        }
+                    }
+                    onResult(bytes?.let { PickedFile(it, file.name) })
+                }
+            }
         }
     }
 }

@@ -9,9 +9,16 @@ fun main() {
     val database = createAudioLexDatabase(getDatabaseBuilder())
     val clock = systemClock()
     val ownCorpusDir = getOwnCorpusDir().absolutePath
+    val ownNoiseDir = getOwnNoiseDir().absolutePath
     application {
         Window(onCloseRequest = ::exitApplication, title = "AudioLex") {
-            App(database, clock, onExitApp = ::exitApplication, ownCorpusDir = ownCorpusDir)
+            App(
+                database,
+                clock,
+                onExitApp = ::exitApplication,
+                ownCorpusDir = ownCorpusDir,
+                ownNoiseDir = ownNoiseDir,
+            )
         }
     }
 }

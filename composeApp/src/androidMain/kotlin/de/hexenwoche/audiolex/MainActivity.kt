@@ -14,8 +14,15 @@ class MainActivity : ComponentActivity() {
         val database = createAudioLexDatabase(getDatabaseBuilder(applicationContext))
         val clock = systemClock()
         val ownCorpusDir = getOwnCorpusDir(applicationContext).absolutePath
+        val ownNoiseDir = getOwnNoiseDir(applicationContext).absolutePath
         setContent {
-            App(database, clock, onExitApp = { finishAndRemoveTask() }, ownCorpusDir = ownCorpusDir)
+            App(
+                database,
+                clock,
+                onExitApp = { finishAndRemoveTask() },
+                ownCorpusDir = ownCorpusDir,
+                ownNoiseDir = ownNoiseDir,
+            )
         }
     }
 }

@@ -49,6 +49,7 @@ private sealed interface Screen {
     data object Sitzungshistorie : Screen
     data object Impressum : Screen
     data object EigeneAufnahmen : Screen
+    data object EigeneStoergeraeusche : Screen
     data object DevKanaltest : Screen
 }
 
@@ -60,9 +61,11 @@ private sealed interface Screen {
 // (Backlog Eigen-Korpus Batch B, ADR-0012 Nachtrag) -- a plain absolute path
 // from the platform-specific `getOwnCorpusDir`, not the database itself,
 // since the own corpus deliberately isn't in Room (Nachtrag "JSON statt
-// Datenbank").
+// Datenbank"). [ownNoiseDir] is the same pattern again for the own noise
+// loops (Backlog M4 "Eigene Störgeräusche", AC1), resolved by the
+// platform-specific `getOwnNoiseDir`.
 @Composable
-fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit, ownCorpusDir: String) {
+fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit, ownCorpusDir: String, ownNoiseDir: String) {
     val scope = rememberCoroutineScope()
     val settingsRepository = remember(database) { RoomSettingsRepository(database.settingsDao()) }
     // JSON-backed, not Room (ADR-0012 Nachtrag) -- created once per process
@@ -70,6 +73,9 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit, ownCorp
     // entry point resolved.
     val ownCorpusRepository = remember(ownCorpusDir) {
         OwnCorpusRepository(createOwnCorpusFiles(ownCorpusDir), clock)
+    }
+    val ownNoiseRepository = remember(ownNoiseDir) {
+        OwnNoiseRepository(createOwnNoiseFiles(ownNoiseDir), clock)
     }
     // Hoisted out of the individual screens: three of them need it now that
     // the backup covers the session history too (ADR-0013 Nachtrag), and
@@ -131,6 +137,7 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit, ownCorp
                         channelMode = settings.channelMode,
                         excludedSpeakers = settings.excludedSpeakers,
                         ownCorpusRepository = ownCorpusRepository,
+                        ownNoiseRepository = ownNoiseRepository,
                         onBeenden = { screen = Screen.Start },
                     )
                     is Screen.Pruefmodus -> PruefmodusScreen(
@@ -144,6 +151,7 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit, ownCorp
                         channelMode = settings.channelMode,
                         excludedSpeakers = settings.excludedSpeakers,
                         ownCorpusRepository = ownCorpusRepository,
+                        ownNoiseRepository = ownNoiseRepository,
                         onBeenden = { screen = Screen.Start },
                         onZumLernmodus = { screen = Screen.Lernmodus },
                     )
@@ -186,6 +194,8 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit, ownCorp
                             updateSettings { it.copy(excludedSpeakers = newExcludedSpeakers) }
                         },
                         ownCorpusRepository = ownCorpusRepository,
+                        ownNoiseRepository = ownNoiseRepository,
+                        onOpenEigeneStoergeraeusche = { screen = Screen.EigeneStoergeraeusche },
                         onBeenden = { screen = Screen.Start },
                     )
                     is Screen.Sitzungshistorie -> SitzungshistorieScreen(
@@ -199,8 +209,19 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit, ownCorp
                         // Nachtrag), which is why this screen needs a second
                         // repository it otherwise has no use for.
                         sessionRepository = sessionRepository,
+                        // And, since Backlog M4 "Eigene Störgeräusche" (AC5),
+                        // the own noises as well -- the backup section lives
+                        // here, so this screen hands all three to it.
+                        ownNoiseRepository = ownNoiseRepository,
                         clock = clock,
                         onBeenden = { screen = Screen.Start },
+                    )
+                    is Screen.EigeneStoergeraeusche -> EigeneStoergeraeuscheScreen(
+                        repository = ownNoiseRepository,
+                        clock = clock,
+                        // Reached from the Einstellungen noise section; the
+                        // way back is where it came from, not the Start hub.
+                        onBeenden = { screen = Screen.Einstellungen },
                     )
                     is Screen.DevKanaltest -> DevKanaltestScreen(
                         ownCorpusRepository = ownCorpusRepository,
