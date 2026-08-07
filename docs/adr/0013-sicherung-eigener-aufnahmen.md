@@ -40,3 +40,22 @@ ADR-0012 hat die Sicherung eigener Aufnahmen ausdrücklich offen gelassen: „Ei
 - **Die ZIP liegt unverschlüsselt im Dokumentenverzeichnis** und ist damit für andere Apps mit Dateizugriff und für jeden am angeschlossenen Rechner lesbar. Bewusst hingenommen (Entscheidung 4).
 - **Der Import kann nichts kaputtmachen, aber auch nichts reparieren.** Er fügt hinzu und überschreibt nie. Eine versehentlich gelöschte *und* seither neu angelegte id lässt sich damit nicht zurückholen — dieser Fall existiert praktisch nicht, weil ids nie wiederverwendet werden.
 - **Ein Gerätewechsel ist ab hier durchführbar**, ohne dass Aufnahmen verloren gehen: exportieren, Datei mitnehmen, auf dem neuen Gerät importieren. Das war vorher nicht möglich.
+
+## Nachtrag 2026-08-07: Entscheidung 6 war zur Hälfte falsch — die Sitzungshistorie gehört in die Sicherung
+
+**Anlass:** Der Gerätetest zu AC8 (exportieren, deinstallieren, neu installieren, importieren) hat die Sicherung bewiesen — und dabei die Sitzungshistorie des Autors gelöscht. Wiederhergestellt wurde nur der Eigen-Korpus, wie Entscheidung 6 es vorsieht. Der Autor bemerkte den Verlust unmittelbar danach („Die Sitzungshistorie ist zurückgesetzt. Wird diese mitgesichert beim Backup?"). Die konkreten Sitzungen waren verzichtbar (Autor 2026-08-07: „Bisherige Verläufe sind irrelevant"), die Begründung dahinter ist es nicht.
+
+**Der Fehler:** Entscheidung 6 begründet den Ausschluss der Datenbank mit „SRS-Fälligkeiten und Sitzungshistorie sind Verlaufsdaten, die sich neu bilden". Das fasst zwei ungleiche Dinge unter ein Wort:
+
+- **SRS-Fälligkeiten bilden sich tatsächlich neu.** Ein paar Runden Bewertung, und der Zustand ist wieder da. Ihr Verlust kostet Terminierung, keine Information. Für sie bleibt Entscheidung 6 richtig.
+- **Die Sitzungshistorie bildet sich nicht neu.** Sie ist die Aufzeichnung dessen, was tatsächlich geschehen ist — wann geübt wurde, wie bewertet wurde, wie sich das über Wochen verändert. Bei einem Training, dessen Zweck eine langsame neurologische Veränderung über Monate ist, ist genau das die Größe, an der sich Fortschritt überhaupt ablesen lässt. Sie ist so unwiederbringlich wie eine Aufnahme, nur unauffälliger: Ihr Fehlen tut nicht sofort weh, sondern erst nach einem Jahr.
+
+Das Wort „Verlaufsdaten" hat den Fehler getragen. Es klingt nach „vorübergehend", meint hier aber „Aufzeichnung eines Verlaufs" — das Gegenteil.
+
+**Korrigierte Entscheidung 6:** Gesichert wird, was sich nicht neu bildet: **der Eigen-Korpus und die Sitzungshistorie**. Nicht gesichert werden SRS-Karten und Einstellungen — beide stellen sich durch Benutzung bzw. in einer Minute wieder her, und beide hingen an der eigentlichen Begründung von Entscheidung 6, die insoweit gültig bleibt: die Sicherung klein und frei von Schema-Fragen zu halten.
+
+**Nicht die Datenbank sichern, sondern die Historie.** Der Weg bleibt derselbe wie beim Eigen-Korpus: eine JSON-Datei im Archiv (`sitzungen/verlauf.json`), keine `.db`-Datei. Eine mitgesicherte Datenbank müsste bei jedem Schema-Sprung mitgepflegt werden und wäre nur mit passender Room-Version lesbar; eine Liste von Sitzungsaufzeichnungen ist beides nicht. Der Archiv-Aufbau trägt das ohne Änderung — er wurde am selben Tag bewusst mit einem Ordner je Inhaltsart geschnitten.
+
+**Zusammengeführt wird über den Startzeitpunkt, nicht über die Datenbank-id.** `SessionEntity.id` ist `autoGenerate` und damit gerätelokal: Auf zwei Geräten trägt dieselbe Zahl verschiedene Sitzungen. Als Identität dient `startedAtEpochMillis` — zwei Sitzungen desselben Nutzers beginnen nicht in derselben Millisekunde. Damit gilt dieselbe Regel wie für Aufnahmen: unbekannter Startzeitpunkt kommt hinzu, bekannter wird übersprungen, nichts wird überschrieben oder gelöscht.
+
+**Was das über den Prozess sagt:** Der Fehler stand seit dem 2026-08-06 im ADR und ist niemandem aufgefallen, weil die Formulierung plausibel klang. Bemerkt wurde er erst, als der Test die Daten wirklich löschte. Zur Lehre gehört auch der zweite Teil: Vor dem zerstörenden Schritt wurde der Eigen-Korpus vom Gerät gezogen, die Datenbank nicht — obwohl es derselbe Handgriff gewesen wäre. Wer einen Test fährt, der Daten löscht, zieht vorher **alles**, nicht das, was er für wichtig hält.

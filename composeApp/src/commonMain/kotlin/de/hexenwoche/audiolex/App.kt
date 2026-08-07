@@ -69,6 +69,10 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit, ownCorp
     val ownCorpusRepository = remember(ownCorpusDir) {
         OwnCorpusRepository(createOwnCorpusFiles(ownCorpusDir), clock)
     }
+    // Hoisted out of the individual screens: three of them need it now that
+    // the backup covers the session history too (ADR-0013 Nachtrag), and
+    // building it per call site meant three instances over one DAO.
+    val sessionRepository = remember(database) { RoomSessionRepository(database.sessionDao()) }
     // One state object for all persisted settings (Backlog "Code-Qualität":
     // five separate states + five near-identical save blocks used to mean
     // every new field had to be maintained in 6+ places). Renders on the
@@ -129,7 +133,7 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit, ownCorp
                     )
                     is Screen.Pruefmodus -> PruefmodusScreen(
                         repository = remember(database) { RoomReviewCardRepository(database.reviewCardDao()) },
-                        sessionRepository = remember(database) { RoomSessionRepository(database.sessionDao()) },
+                        sessionRepository = sessionRepository,
                         clock = clock,
                         corpusMode = settings.corpusMode,
                         noiseEnabled = settings.noiseEnabled,
@@ -174,12 +178,16 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit, ownCorp
                         onBeenden = { screen = Screen.Start },
                     )
                     is Screen.Sitzungshistorie -> SitzungshistorieScreen(
-                        repository = remember(database) { RoomSessionRepository(database.sessionDao()) },
+                        repository = sessionRepository,
                         onBeenden = { screen = Screen.Start },
                     )
                     is Screen.Impressum -> ImpressumScreen(onBeenden = { screen = Screen.Start })
                     is Screen.EigeneAufnahmen -> EigeneAufnahmenScreen(
                         repository = ownCorpusRepository,
+                        // The backup covers the session history too (ADR-0013
+                        // Nachtrag), which is why this screen needs a second
+                        // repository it otherwise has no use for.
+                        sessionRepository = sessionRepository,
                         clock = clock,
                         onBeenden = { screen = Screen.Start },
                     )

@@ -3,14 +3,13 @@ package de.hexenwoche.audiolex
 import de.hexenwoche.audiolex.core.audio.PcmBuffer
 import de.hexenwoche.audiolex.core.audio.WavFile
 import de.hexenwoche.audiolex.core.corpus.BackupContents
+import de.hexenwoche.audiolex.core.corpus.BackupPlan
 import de.hexenwoche.audiolex.core.corpus.EntryKind
 import de.hexenwoche.audiolex.core.corpus.OwnEntry
 import de.hexenwoche.audiolex.core.corpus.buildBackup
 import de.hexenwoche.audiolex.core.corpus.encodeOwnCorpus
-import de.hexenwoche.audiolex.core.corpus.packArchive
 import de.hexenwoche.audiolex.core.corpus.parseOwnCorpus
-import de.hexenwoche.audiolex.core.corpus.readBackup
-import de.hexenwoche.audiolex.core.corpus.unpackArchive
+import de.hexenwoche.audiolex.core.session.Session
 import de.hexenwoche.audiolex.core.time.Clock
 import kotlin.random.Random
 import kotlinx.coroutines.Dispatchers
@@ -144,47 +143,35 @@ class OwnCorpusRepository(
     }
 
     /**
-     * Packs the whole collection into a backup archive (ADR-0013 point 1).
-     * Only the bytes are produced here -- where they land is
-     * [BackupActions.saveToDocuments]'s job.
+     * Builds the archive's contents (ADR-0013 point 1). [sessions] arrives as
+     * plain data rather than as a repository on purpose: this class owns the
+     * own corpus, not the session history, and it should stay that way even
+     * though both end up in the same file. The coordination lives in
+     * `Backup.kt` (Backlog "Sitzungshistorie mitsichern", AC4).
      */
-    suspend fun exportArchive(): ArchiveExport = withContext(Dispatchers.IO) {
-        val plan = buildBackup(allBlocking(), clock.nowEpochMillis()) { files.readRecording(it) }
-        ArchiveExport(
-            bytes = packArchive(plan.files),
-            exported = plan.exported,
-            skippedWithoutRecording = plan.skippedWithoutRecording,
-        )
-    }
+    suspend fun buildArchive(nowEpochMillis: Long, sessions: List<Session>): BackupPlan =
+        withContext(Dispatchers.IO) {
+            buildBackup(allBlocking(), nowEpochMillis, sessions) { files.readRecording(it) }
+        }
 
     /**
-     * Merges a backup into the collection (ADR-0013 point 5: adds, never
-     * overwrites, never deletes).
+     * Writes the own-corpus half of an already-read archive and answers how
+     * many entries were added.
      *
-     * The whole archive is read and judged before anything is written, so an
-     * unreadable file cannot leave a half-imported state behind (AC3). Within
-     * the write, each WAV goes down before the metadata that references it --
-     * the same order as [add], and for the same reason: a failure in between
-     * leaves an unreferenced file, never an entry pointing at nothing.
+     * Each WAV goes down before the metadata that references it -- the same
+     * order as [add], and for the same reason: a failure in between leaves an
+     * unreferenced file, never an entry pointing at nothing. Judging what to
+     * write happened earlier in `readBackup`, which is what keeps "no
+     * half-imported state" (AC3) a property of the construction.
      */
-    suspend fun importArchive(bytes: ByteArray): ArchiveImport = withContext(Dispatchers.IO) {
-        val archive = unpackArchive(bytes) ?: return@withContext ArchiveImport.Unreadable
-        when (val contents = readBackup(archive, allBlocking())) {
-            BackupContents.Unreadable -> ArchiveImport.Unreadable
-            is BackupContents.Readable -> {
-                for (pending in contents.toAdd) {
-                    files.writeRecording(pending.entry.fileName, pending.audio)
-                }
-                if (contents.toAdd.isNotEmpty()) {
-                    saveAllBlocking(allBlocking() + contents.toAdd.map { it.entry })
-                }
-                ArchiveImport.Merged(
-                    added = contents.toAdd.size,
-                    alreadyPresent = contents.alreadyPresent,
-                    unusable = contents.unusable,
-                )
-            }
+    suspend fun applyImport(contents: BackupContents.Readable): Int = withContext(Dispatchers.IO) {
+        for (pending in contents.toAdd) {
+            files.writeRecording(pending.entry.fileName, pending.audio)
         }
+        if (contents.toAdd.isNotEmpty()) {
+            saveAllBlocking(allBlocking() + contents.toAdd.map { it.entry })
+        }
+        contents.toAdd.size
     }
 
     private fun allBlocking(): List<OwnEntry> = parseOwnCorpus(files.readMetadata())
@@ -211,10 +198,23 @@ class ArchiveExport(
     val bytes: ByteArray,
     val exported: Int,
     val skippedWithoutRecording: Int,
+    val sessions: Int,
 )
 
 sealed interface ArchiveImport {
-    class Merged(val added: Int, val alreadyPresent: Int, val unusable: Int) : ArchiveImport
+    /**
+     * [sessionsAlreadyPresent] is counted against what the *archive* carried,
+     * so an old backup without a `sitzungen/` folder reports zero on both
+     * session counts and the message stays silent about them rather than
+     * claiming "0 Sitzungen".
+     */
+    class Merged(
+        val added: Int,
+        val alreadyPresent: Int,
+        val unusable: Int,
+        val sessionsAdded: Int,
+        val sessionsAlreadyPresent: Int,
+    ) : ArchiveImport
 
     /** Not an AudioLex backup, or damaged (AC3) -- nothing was written. */
     data object Unreadable : ArchiveImport

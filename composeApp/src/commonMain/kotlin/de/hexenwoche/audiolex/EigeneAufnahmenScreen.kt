@@ -41,6 +41,7 @@ import de.hexenwoche.audiolex.core.audio.createAudioSink
 import de.hexenwoche.audiolex.core.audio.createAudioSource
 import de.hexenwoche.audiolex.core.corpus.EntryKind
 import de.hexenwoche.audiolex.core.corpus.OwnEntry
+import de.hexenwoche.audiolex.core.persistence.SessionRepository
 import de.hexenwoche.audiolex.core.session.PlaybackQueue
 import de.hexenwoche.audiolex.core.time.Clock
 import kotlinx.coroutines.CancellationException
@@ -74,7 +75,12 @@ import kotlinx.coroutines.withContext
  * has been a real bug in this project twice before).
  */
 @Composable
-fun EigeneAufnahmenScreen(repository: OwnCorpusRepository, clock: Clock, onBeenden: () -> Unit) {
+fun EigeneAufnahmenScreen(
+    repository: OwnCorpusRepository,
+    sessionRepository: SessionRepository,
+    clock: Clock,
+    onBeenden: () -> Unit,
+) {
     val scope = rememberCoroutineScope()
     val sink = remember { createAudioSink() }
     var status by remember { mutableStateOf<String?>(null) }
@@ -288,8 +294,8 @@ fun EigeneAufnahmenScreen(repository: OwnCorpusRepository, clock: Clock, onBeend
             // not a recurring nag: ADR-0013 hands the decision to the user
             // on purpose.
             Text(
-                "Eigene Aufnahmen liegen sonst nur auf diesem Gerät. " +
-                    "Der Export legt sie als ZIP-Datei in deinen Dokumenten ab — was danach damit geschieht, entscheidest du.",
+                "Eigene Aufnahmen und dein Sitzungsverlauf liegen sonst nur auf diesem Gerät. " +
+                    "Der Export legt beides als ZIP-Datei in deinen Dokumenten ab — was danach damit geschieht, entscheidest du.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -300,7 +306,7 @@ fun EigeneAufnahmenScreen(repository: OwnCorpusRepository, clock: Clock, onBeend
                     onClick = {
                         scope.launch {
                             isBackupBusy = true
-                            status = runExport(repository, backup, clock)
+                            status = runExport(repository, sessionRepository, backup, clock)
                             isBackupBusy = false
                         }
                     },
@@ -318,7 +324,7 @@ fun EigeneAufnahmenScreen(repository: OwnCorpusRepository, clock: Clock, onBeend
                                 isBackupBusy = false
                             } else {
                                 scope.launch {
-                                    status = runImport(repository, bytes)
+                                    status = runImport(repository, sessionRepository, bytes)
                                     reload()
                                     isBackupBusy = false
                                 }
@@ -550,19 +556,32 @@ private fun RecorderControls(
  * file couldn't be written, which is otherwise indistinguishable from a
  * successful backup that simply isn't there when it's needed.
  */
-private suspend fun runExport(repository: OwnCorpusRepository, backup: BackupActions, clock: Clock): String {
-    val export = repository.exportArchive()
-    if (export.exported == 0) {
-        return "Nichts zu sichern: Es gibt noch keine Aufnahme, nur Einträge ohne Ton."
+private suspend fun runExport(
+    repository: OwnCorpusRepository,
+    sessions: SessionRepository,
+    backup: BackupActions,
+    clock: Clock,
+): String {
+    val now = clock.nowEpochMillis()
+    val export = exportBackup(repository, sessions, now)
+    if (export.exported == 0 && export.sessions == 0) {
+        return "Nichts zu sichern: Es gibt noch keine Aufnahme und keine Sitzung."
     }
-    val location = backup.saveToDocuments(backupFileName(clock.nowEpochMillis()), export.bytes)
+    val location = backup.saveToDocuments(backupFileName(now), export.bytes)
         ?: return "Sicherung fehlgeschlagen — die Datei konnte nicht geschrieben werden."
+
+    // AC5: both kinds named separately. A backup that holds recordings but no
+    // sessions yet says so by staying silent about them, not by claiming "0".
+    val what = buildList {
+        if (export.exported > 0) add("${export.exported} Aufnahme(n)")
+        if (export.sessions > 0) add("${export.sessions} Sitzung(en)")
+    }.joinToString(" und ")
     val skipped = if (export.skippedWithoutRecording > 0) {
         " ${export.skippedWithoutRecording} Eintrag/Einträge ohne Aufnahme sind nicht enthalten."
     } else {
         ""
     }
-    return "${export.exported} Aufnahme(n) gesichert nach $location.$skipped"
+    return "$what gesichert nach $location.$skipped"
 }
 
 /**
@@ -570,24 +589,38 @@ private suspend fun runExport(repository: OwnCorpusRepository, backup: BackupAct
  * rather than reduced to "fertig": on a restore the difference between
  * "12 hinzugefügt" and "12 waren schon da" is the whole information.
  */
-private suspend fun runImport(repository: OwnCorpusRepository, bytes: ByteArray): String =
-    when (val result = repository.importArchive(bytes)) {
+private suspend fun runImport(
+    repository: OwnCorpusRepository,
+    sessions: SessionRepository,
+    bytes: ByteArray,
+): String =
+    when (val result = importBackup(bytes, repository, sessions)) {
         ArchiveImport.Unreadable ->
             "Diese Datei ist keine AudioLex-Sicherung oder beschädigt. Es wurde nichts verändert."
 
         is ArchiveImport.Merged -> buildString {
-            append(
-                when {
-                    result.added == 0 && result.alreadyPresent > 0 ->
-                        "Nichts hinzugefügt — alle ${result.alreadyPresent} Einträge der Sicherung sind bereits vorhanden."
+            // AC5: the two kinds are reported separately, and each stays
+            // silent when the archive carried none of it -- an old backup
+            // without a sitzungen/ folder must not read as "0 Sitzungen".
+            val added = buildList {
+                if (result.added > 0) add("${result.added} Eintrag/Einträge")
+                if (result.sessionsAdded > 0) add("${result.sessionsAdded} Sitzung(en)")
+            }
+            val known = buildList {
+                if (result.alreadyPresent > 0) add("${result.alreadyPresent} Eintrag/Einträge")
+                if (result.sessionsAlreadyPresent > 0) add("${result.sessionsAlreadyPresent} Sitzung(en)")
+            }
+            when {
+                added.isNotEmpty() -> {
+                    append("${added.joinToString(" und ")} übernommen")
+                    if (known.isNotEmpty()) append(", ${known.joinToString(" und ")} waren schon vorhanden")
+                    append(".")
+                }
 
-                    result.added == 0 -> "Nichts hinzugefügt."
-                    else -> "${result.added} Eintrag/Einträge übernommen"
-                },
-            )
-            if (result.added > 0) {
-                if (result.alreadyPresent > 0) append(", ${result.alreadyPresent} waren schon vorhanden")
-                append(".")
+                known.isNotEmpty() ->
+                    append("Nichts hinzugefügt — ${known.joinToString(" und ")} der Sicherung sind bereits vorhanden.")
+
+                else -> append("Nichts hinzugefügt.")
             }
             if (result.unusable > 0) {
                 append(" ${result.unusable} Eintrag/Einträge der Sicherung waren unvollständig und wurden übersprungen.")

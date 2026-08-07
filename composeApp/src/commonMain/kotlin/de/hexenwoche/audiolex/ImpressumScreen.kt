@@ -97,10 +97,10 @@ fun ImpressumScreen(onBeenden: () -> Unit) {
                 style = MaterialTheme.typography.bodyLarge,
             )
             Text(
-                "Eigene Aufnahmen lassen sich sichern: Auf Tastendruck schreibt AudioLex sie " +
-                    "als ZIP-Datei in deine Dokumente. Das geschieht nur, wenn du es auslöst. " +
-                    "Was danach mit der Datei passiert — kopieren, weitergeben, in eine Cloud " +
-                    "laden — entscheidest du.",
+                "Eigene Aufnahmen und der Sitzungsverlauf lassen sich sichern: Auf " +
+                    "Tastendruck schreibt AudioLex beides als ZIP-Datei in deine Dokumente. " +
+                    "Das geschieht nur, wenn du es auslöst. Was danach mit der Datei passiert " +
+                    "— kopieren, weitergeben, in eine Cloud laden — entscheidest du.",
                 style = MaterialTheme.typography.bodyLarge,
             )
             Text(

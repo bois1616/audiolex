@@ -1,5 +1,7 @@
 package de.hexenwoche.audiolex.core.corpus
 
+import de.hexenwoche.audiolex.core.session.Session
+import de.hexenwoche.audiolex.core.srs.ReviewRating
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -149,6 +151,53 @@ class OwnCorpusBackupTest {
         )
 
         assertEquals(BackupContents.Unreadable, readBackup(damaged, existing = emptyList()))
+    }
+
+    @Test
+    fun `session history rides along as its own folder`() {
+        val sessions = listOf(
+            Session(1_000L, "Europe/Vienna", "PRUEFMODUS", 3, mapOf(ReviewRating.GOOD to 3)),
+        )
+
+        val plan = buildBackup(listOf(entry("own-1")), nowEpochMillis = 5_000L, sessions = sessions) {
+            byteArrayOf(9)
+        }
+
+        assertTrue(plan.files.any { it.path == SESSIONS_PATH })
+        assertEquals(1, plan.sessions)
+        val readable = assertIs<BackupContents.Readable>(readBackup(plan.files, existing = emptyList()))
+        assertEquals(sessions, readable.sessions)
+    }
+
+    @Test
+    fun `an archive without a sessions folder stays importable`() {
+        // Every backup written before ADR-0013's Nachtrag has no sitzungen/
+        // folder. Those must keep working -- a missing history is normal,
+        // not damage.
+        val archive = archiveOf(listOf(entry("own-1")))
+
+        val readable = assertIs<BackupContents.Readable>(readBackup(archive, existing = emptyList()))
+
+        assertTrue(readable.sessions.isEmpty())
+        assertEquals(listOf("own-1"), readable.toAdd.map { it.entry.id })
+    }
+
+    @Test
+    fun `no sessions means no sessions folder at all`() {
+        val plan = buildBackup(listOf(entry("own-1")), nowEpochMillis = 5_000L) { byteArrayOf(9) }
+
+        assertTrue(plan.files.none { it.path.startsWith("$SESSIONS_FOLDER/") })
+    }
+
+    @Test
+    fun `a damaged session history makes the whole archive unreadable`() {
+        // The opposite of the missing-folder case: present but broken must
+        // not import as "no sessions", which would look like a clean restore
+        // of an empty history.
+        val archive = archiveOf(listOf(entry("own-1"))) +
+            ArchiveFile(SESSIONS_PATH, """[ { "startedAtEpochMillis": 1, "zoneI""".encodeToByteArray())
+
+        assertEquals(BackupContents.Unreadable, readBackup(archive, existing = emptyList()))
     }
 
     @Test

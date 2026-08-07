@@ -1,5 +1,28 @@
 # Umsetzungs-Log (Neueste Einträge zuerst)
 
+## 2026-08-07 (Opus: **Sitzungshistorie wird mitgesichert — v0.29.1**)
+
+- **Abnahme am A53 (2026-08-07): bestanden, voller Durchlauf mit Deinstallation.** Und diesmal **mit vollständiger Sicherheitskopie vorab** — Datenbank samt WAL **und** Eigen-Korpus per `run-as` gezogen, bevor irgendetwas angefasst wurde. Genau das war beim vorigen Durchlauf versäumt worden und hat die Historie gekostet. Gemessen:
+
+  - Export schrieb `Documents/audiolex-sicherung-2026-08-07-1345.zip` mit **`sitzungen/verlauf.json`** neben `eigene-aufnahmen/`. Inhalt heruntergezogen und geöffnet: eine Sitzung, `startedAtEpochMillis` 1786090371423, `PRUEFMODUS`, 15 Bewertungen (3 AGAIN, 7 SOON, 5 LATER).
+  - Nach Deinstallation und Neuinstallation: leerer Korpus, `SELECT COUNT(*) FROM SessionEntity` = **0**, „Exportieren" korrekt ausgegraut.
+  - Nach dem Import: 4 Aufnahmen zurück **und** die Sitzung mit exakt denselben Werten (`1786090371423|PRUEFMODUS|15|3|7|5|0|0`) — an der Datenbank nachgesehen, nicht am Bildschirm.
+  - Dieselbe Datei ein zweites Mal importiert: „Nichts hinzugefügt — 4 Eintrag/Einträge und 1 Sitzung(en) der Sicherung sind bereits vorhanden." Sitzungszahl blieb 1, Aufnahmen blieben 4. Die Zusammenführung über `startedAtEpochMillis` hält am Gerät (AC3).
+
+- **Was:** Korrigiert **ADR-0013 Entscheidung 6**, deren Begründung sich als zur Hälfte falsch erwiesen hat. Sie fasste SRS-Fälligkeiten und Sitzungshistorie unter „Verlaufsdaten, die sich neu bilden" — richtig für die Fälligkeiten, falsch für die Historie. Die bildet sich gerade nicht neu: Sie ist die Aufzeichnung dessen, was geschehen ist, und bei einem Training über Monate die einzige Größe, an der sich Fortschritt ablesen lässt. Aufgefallen ist der Fehler erst, als der AC8-Test die Daten wirklich löschte und der Autor nachfragte. Das Wort „Verlaufsdaten" hat ihn getragen — es klingt nach „vorübergehend" und meint hier das Gegenteil.
+
+- **Wie (AC1/AC2, `:core`):** `Session` ist jetzt `@Serializable` (Präzedenz `OwnEntry`), dazu `encodeSessions`/`parseSessionsOrNull`/`sessionsToAdd` in neuem `core/session/SessionStore.kt`. Das Archiv bekommt `sitzungen/verlauf.json` als zweite Inhaltsart — **rein additiv**: Die Formatmarke bleibt `format = 1`, und ein Archiv **ohne** `sitzungen/`-Ordner bleibt gültig (fehlende Datei → leere Liste). Das war keine Nachsicht, sondern Pflicht: Die drei Sicherungen, die heute Vormittag entstanden sind, haben keinen solchen Ordner und liegen bereits im Dokumentenverzeichnis des Autors.
+
+  **Die Unterscheidung, die dabei zählt:** *fehlende* Historie ist normal, *vorhandene aber beschädigte* macht das ganze Archiv unlesbar. Andernfalls hätte ein kaputter Verlauf als „0 Sitzungen übernommen" gemeldet — dieselbe stille Falschmeldung, gegen die es `parseOwnCorpusOrNull` schon gibt.
+
+- **Wie (AC3, Zusammenführung):** Identität ist `startedAtEpochMillis`, **nicht** `SessionEntity.id` — die ist `autoGenerate` und damit gerätelokal; auf zwei Geräten trägt dieselbe Zahl verschiedene Sitzungen. Ein Test hält das ausdrücklich fest (zwei Sitzungen mit gleichem Startzeitpunkt, aber verschiedenen Zählern, gelten als bekannt).
+
+- **Wie (AC4, Verdrahtung):** Neues `composeApp/Backup.kt` koordiniert die beiden Quellen. `OwnCorpusRepository` bekommt **keine** `SessionRepository` — es nimmt die Sitzungen als schlichte Liste entgegen und gibt mit `applyImport` nur seine eigene Hälfte zurück. Die eine Stelle, die beides kennt, ist die neue Datei. `sessionRepository` ist in `App.kt` aus zwei Aufrufstellen herausgezogen, die es bis dahin je einzeln bauten (zwei Instanzen über einem DAO).
+
+- **Wie (AC5/AC6, Texte):** Meldungen nennen beide Inhaltsarten getrennt und schweigen zu der, die im Archiv nicht vorkommt — ein Altbestand ohne `sitzungen/` darf nicht als „0 Sitzungen" erscheinen. Impressum **und** der Hinweis über den Schaltflächen sind nachgezogen: Beide sagten „eigene Aufnahmen", der Export enthält jetzt mehr als der Text zusagt.
+
+- **Wie verifiziert:** `./gradlew build` grün, `:core:jvmTest` 161 → **172** (11 neue Fälle: Roundtrip mit Sitzungen, Merge über den Startzeitpunkt, Identität *nicht* über die Room-id, Altarchiv ohne `sitzungen/` importierbar, beschädigte Historie → unlesbar, leere ≠ beschädigte Historie, unbekannter Bewertungsschlüssel bleibt lesbar). Gerätetest wie oben. Version 0.28.1 → 0.29.0 → **0.29.1**; der Patch-Schritt, weil der Hinweistext über den Schaltflächen erst nach der Installation von 0.29.0 nachgezogen wurde.
+
 ## 2026-08-07 (Opus: **Kanaltest per Langdruck auf die Versionszeile — v0.28.1**)
 
 - **Vorgeschichte, die hier hingehört: v0.27.0 war an der Spezifikation vorbeigebaut.** Für den Kanaltest gab es seit dem 2026-08-06 ein **geschärftes Backlog-Item mit AC1–AC3 und Nicht-Zielen** — ich habe es vor der Umsetzung nicht gelesen (AGENTS.md §2 verlangt genau das) und stattdessen eine eigene Lösung über `BuildConfig.DEBUG` gebaut. Die verstößt gegen ein ausdrückliches Nicht-Ziel („keine Debug-/Release-Unterscheidung über BuildConfig"), erfüllt AC1 nicht (verlangt war die Langdruck-Geste) und ließ AC2 ganz aus. Der Unterschied war nicht kosmetisch: Bei meiner Fassung wäre das Werkzeug aus Release-Builds verschwunden, statt in jedem Build erreichbar zu bleiben. **Autor-Entscheid 2026-08-07: wie geschärft umsetzen.** Das BuildConfig-Gating ist vollständig zurückgebaut (`DebugBuild.kt` samt Actuals gelöscht, `buildFeatures { buildConfig = true }` wieder raus).
