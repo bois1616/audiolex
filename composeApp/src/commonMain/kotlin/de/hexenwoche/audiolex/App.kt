@@ -31,6 +31,8 @@ import de.hexenwoche.audiolex.core.persistence.RoomSessionRepository
 import de.hexenwoche.audiolex.core.persistence.RoomSettingsRepository
 import de.hexenwoche.audiolex.core.settings.AppSettings
 import de.hexenwoche.audiolex.core.settings.ThemeMode
+import de.hexenwoche.audiolex.core.settings.applyProfile
+import de.hexenwoche.audiolex.core.settings.derivedProfile
 import de.hexenwoche.audiolex.core.time.Clock
 import kotlinx.coroutines.launch
 
@@ -146,6 +148,15 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit, ownCorp
                         onZumLernmodus = { screen = Screen.Lernmodus },
                     )
                     is Screen.Einstellungen -> EinstellungenScreen(
+                        // The level is never persisted -- the option state
+                        // is re-derived from the atomic noise pair on every
+                        // recomposition, and tapping one applies it over the
+                        // regular settings path (Backlog M4
+                        // "Szenario-Presets", AC2/AC3).
+                        activeProfile = settings.derivedProfile(),
+                        onProfileChange = { profile ->
+                            updateSettings { it.applyProfile(profile) }
+                        },
                         themeMode = settings.themeMode,
                         onThemeModeChange = { newMode ->
                             updateSettings { it.copy(themeMode = newMode) }

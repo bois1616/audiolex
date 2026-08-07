@@ -1,5 +1,17 @@
 # Umsetzungs-Log (Neueste Einträge zuerst)
 
+## 2026-08-07 (Qwen: **Szenario-Presets Einfach/Schwierig/Fortgeschritten — v0.30.0**)
+
+- **Was:** Das M4-Item „Szenario-Presets" (S9), am selben Tag geschärft und als `[→Sonnet]` freigegeben. Ein-Tipp-Trainingsstufen: Ein Preset schreibt die **atomaren** Werte (`noiseEnabled`/`snrDb`), die Stufe selbst wird **nicht** persistiert — welche Stufe gerade gilt (oder keine), wird je Rekompilation aus den atomaren Werten abgeleitet. Stufen: Einfach = Störgeräusch aus (SNR unverändert), Schwierig = an bei +5 dB (hörgeprüfter Default), Fortgeschritten = an bei −5 dB (anderer Regler-Anschlag); `noiseScenario` bleibt bewusst preset-neutral (Loops lautheitsnormalisiert seit v0.13.0, Schwierigkeit kommt allein über den SNR). Keine Spalte, keine Migration, `SettingsEntity` unangetastet. **Arbeitsteilung:** Schärfung, Diff-Review und DoD in der Hauptsession; die Umsetzung lief delegiert über einen Subagenten (autorisiert, vorerst dasselbe Modell). Randnotiz: Der erste Delegationslauf starb mitten in der Umsetzung an einem externen Quotenlimit und hinterließ einen nicht kompilierbaren Teilstaat; der zweite Lauf hat ihn vorgefunden, gegen die ACs geprüft und vervollständigt.
+
+- **Wie (AC1, `:core`):** `SettingsProfile`-Enum in `core/settings` mit den Stufen-Parametern im Konstruktor als **einziger** Definition; `applyProfile`/`derivedProfile` lesen nur diese Tabelle, darum können Anwendung und Ableitung nicht auseinanderlaufen. `SettingsProfileTest` mit 9 Fällen: Anwendung je Stufe (EINFACH lässt `snrDb` über die ganze Spannweite unangetastet), alles außer dem Noise-Paar preset-neutral, Ableitung inkl. Randfälle (aus + beliebiger SNR = Einfach; an + jeder andere SNR = keine Stufe), Apply/Derive-Roundtrip.
+
+- **Wie (AC2/AC3, composeApp):** `App.kt` leitet `activeProfile = settings.derivedProfile()` ab und schreibt über `updateSettings { it.applyProfile(profile) }` — derselbe Pfad wie eine manuelle Änderung. `EinstellungenScreen`: neue **erste** Sektion „Trainingsstufe" (über „Erscheinungsbild", `RadioOption`/`selectableGroup`), Labels exakt „Einfach"/„Schwierig"/„Fortgeschritten", bei keiner passenden Stufe keine aktive Option und die Zeile „Individuell eingestellt" (`labelSmall`, `onSurfaceVariant`).
+
+- **Wie verifiziert:** `./gradlew build` grün; `:core:jvmTest` 172 → **181** (9 neue Fälle, 0 Fehler) — von der Hauptsession selbst nachgefahren, nicht aus dem Subagenten-Bericht übernommen; `:composeApp:assembleDebug` grün. **A53-Bedienprobe (AC4) am 2026-08-07 mit v0.30.0 bestätigt:** „Schwierig" → Schalter an und Regler auf +5; Regler manuell verstellen → Auswahl entfällt, „Individuell eingestellt" erscheint; „Einfach" → Störgeräusch aus. Angenommener Nebenbefund: Die „Individuell"-Zeile ist nur bei aktivem Störgeräusch sichtbar — bei ausgeschaltetem greift die Ableitung zurück auf „Einfach"; vom Autor ausdrücklich in Ordnung befunden. Dieselbe Sichtprobe hat die noch offene `FlowRow`-Frage des Kanaltests (v0.28.1) mit abgeräumt: Die drei Kanaltasten brechen sauber um.
+
+- **Version:** 0.29.1 → **0.30.0**.
+
 ## 2026-08-07 (Opus: **Sitzungshistorie wird mitgesichert — v0.29.1**)
 
 - **Abnahme am A53 (2026-08-07): bestanden, voller Durchlauf mit Deinstallation.** Und diesmal **mit vollständiger Sicherheitskopie vorab** — Datenbank samt WAL **und** Eigen-Korpus per `run-as` gezogen, bevor irgendetwas angefasst wurde. Genau das war beim vorigen Durchlauf versäumt worden und hat die Historie gekostet. Gemessen:

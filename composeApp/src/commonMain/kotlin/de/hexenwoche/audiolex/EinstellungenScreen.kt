@@ -36,14 +36,23 @@ import de.hexenwoche.audiolex.core.settings.ChannelMode
 import de.hexenwoche.audiolex.core.settings.CorpusMode
 import de.hexenwoche.audiolex.core.settings.SNR_DB_MAX
 import de.hexenwoche.audiolex.core.settings.SNR_DB_MIN
+import de.hexenwoche.audiolex.core.settings.SettingsProfile
 import de.hexenwoche.audiolex.core.settings.ThemeMode
 import kotlin.math.roundToInt
 
 /**
  * Einstellungen (Backlog M4 "Settings-Persistenz-Fundament", erweitert in M2
  * "Satz-Bogen Batch B" um den Trainingsinhalt-Schalter, in M4
- * "Störgeräusch-Overlay" um SNR/Szenario, ADR-0010): the first setting was a
- * manual theme override -- the app previously followed
+ * "Störgeräusch-Overlay" um SNR/Szenario, ADR-0010, in M4 "Szenario-Presets"
+ * um die Trainingsstufe): the first section is the one-tap training level
+ * (Backlog M4 "Szenario-Presets Einfach/Schwierig/Fortgeschritten", S9) --
+ * tapping a level applies it over the regular settings path, writing only
+ * the atomic noise pair. The level itself is never persisted: which option
+ * is active is re-derived from the atomic values (`derivedProfile` in
+ * `:core`), so manually adjusting the noise switch or the SNR slider simply
+ * moves or drops the selection, and when no level matches, no option is
+ * active and the "Individuell eingestellt" line says so. The first setting
+ * historically was a manual theme override -- the app previously followed
  * `isSystemInDarkTheme()` unconditionally with no way to confirm Dark Mode
  * actually engaged (Autor-Finding 2026-07-13, A53-Gerätetest). The second
  * setting picks the corpus entries the training screens work on (Wörter /
@@ -57,8 +66,8 @@ import kotlin.math.roundToInt
  * group for [ChannelMode], `enabled = false` with an explanatory line
  * whenever the detected setup is [OutputSetup.HOERGERAET] -- a channel
  * choice would be wirkungslos there (ADR-0007), and the disabled state says
- * so instead of just hiding the control. Presets stay out of scope, own
- * backlog items. The sixth, "Korpus" (Backlog Eigen-Korpus Batch D, ADR-0012
+ * so instead of just hiding the control. The sixth, "Korpus" (Backlog
+ * Eigen-Korpus Batch D, ADR-0012
  * Nachtrag "Die Quellentrennung wird durch Kontingente ersetzt"), sits
  * directly below "Trainingsinhalt" -- both settings answer "what does the
  * training screen even draw from", the checkbox list picking *which*
@@ -78,6 +87,8 @@ import kotlin.math.roundToInt
  */
 @Composable
 fun EinstellungenScreen(
+    activeProfile: SettingsProfile?,
+    onProfileChange: (SettingsProfile) -> Unit,
     themeMode: ThemeMode,
     onThemeModeChange: (ThemeMode) -> Unit,
     corpusMode: CorpusMode,
@@ -130,6 +141,47 @@ fun EinstellungenScreen(
             verticalArrangement = Arrangement.spacedBy(10.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            // One-tap training level (Backlog M4 "Szenario-Presets", AC3),
+            // the first section. Which option is active is the *derived*
+            // level (`activeProfile` from the atomic noise pair) -- nothing
+            // about the level itself is stored, so a manual change of the
+            // noise switch or the SNR slider simply moves or drops the
+            // selection. When no level matches (`null`), no option is active
+            // and the "Individuell eingestellt" line says so -- deliberately
+            // not a tappable option of its own (Nicht-Ziel), just the same
+            // reserved styling as the "leiser/lauter" orientation on the SNR
+            // slider.
+            Text("Trainingsstufe", style = MaterialTheme.typography.titleMedium)
+
+            Column(
+                modifier = Modifier.fillMaxWidth().selectableGroup(),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                RadioOption(
+                    label = "Einfach",
+                    selected = activeProfile == SettingsProfile.EINFACH,
+                    onSelect = { onProfileChange(SettingsProfile.EINFACH) },
+                )
+                RadioOption(
+                    label = "Schwierig",
+                    selected = activeProfile == SettingsProfile.SCHWIERIG,
+                    onSelect = { onProfileChange(SettingsProfile.SCHWIERIG) },
+                )
+                RadioOption(
+                    label = "Fortgeschritten",
+                    selected = activeProfile == SettingsProfile.FORTGESCHRITTEN,
+                    onSelect = { onProfileChange(SettingsProfile.FORTGESCHRITTEN) },
+                )
+            }
+
+            if (activeProfile == null) {
+                Text(
+                    "Individuell eingestellt",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
             Text("Erscheinungsbild", style = MaterialTheme.typography.titleMedium)
 
             Column(

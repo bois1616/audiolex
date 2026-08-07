@@ -41,6 +41,43 @@ const val SNR_DB_MAX = 20
 private const val DEFAULT_SNR_DB = 5
 private const val DEFAULT_NOISE_SCENARIO = "restaurant"
 
+/**
+ * One-tap training levels (Backlog M4 "Szenario-Presets Einfach/Schwierig/
+ * Fortgeschritten", S9): a preset is a single-tap *applier* of atomic
+ * settings -- the atomic values ([AppSettings.noiseEnabled]/
+ * [AppSettings.snrDb]) stay the source of truth, and the level itself is
+ * never persisted. Which level is currently active (or none) is always
+ * re-derived from the atomic values via [derivedProfile], so a stored
+ * preset state that could contradict them cannot exist.
+ *
+ * Each level is exactly two effects on the noise pair, and both SNR values
+ * are already-calibrated points of the existing slider rather than newly
+ * invented ones: [EINFACH] turns the noise off (the SNR stays whatever it
+ * was), [SCHWIERIG] turns it on at the hear-tested +5 dB default,
+ * [FORTGESCHRITTEN] at the slider's other stop (−5 dB, noise over the
+ * speech). [AppSettings.noiseScenario] deliberately stays out of this: the
+ * loops are loudness-normalized since v0.13.0, so difficulty comes from the
+ * SNR alone -- the scenario is a choice of surroundings, not of level. The
+ * word-side of the levels from the Fachkonzept (word length, phonetic
+ * pairs, playback behaviour) does not exist yet (M5) and will later extend
+ * *this same* definition, not a new construct.
+ *
+ * The constructor parameters are the single definition of the level
+ * parameters: [applyProfile] and [derivedProfile] both only read them, so
+ * the two can never drift apart (a `null` [snrDb] means "leave the current
+ * value untouched").
+ */
+enum class SettingsProfile(val noiseEnabled: Boolean, val snrDb: Int?) {
+    /** Noise off; the current SNR stays untouched (`snrDb = null`). */
+    EINFACH(noiseEnabled = false, snrDb = null),
+
+    /** Noise on at +5 dB, the hear-tested default (v0.13.0 A53-Hörprobe). */
+    SCHWIERIG(noiseEnabled = true, snrDb = DEFAULT_SNR_DB),
+
+    /** Noise on at −5 dB ([SNR_DB_MIN]), the slider's other stop. */
+    FORTGESCHRITTEN(noiseEnabled = true, snrDb = SNR_DB_MIN),
+}
+
 private val excludedSpeakersJson = Json { ignoreUnknownKeys = true }
 
 /**
@@ -75,6 +112,34 @@ data class AppSettings(
      */
     val excludedSpeakers: Set<String> = emptySet(),
 )
+
+/**
+ * Applies a training level (Backlog M4 "Szenario-Presets", AC1): writes
+ * only the atomic noise pair, everything else (theme, corpus, scenario,
+ * channels, contingents) stays preset-neutral. The parameters come from
+ * [SettingsProfile]'s constructor -- the single definition of the level
+ * parameters -- so this mapper can neither invent nor forget one. A `null`
+ * level SNR ([SettingsProfile.EINFACH]) leaves the current [snrDb]
+ * untouched. Persistence runs over the regular settings path
+ * (composeApp state -> `SettingsRepository`), identical to a manual change.
+ */
+fun AppSettings.applyProfile(profile: SettingsProfile): AppSettings =
+    copy(noiseEnabled = profile.noiseEnabled, snrDb = profile.snrDb ?: snrDb)
+
+/**
+ * Derives which training level the current atomic values correspond to
+ * (`null` = none, "Individuell eingestellt"): noise off is always
+ * [SettingsProfile.EINFACH] whatever the SNR, noise on matches the level
+ * whose SNR stop it sits on (+5 dB [SettingsProfile.SCHWIERIG], −5 dB
+ * [SettingsProfile.FORTGESCHRITTEN]), any other SNR matches nothing. The
+ * match reads the parameter table off [SettingsProfile] itself instead of
+ * duplicating its literals, so a level added or re-tuned there changes the
+ * derivation with it.
+ */
+fun AppSettings.derivedProfile(): SettingsProfile? =
+    SettingsProfile.entries.firstOrNull { profile ->
+        profile.noiseEnabled == noiseEnabled && (profile.snrDb == null || profile.snrDb == snrDb)
+    }
 
 /**
  * Maps the stored enum names back to the domain enums, not by ordinal
