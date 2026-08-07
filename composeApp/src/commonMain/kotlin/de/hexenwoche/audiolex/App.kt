@@ -1,5 +1,6 @@
 package de.hexenwoche.audiolex
 
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -230,13 +231,6 @@ private fun StartScreen(
         Button(onClick = onOpenEigeneAufnahmen) {
             Text("Eigene Aufnahmen")
         }
-        // Dev-only: hidden in release builds (see isDebugBuild). The screen
-        // itself stays wired up -- it is unreachable, not removed.
-        if (isDebugBuild()) {
-            Button(onClick = onOpenDevKanaltest) {
-                Text("Kanaltest (Dev)")
-            }
-        }
         // Version pinned quietly at the bottom so a device test can always
         // tell which build is running (Autor-Wunsch 2026-07-13). Muted color,
         // never the accent -- it's reference info, not an active element.
@@ -262,10 +256,28 @@ private fun StartScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+        // The version line doubles as the way into the Dev-Kanaltest (Backlog
+        // M4 "Kanaltest aus dem Regelbetrieb ausblenden, aber erreichbar
+        // halten", AC1): a long press opens it, a normal tap does nothing.
+        // The tool stays available in every build -- it is the instrument for
+        // the channel work and was already that during the Re-Test-Protokoll
+        // of 2026-07-08 -- but it no longer sits between the training actions
+        // as if it were one of them.
+        //
+        // Deliberately without ripple or any visual hint: a discoverable
+        // affordance here would put the developer tool back into the user's
+        // field of view, which is exactly what this item removes. Whoever
+        // needs it knows about it.
         Text(
             "v$VERSION_NAME",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.combinedClickable(
+                interactionSource = null,
+                indication = null,
+                onLongClick = onOpenDevKanaltest,
+                onClick = {},
+            ),
         )
     }
 }

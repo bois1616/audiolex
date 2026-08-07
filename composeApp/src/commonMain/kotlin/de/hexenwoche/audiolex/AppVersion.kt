@@ -18,5 +18,5 @@ package de.hexenwoche.audiolex
  * under one number make a device test unprovable, which is the one thing
  * this number exists to prevent.
  */
-const val VERSION_NAME = "0.27.0"
-const val VERSION_CODE = 27
+const val VERSION_NAME = "0.28.1"
+const val VERSION_CODE = 29

@@ -2,6 +2,7 @@ package de.hexenwoche.audiolex
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -111,7 +112,18 @@ fun DevPlaybackScreen(ownCorpusRepository: OwnCorpusRepository) {
     val rightWordRecording = currentCorpus.words.getOrNull(1)?.let { currentCorpus.recordingFor(it.id) }
     val leftWordText = currentCorpus.words.getOrNull(0)?.text ?: "?"
     val rightWordText = currentCorpus.words.getOrNull(1)?.text ?: "?"
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    // FlowRow, not Row: the labels carry the word texts ("Nur „Haus“ rechts"),
+    // so the three buttons overflow the A53's width and the last one gets
+    // squeezed into a one-character-wide column. Visible on the device only
+    // once the corpus list below shrank to two entries and stopped drawing
+    // the eye away from it. Same overflow, same remedy as the speaker chips
+    // and the per-entry action row (A53-Befund 2026-08-06). Beyond this
+    // batch's ACs, but shipping a mangled control on the very screen the
+    // batch is about would be worse.
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
         for ((label, gain) in listOf(
             "Nur „$leftWordText“ links" to StereoGain.LEFT_ONLY,
             "Beide" to StereoGain.BOTH,
@@ -134,8 +146,14 @@ fun DevPlaybackScreen(ownCorpusRepository: OwnCorpusRepository) {
         }
     }
 
+    // AC2: only the two words the channel test itself uses, not the whole
+    // corpus. The list had grown to 58 entries including sentences, which
+    // turned the channel tool into a corpus browser -- Autor 2026-08-06:
+    // "für den Test brauche ich nur Ball und Haus". These are the same two
+    // words the per-ear buttons above play, so hearing one on its own is the
+    // natural cross-check when a channel sounds wrong.
     LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(currentCorpus.words) { word ->
+        items(currentCorpus.words.take(2)) { word ->
             val recording = currentCorpus.recordingFor(word.id)
             Button(
                 enabled = recording != null,
