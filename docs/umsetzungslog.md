@@ -1,5 +1,12 @@
 # Umsetzungs-Log (Neueste Einträge zuerst)
 
+## 2026-08-07 (Qwen: **Szenario-Auswahl heilt gelöschte eigene Geräusche — v0.31.1**)
+
+- **Was:** A53-Abnahme-Befund zu v0.31.0: Nach dem Löschen des ausgewählten eigenen Geräuschs zeigte die Szenario-Auswahl in den Einstellungen „nichts" (kein Radio aktiv, auch Ein/Aus-Toggeln heilte es nicht), während die Wiedergabe still auf den ersten Katalogeintrag zurückfiel — Anzeige und Verhalten liefen auseinander. Die Schärfung (AC2) hatte den Wiedergabe-Fallback festgelegt, die UI-Anzeige aber nicht bedacht. **Autor-Entscheid 2026-08-07: beim Öffnen heilen.**
+- **Wie:** Im Katalog-Laden des `EinstellungenScreen`: existiert die gespeicherte Id nicht mehr und der Katalog ist nicht leer, wird das erste verfügbare Szenario übernommen und gespeichert. Ein leerer Katalog (Release-Fall, ADR-0014) bleibt ungeheilt — es gibt nichts zu übernehmen, und der ADR-0010-Fallback (saubere Sprache) deckt die Wiedergabe.
+- **Wie verifiziert:** `./gradlew build` grün. **A53-Probe steht aus:** ausgewähltes eigenes Geräusch löschen → Einstellungen öffnen → die Auswahl muss sichtbar auf das erste Szenario geheilt sein. Import-/Sicherungs-Proben der v0.31.0-Abnahme laufen parallel weiter.
+- **Version:** 0.31.0 → **0.31.1** (Patch, DoD §6).
+
 ## 2026-08-07 (Qwen: **Eigene Störgeräusche: aufnehmen, importieren, löschen — v0.31.0**)
 
 - **Was:** Das M4-Item „Eigene Störgeräusche", am selben Tag geschärft und als `[→Sonnet]` freigegeben (plus zweiter Nachtrag zu ADR-0013). Eigene Geräusche werden zweite, schreibbare Quelle neben dem gebündelten Katalog: App-Verzeichnis `eigene-stoergeraeusche/` mit `geraeusche.json` + WAVs (Muster Eigen-Korpus, keine Datenbank); der zusammengeführte Katalog bedient Einstellungen und `loadNoiseBuffer`; der Import validiert WAVs strikt (22050 Hz, mono, PCM16) und lehnt ab statt zu konvertieren; die Sicherung bekommt die dritte Inhaltsart (`stoergeraeusche/`, rein additiv, `format = 1` bleibt). Ändern ist kein Ziel (Autor-Entscheid): löschen und neu aufnehmen. **Arbeitsteilung:** Schärfung, ADR-Nachtrag, Diff-Review und DoD in der Hauptsession; die Umsetzung lief delegiert über einen Subagenten (zweiter Delegations-Batch).

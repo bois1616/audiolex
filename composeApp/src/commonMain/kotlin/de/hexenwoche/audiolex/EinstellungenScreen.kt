@@ -118,7 +118,19 @@ fun EinstellungenScreen(
     // screens can play is the same list.
     var scenarios by remember { mutableStateOf<List<NoiseScenario>>(emptyList()) }
     LaunchedEffect(Unit) {
-        scenarios = loadAllNoiseScenarios(ownNoiseRepository)
+        val loaded = loadAllNoiseScenarios(ownNoiseRepository)
+        scenarios = loaded
+        // A saved scenario that no longer exists (an own noise deleted since)
+        // left the radio group without any selected option while playback
+        // silently resolved to the first catalog entry -- display and
+        // behaviour diverging, and no toggle healed it (A53-Abnahme v0.31.0,
+        // Autor-Entscheid 2026-08-07: beim Öffnen heilen). Adopt the first
+        // available scenario and persist that choice; an empty catalog has
+        // nothing to heal to -- the ADR-0010 clean-speech fallback covers
+        // playback there.
+        if (loaded.isNotEmpty() && loaded.none { it.id == noiseScenario }) {
+            onNoiseScenarioChange(loaded.first().id)
+        }
     }
 
     // The Kontingent-Liste (Backlog Eigen-Korpus Batch D, AC4): loaded fully
