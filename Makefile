@@ -15,7 +15,7 @@
 # IP is fixed for now (single known device on the home network); override
 # with IP=... if that changes.
 
-IP        ?= 192.168.178.42
+IP        ?= 192.168.178.24
 PAIR_PORT ?=
 CODE      ?=
 PORT      ?=
