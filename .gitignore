@@ -37,5 +37,8 @@ __pycache__/
 *.py[oc]
 .venv/
 
+# Qwen Code (Agent-/Tool-Konfiguration der Entwicklungsumgebung, kein Bestandteil der App)
+.qwen/
+
 # TTS-Stimmodelle (großer Download, per Skript reproduzierbar, siehe tools/generate_tts.py)
 tools/voices/
