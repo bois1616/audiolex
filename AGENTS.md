@@ -41,7 +41,7 @@ AudioLex ist eine Hörtrainings-App (Android zuerst, iOS-Option offen) zum Wiede
 ## 5) Konventionen
 
 - **Sprache**: Doku und Commits Deutsch; Code, Bezeichner und Code-Kommentare Englisch; UI-Texte Deutsch.
-- **Texte, die andere lesen** (UI-Texte, Commit-Messages, README, Store-Beschreibungen): **`prose-anti-ki`-Skill laden, bevor formuliert wird** — nicht danach zum Prüfen. Gilt auch für delegierte Sessions. Nicht nötig für die Steuerdateien selbst (dieses Dokument, CLAUDE.md, SOUL.md, DESIGN.md, Configs) sowie für Backlog und Umsetzungslog: das sind interne Arbeitsdokumente, dort sind knappe Struktur und Wiederholung richtig.
+- **Texte, die andere lesen** (UI-Texte, Commit-Messages, README, Store-Beschreibungen): **vor** dem Formulieren die Stil-Leitplanken heranziehen, nicht danach zum Prüfen. Kern: schreiben wie ein bestimmter, kompetenter Mensch mit knapper Zeit — konkret statt allgemein, keine Werbe- und Füllwörter, keine Absicherungsfloskeln, Satzlängen ungleichmäßig. Wo der `prose-anti-ki`-Skill verfügbar ist, ist er die ausführliche Fassung davon und wird geladen; wo nicht, gilt der Kern trotzdem. Gilt auch für delegierte Sessions. Nicht nötig für die Steuerdateien selbst (dieses Dokument, CLAUDE.md, SOUL.md, DESIGN.md, Configs) sowie für Backlog und Umsetzungslog: das sind interne Arbeitsdokumente, dort sind knappe Struktur und Wiederholung richtig.
 - **Namensraum**: `de.hexenwoche.audiolex`
 - **Kein Netzwerk-/Cloud-Code in Phase 1** — Datenhaltung strikt lokal.
 - **Keine neuen Gradle-Module ohne ADR**: Komponenten wachsen zuerst als Pakete in `:core` (srs, audio, corpus, session), Modul-Split erst bei echtem Bedarf.
