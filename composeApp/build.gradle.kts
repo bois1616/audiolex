@@ -66,6 +66,12 @@ android {
             isMinifyEnabled = false
         }
     }
+    // Only for BuildConfig.DEBUG, which gates the Dev-only Kanaltest entry on
+    // the StartScreen (see isDebugBuild). AGP 8 generates BuildConfig only on
+    // request; nothing else in the project reads it.
+    buildFeatures {
+        buildConfig = true
+    }
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"

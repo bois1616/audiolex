@@ -230,8 +230,12 @@ private fun StartScreen(
         Button(onClick = onOpenEigeneAufnahmen) {
             Text("Eigene Aufnahmen")
         }
-        Button(onClick = onOpenDevKanaltest) {
-            Text("Kanaltest (Dev)")
+        // Dev-only: hidden in release builds (see isDebugBuild). The screen
+        // itself stays wired up -- it is unreachable, not removed.
+        if (isDebugBuild()) {
+            Button(onClick = onOpenDevKanaltest) {
+                Text("Kanaltest (Dev)")
+            }
         }
         // Version pinned quietly at the bottom so a device test can always
         // tell which build is running (Autor-Wunsch 2026-07-13). Muted color,

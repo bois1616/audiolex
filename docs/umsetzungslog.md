@@ -1,5 +1,12 @@
 # Umsetzungs-Log (Neueste Einträge zuerst)
 
+## 2026-08-07 (Opus: **Kanaltest nur noch im Debug-Build — v0.27.0**)
+
+- **Was:** Autor-Requirement „Kanaltest ausblenden". Der Dev-Kanaltest verschwindet aus Release-Builds, bleibt in Debug-Builds einen Tap entfernt. **Ausgeblendet, nicht gelöscht:** Das Werkzeug hat echten diagnostischen Wert — die ASHA-Volume-State-Beweiskette vom 2026-07-18 kam daher —, gehört aber in keine App, die an Fremde geht (M6/M7).
+- **Wie:** `expect fun isDebugBuild()` in `composeApp/commonMain` (`DebugBuild.kt`), Android-Actual liest `BuildConfig.DEBUG`, Desktop-Actual gibt `true` zurück (Dev-Target, wird nicht verteilt — den Diagnose-Knopf ausgerechnet dort zu verstecken wäre verkehrt herum). Dafür `buildFeatures { buildConfig = true }` in `composeApp/build.gradle.kts`; AGP 8 erzeugt `BuildConfig` sonst nicht, und nichts sonst im Projekt liest daraus. Der Startscreen-Knopf steht in einem `if (isDebugBuild())`; `Screen.DevKanaltest` und `DevPlaybackScreen` bleiben verdrahtet — der Weg ist unerreichbar, nicht entfernt.
+- **Wie verifiziert:** `./gradlew build` grün. Der Mechanismus ist an den generierten Quellen belegt statt angenommen: `buildConfig/release/…/BuildConfig.java` trägt `DEBUG = false`, die Debug-Variante `DEBUG = Boolean.parseBoolean("true")`. **Offen: die Sichtprobe am Gerät** — der Debug-Build ist installiert, aber das A53 verlangte beim Prüfversuch das Entsperrmuster, das nur der Autor kennt. Erwartung: Knopf im Debug-Build unverändert da. Der Release-Fall lässt sich am Gerät ohnehin nicht prüfen, solange es keine signierten Release-Builds gibt (M7-Item).
+- **Nebenher:** Die Versions-Doku in `AppVersion.kt` sagte „Patch bleibt Hotfixes vorbehalten" und widersprach damit der an diesem Tag ergänzten DoD-§6-Regel (auch kurze Fixes zählen die Patch-Stelle hoch). Angeglichen.
+
 ## 2026-08-07 (Opus: **Sicherung eigener Aufnahmen: ZIP-Export/Import — und `allowBackup` aus — v0.26.0**)
 
 - **Abnahme am A53 (2026-08-07): bestanden, einschließlich des Tests, der als einziger etwas beweist.** Vollständiger Durchlauf: exportieren → **App deinstallieren** → neu installieren → importieren. Ergebnis am Gerät gemessen, nicht am Bildschirm abgelesen:
