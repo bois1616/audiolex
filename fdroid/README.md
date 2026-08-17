@@ -21,3 +21,7 @@ Danach Merge Request stellen. Die vollständige Schrittfolge samt Prüfungen ste
 `versionName`, `versionCode` und `commit` im `Builds`-Block sowie `CurrentVersion`/`CurrentVersionCode` — alle vier kommen aus `composeApp/src/commonMain/kotlin/de/hexenwoche/audiolex/AppVersion.kt` und dem passenden Tag `v<VERSION_NAME>`.
 
 Wegen `AutoUpdateMode: Version` und `UpdateCheckMode: Tags` erledigt F-Droid das nach der ersten Aufnahme selbst: Ein neuer Tag erzeugt einen neuen Build-Eintrag. Die Kopie hier bleibt trotzdem der Ort, an dem eine bewusste Änderung an der Rezeptur (neue Kategorie, geänderte Adressen, ein Anti-Feature) zuerst festgehalten wird.
+
+## Der Text für den Merge Request
+
+`merge-request.md` daneben enthält den Titel im vorgeschriebenen Format, die ausgefüllte Vorlage „App inclusion" und die eine Entscheidung, die vor dem Absenden fällt: reproduzierbare Builds ja oder nein. Die ist eine Einbahnstraße — wer sie auslässt, kann sie später nicht nachholen, weil das APK dann mit F-Droids Schlüssel signiert ist.
