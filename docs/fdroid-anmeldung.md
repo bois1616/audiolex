@@ -64,7 +64,7 @@ Belegt statt behauptet: Der Index wurde per `git checkout-index --prefix` in ein
 
 **Was hier noch offen ist:** die eigenen Einsprachen (Autor, Grete) als Beispiel-Kontingent. Format, die drei Bedingungen und die JSON-Einträge stehen in `files/corpus/README.md`; die Dateien selbst liegen nur auf dem Testgerät.
 
-### Schritt 4 — Repository öffentlich machen und Tags setzen · **halb erledigt**
+### Schritt 4 — Repository öffentlich machen und Tags setzen · **erledigt**
 
 `origin` ist `git@github.com:bois1616/audiolex.git` und privat. F-Droid braucht ein öffentlich lesbares Repository und je Version einen Tag, den die Rezeptur referenzieren kann.
 
@@ -76,25 +76,19 @@ Konvention: `v<VERSION_NAME>`, also `v0.33.5`. Der Tag gehört an denselben Comm
 
 Nebenwirkung, die zu wissen ist: Alle Commit-Hashes ab v0.16.0 sind neu, der Push muss also erzwungen werden. `refs/notes/ai-attribution` (7 Notizen) hing danach an den alten Hashes und ist über die `commit-map` von `filter-repo` neu angehängt worden.
 
-**Beim Autor bleiben zwei Wege.** Der empfohlene, weil er die Frage ganz erledigt: das GitHub-Repository löschen (*Settings → Danger Zone → Delete this repository*), gleichnamig neu anlegen — privat oder direkt öffentlich — und den bereinigten Stand hineinschieben:
+**Ausgeführt am 2026-08-17.** Der Autor hat den Force-Push gewählt:
 
 ```bash
-git push -u origin master
+git push --force-with-lease origin master   # 7f5cce1 -> 754a339, forced update
 git push origin v0.33.5
-git push origin refs/notes/ai-attribution   # optional, die KI-Attributionsnotizen
+git push origin refs/notes/ai-attribution
 ```
 
-Der bequemere Weg ist ein Force-Push auf das bestehende Repository:
+Zwei Dinge, die dabei zu lernen waren. Erstens: Der Tag-Push geht auch dann durch, wenn der Branch-Push an der umgeschriebenen Historie abprallt — Tags brauchen kein Fast-Forward. Nach dem ersten Versuch lag also die bereinigte Historie samt aller Objekte (8,17 MiB) schon bei GitHub, während `master` weiter auf den alten Stand zeigte. Zweitens: `--force-with-lease` verlangt einen aktuellen Remote-Tracking-Ref als Vergleichsgrundlage; nach `filter-repo` fehlt der, ein `git fetch` stellt ihn her (hier hatte VS Codes Autofetch das schon getan).
 
-```bash
-git fetch origin                            # stellt die Lease-Grundlage wieder her
-git push --force-with-lease origin master
-git push origin v0.33.5
-```
+Die Alternative wäre gewesen, das GitHub-Repository zu löschen und gleichnamig neu anzulegen. Der Unterschied: GitHub behält nach einem Force-Push die unerreichbaren Objekte und liefert sie aus, wenn jemand den genauen Hash kennt. Diese Hashes waren nie öffentlich — praktisch also nicht auffindbar, aber „nicht auffindbar" ist ein schwächeres Ergebnis als „nicht vorhanden". Wer diesen Weg noch einmal geht, entscheidet das vor dem ersten Push, nicht danach.
 
-Warum trotzdem Löschen die bessere Wahl ist: GitHub behält nach einem Force-Push die unerreichbaren Objekte und liefert sie weiter aus, wenn man den genauen Hash kennt. Diese Hashes waren nie öffentlich, das Risiko ist praktisch keins — aber „praktisch keins" ist ein schwächeres Ergebnis als „weg", und darum ging der Aufwand. Voraussetzung fürs Löschen ist nur, dass am Repository nichts hängt, was erhalten bleiben soll (Issues, Stars, Forks); bei einem privaten Einzelprojekt ist das gegeben.
-
-Deliverable: öffentliches Repo, Tag `v0.33.5` sichtbar, Historie ohne die Nummer.
+**Belegt, nicht angenommen:** `git ls-remote https://github.com/bois1616/audiolex.git` **ohne Zugangsdaten** (`credential.helper` leer, `GIT_TERMINAL_PROMPT=0`) liefert `refs/heads/master`, `refs/tags/v0.33.5` und `refs/notes/ai-attribution`, alle auf `754a339` — das Repository ist öffentlich lesbar und der Tag auflösbar, genau in der Form, in der der Buildserver ihn holt. In den 106 Commits von `master` steht die Telefonnummer nicht mehr.
 
 ### Schritt 5 — Impressum und README auf „veröffentlicht" umstellen · **erledigt**
 
@@ -120,7 +114,7 @@ fastlane/metadata/android/en-US/changelogs/41.txt       max 500 Zeichen, Dateina
 fastlane/metadata/android/de-DE/…                       dieselbe Struktur
 ```
 
-**Erledigt 2026-08-17:** Die Struktur steht für `de-DE` und `en-US`, mit Titel, Kurz- und Langbeschreibung, Änderungstext für versionCode 41 und Icon. Zeichenzahlen nachgezählt: Kurzbeschreibung 76 bzw. 79 von 80 erlaubten, Langbeschreibung 2525 bzw. 2249 von 4000, Änderungstext 325 bzw. 315 von 500.
+**Erledigt 2026-08-17:** Die Struktur steht für `de-DE` und `en-US`, mit Titel, Kurz- und Langbeschreibung, Änderungstext für versionCode 41 und Icon. Zeichenzahlen nachgezählt, Stand nach allen Nachträgen des Tages: Kurzbeschreibung 76 bzw. 79 von 80 erlaubten, Langbeschreibung 2599 bzw. 2309 von 4000, Änderungstext 398 bzw. 388 von 500. Die Tabelle im Abschnitt Textvorlagen führt alle acht Dateien.
 
 Zum Icon: Es existierte nur als Vektor (adaptive icon). Die Pfade sind ein gefüllter Punkt und drei rechte Halbkreis-Bögen mit runden Enden — ImageMagicks interner SVG-Renderer verwarf sie, also wurde das Icon analytisch gerastert (`icon.png`, 512×512, 4×4-Supersampling, innerer 72er-Bereich des 108er-Canvas, den eine Launcher-Maske zeigt). Das Skript dazu ist keine Projektdatei; wird das Icon geändert, ist es in einer Viertelstunde neu geschrieben oder besser gleich in Inkscape gezeichnet.
 
@@ -154,7 +148,7 @@ fdroid readmeta && fdroid rewritemeta de.hexenwoche.audiolex \
   && fdroid lint de.hexenwoche.audiolex && fdroid build -v -l de.hexenwoche.audiolex
 ```
 
-**Probe 1 ist gelaufen (2026-08-17), in der Variante, die ohne öffentliches Repo auskommt:** `git checkout-index -a --prefix=<leeres Verzeichnis>` exportiert genau den Repository-Stand, `ANDROID_HOME` aus der Umgebung ersetzt das fehlende `local.properties`, `./gradlew :composeApp:assembleRelease --no-daemon` läuft durch. Damit sind zwei der drei Vermutungen erledigt: Der Desktop-Zielteil des KMP-Moduls stört den Android-Release-Build nicht, und KSP/Room laufen durch. Nach Schritt 4 ist derselbe Lauf mit einem echten `git clone` zu wiederholen — der Unterschied ist gering, aber er kostet nichts.
+**Probe 1 ist gelaufen (2026-08-17), in der Variante, die ohne öffentliches Repo auskommt:** `git checkout-index -a --prefix=<leeres Verzeichnis>` exportiert genau den Repository-Stand, `ANDROID_HOME` aus der Umgebung ersetzt das fehlende `local.properties`, `./gradlew :composeApp:assembleRelease --no-daemon` läuft durch. Damit sind zwei der drei Vermutungen erledigt: Der Desktop-Zielteil des KMP-Moduls stört den Android-Release-Build nicht, und KSP/Room laufen durch. **Mit dem echten Klon wiederholt (2026-08-17, nach Schritt 4):** `git clone --branch v0.33.5 --depth 1` von GitHub in ein leeres Verzeichnis, kein `local.properties`, `ANDROID_HOME` aus der Umgebung, `./gradlew :composeApp:assembleRelease --no-daemon` — grün. Der Klon bringt 72 Korpus-WAVs und `bus.wav` mit, die Telefonnummer steht in keiner Datei. Am fertigen APK nachgesehen (`aapt2 dump badging`): `de.hexenwoche.audiolex`, versionCode **41**, versionName **0.33.5**, minSdk 29, compileSdk 35 — dieselben Werte, die die Rezeptur erwartet. Im APK liegen 72 Korpus-WAVs, `bus.wav` mit 247 004 Bytes (byte-identisch mit der Aufnahme vom Gerät) und `noise.json`; die Assets wiegen 4,3 MB, das APK 29 MB. Nebenbefund: Compose Resources packt auch die beiden Herkunfts-READMEs mit ein (10 KB) — kein Schaden, es heißt nur, dass diese Texte ausgeliefert werden.
 
 **Probe 2 ist offen** und braucht Docker: Ob die Gradle-Version aus dem Wrapper (8.11.1) in F-Droids Buildumgebung vorhanden ist, ob `fdroid lint` etwas an der Rezeptur auszusetzen hat und ob der Scanner noch irgendwo anschlägt, beantwortet nur `fdroid build`. Der Lauf lohnt sich vor dem Merge Request, nicht danach — im Merge Request ist ein durchgefallener Build öffentlich.
 
@@ -238,8 +232,8 @@ Alternative, falls der Autor die Rezeptur nicht selbst schreiben will: ein Antra
 | `LICENSE` (Apache-2.0) | Repo-Root | **erledigt** |
 | 72 Korpus-WAVs im Index | `files/corpus/raw/de-DE/` | **erledigt** — 68 synthetisch, 4 eingesprochen |
 | Toolchain-Plugin entfernt | `settings.gradle.kts` | **erledigt** |
-| Öffentliches Repository | GitHub | **Autor** — Sichtbarkeit umstellen |
-| Git-Tag je Version (`v0.33.5`) | Repo | **erledigt**, lokal — pushen bleibt |
+| Öffentliches Repository | GitHub | **erledigt** — anonym über HTTPS geprüft |
+| Git-Tag je Version (`v0.33.5`) | Repo | **erledigt** — gepusht, löst auf `754a339` auf |
 | Historie ohne Telefonnummer | Repo | **erledigt** — `filter-repo`, 40 Commits |
 | `short_description.txt` (≤80) | `fastlane/metadata/android/<locale>/` | **erledigt**, de + en |
 | `full_description.txt` (≤4000) | dito | **erledigt**, de + en |
@@ -257,74 +251,44 @@ Für die „Neu"-Liste im Client braucht ein Eintrag: Name, Icon, Kurz- und Lang
 
 ## Textvorlagen
 
-Diese Entwürfe **stehen inzwischen als Dateien** unter `fastlane/metadata/android/`; sie bleiben hier stehen, weil sich Textarbeit besser an einem Ort liest als in acht Dateien. Wer sie ändert, ändert die Dateien — nicht diesen Abschnitt. Die endgültige Langbeschreibung ist gegenüber dem Entwurf unten um Trainingsstufen, Kanalwahl und Sicherung gewachsen (2525 Zeichen von 4000 erlaubten).
+Die Texte selbst stehen als Dateien unter `fastlane/metadata/android/<locale>/` — dort sind sie maßgeblich, und nur dort. Bis zum 2026-08-17 standen sie hier zusätzlich als Entwurf, und die Kopien sind erwartungsgemäß auseinandergelaufen: Der Entwurf behauptete noch, die App liefere kein Störgeräusch mit, und nannte einen Änderungstext für versionCode 35. Statt zwei Fassungen zu pflegen, steht hier jetzt nur, was gemessen ist.
 
-**`de-DE/title.txt`**
+| Datei (je unter `fastlane/metadata/android/`) | Zeichen | Grenze |
+| --- | --- | --- |
+| `de-DE/title.txt` | 8 | 50 |
+| `de-DE/short_description.txt` | 76 | 80 |
+| `de-DE/full_description.txt` | 2599 | 4000 |
+| `de-DE/changelogs/41.txt` | 398 | 500 |
+| `en-US/title.txt` | 8 | 50 |
+| `en-US/short_description.txt` | 79 | 80 |
+| `en-US/full_description.txt` | 2309 | 4000 |
+| `en-US/changelogs/41.txt` | 388 | 500 |
 
-```text
-AudioLex
+Gezählt werden **Zeichen, nicht Bytes**. Bei Umlauten ist das ein Unterschied, der die Kurzbeschreibung an der 80er-Grenze kippen lässt — `wc -c` liegt dort zu hoch. Nachzählen:
+
+```bash
+python3 -c "import sys;print(len(open(sys.argv[1],encoding='utf-8').read().rstrip()))" \
+  fastlane/metadata/android/de-DE/short_description.txt
 ```
 
-**`de-DE/short_description.txt`** (76 Zeichen)
-
-```text
-Hörtraining für Wortverständnis: hören, erkennen, wiederholen. Ganz offline.
-```
-
-**`de-DE/full_description.txt`**
-
-```text
-AudioLex trainiert das Verstehen gesprochener Wörter, wenn Hören und Verstehen auseinanderfallen: Der Schall kommt an, wird aber nicht mehr zuverlässig als Sprache erkannt. Das passiert nach einseitigem Hörverlust, und ein Hörgerät allein löst es nicht — der Weg vom Klang zum Wort will wieder geübt werden.
-
-Zwei Modi, beide auf dasselbe Ziel:
-
-Lernmodus — ein Wort wird gespielt, der Text steht dabei. Das baut die Verbindung zwischen dem, was ankommt, und dem, was es bedeutet.
-
-Prüfmodus — das Wort wird gespielt, die Karte bleibt verdeckt. Man entscheidet selbst, wie gut es saß. Aus dieser Bewertung ergibt sich, wann das Wort wiederkommt: nach einer Minute, nach zehn, nach einem Tag, einer Woche oder einem Monat.
-
-Mitgeliefert sind 68 Wörter und Sätze in deutscher Sprache, erzeugt mit einer freien Sprachsynthese. Eigene Aufnahmen kommen dazu: Wörter oder Sätze einsprechen, verschriftlichen, trainieren. Mehrere Sprecher lassen sich getrennt halten und einzeln zu- oder abschalten — vertraute Stimmen sind eine andere Übung als eine fremde.
-
-Wer schwerer üben will, legt ein Störgeräusch darunter und stellt den Abstand zwischen Sprache und Geräusch in Dezibel ein. Die Geräusche bringt man selbst mit, aufgenommen oder als WAV-Datei importiert; die App liefert keine mit.
-
-Was AudioLex nicht tut: Es fordert keine Internet-Berechtigung an, hat keine Konten, keine Tracker, keine Werbung. Wortschatz, Bewertungen und Sitzungsverlauf bleiben auf dem Gerät. Eine Sicherung schreibt beides auf Tastendruck als ZIP-Datei in die eigenen Dokumente — was danach damit passiert, entscheidet man selbst.
-
-AudioLex ist ein Übungswerkzeug, kein medizinisches Produkt. Es ersetzt weder den Hörgeräteakustiker noch die HNO-Abklärung.
-
-Die App ist ursprünglich für einen einzelnen Menschen entstanden, der genau dieses Problem hat. Das merkt man ihr an: Sie ist auf Deutsch, sie ist nüchtern, und sie erklärt sich nicht von selbst.
-```
-
-**`de-DE/changelogs/35.txt`** (274 Zeichen)
-
-```text
-Die drei mitgelieferten Störgeräusche sind entfallen. Ihre Lizenzen erlaubten keine Weitergabe, und ein Übungswerkzeug soll keine Rechtsfragen mitliefern. Störgeräusche nimmt man ab sofort selbst auf oder importiert sie als WAV-Datei — Einstellungen, Abschnitt Störgeräusch.
-```
-
-**`en-US/short_description.txt`** (79 Zeichen)
-
-```text
-Hearing training for word recognition: listen, identify, repeat. Fully offline.
-```
-
-Für `en-US/full_description.txt` genügt eine Übersetzung des deutschen Texts. Kürzen ist erlaubt — der englische Eintrag ist die Rückfallebene, nicht die Hauptsache.
+Zu jeder neuen Version kommt ein `changelogs/<versionCode>.txt` dazu; die alten bleiben liegen. Die englischen Fassungen sind Übersetzungen, keine eigenen Texte — der englische Eintrag ist die Rückfallebene, nicht die Hauptsache, und darf kürzer sein.
 
 ## Was nur der Autor kann
 
-Stand 2026-08-17, nachdem er die Gerätedaten geliefert und die offenen Entscheide getroffen hat. Übrig sind drei Dinge.
+Stand 2026-08-17, abends. Übrig ist **ein** Punkt.
 
-**1. Den bereinigten Stand hinaufschieben und die Sichtbarkeit umstellen.** Committet ist alles, der Tag `v0.33.5` liegt lokal am richtigen Commit, die Historie ist um die Telefonnummer bereinigt — die genauen Kommandos und die Wahl zwischen „Repository neu anlegen" und „Force-Push" stehen in Schritt 4. Was nur er entscheiden kann: ob das Repository hinausgeht. Im Impressum steht nur noch die E-Mail-Adresse — F-Droid selbst verlangt kein Impressum; ob österreichisches Recht für eine nicht-kommerzielle App mehr fordert, ist eine Frage an jemanden mit Zulassung, nicht an diese Anleitung.
+**GitLab-Konto, Fork, Merge Request** — Schritt 9 führt das für jemanden durch, der es noch nie gemacht hat. Ein Konto kann ich nicht anlegen und keinen Antrag in seinem Namen stellen. Empfehlung von dort, weil sie leicht untergeht: die Entstehung im Zusammenspiel mit einer KI im Merge Request selbst ansprechen, statt sie unerwähnt zu lassen.
 
-**2. GitLab-Konto, Fork, Merge Request** — Schritt 9 führt das für jemanden durch, der es noch nie gemacht hat. Ein Konto kann ich nicht anlegen und keinen Antrag in seinem Namen stellen.
+Erledigt und damit nicht mehr auf dieser Liste:
 
-**3. Die Abnahme am Hörgerät.** Zwei Punkte konkret: Klingt das Bus-Geräusch bei „Fortgeschritten" (SNR −5 dB) noch sauber? Gemessen laufen dort 1,7 % der Samples in die Begrenzung des Mixers — ob man das hört, sagt nur das Ohr. Und: Trägt der Loop unter den Wörtern, oder störten Lücken am Anfang? (Gemessen liegt der Pegel gleichmäßig, aber gemessen ist nicht gehört.) Falls es knistert, ist ein Limiter-Durchgang auf `bus.wav` die Antwort.
+- **Repository öffentlich, Tag gepusht** (2026-08-17): `master` und `v0.33.5` zeigen bei GitHub auf `754a339`, anonym über HTTPS geprüft. Die Historie ist um die Telefonnummer bereinigt, Schritt 4 hält den Ablauf und die zwei Lehren daraus fest.
+- **Die Abnahme am Hörgerät** — Urteil des Autors: „Der Hörtest ist sehr gut." Das Bus-Geräusch ist bei „Fortgeschritten" sehr dominant, lässt sich aber über den Regler leicht korrigieren; von Knistern keine Rede. Damit ist der offene Messbefund geschlossen (bei SNR −5 dB laufen 1,7 % der Samples in die Begrenzung des Mixers) — **kein** Limiter-Durchgang auf `bus.wav`, die Datei bleibt, wie sie vom Gerät kam.
+- **Die lokalen Doubletten auf dem A53 sind aufgeräumt:** Die vier eigenen Aufnahmen und das eigene Bus-Geräusch waren identisch mit dem, was jetzt mitgeliefert wird, und sind nach Autor-Entscheid vom Gerät entfernt worden. Auf fremden Geräten konnte die Doppelung nie auftreten.
+- Außerdem: LICENSE, Toolchain-Plugin, 72 Korpus-Audios im Index, gebündeltes Bus-Geräusch, Demo-Einsprachen samt Lizenz und Einverständnis, Impressum, README, Store-Texte, Icon, vier Screenshots vom Gerät, Rezeptur, Build-Probe aus dem echten Klon.
 
-Zwei Kleinigkeiten, die keine Blocker sind:
+Eine Kleinigkeit, die kein Blocker ist: **Akzent der Demo-Einsprachen.** Sie sind als `locale: de-DE` eingetragen, weil sich das am Schreibtisch nicht feststellen lässt. Sind sie österreichisch gefärbt, gehört `de-AT` hinein (und die Dateien in ein `raw/de-AT/`).
 
-- **Die lokalen Doubletten auf dem A53 sind aufgeräumt** (2026-08-17): Die vier eigenen Aufnahmen und das eigene Bus-Geräusch waren identisch mit dem, was jetzt mitgeliefert wird, und sind nach Autor-Entscheid vom Gerät entfernt worden — Sicherung liegt im Sitzungsverzeichnis. Auf fremden Geräten konnte die Doppelung nie auftreten.
-- **Akzent der Demo-Einsprachen:** Sie sind als `locale: de-DE` eingetragen, weil sich das am Schreibtisch nicht feststellen lässt. Sind sie österreichisch gefärbt, gehört `de-AT` hinein (und die Dateien in ein `raw/de-AT/`).
-
-Erledigt und damit nicht mehr auf dieser Liste: LICENSE, Toolchain-Plugin, 72 Korpus-Audios im Index, gebündeltes Bus-Geräusch, Demo-Einsprachen samt Lizenz und Einverständnis, Impressum, README, Store-Texte, Icon, vier Screenshots vom Gerät, Rezeptur, Build-Probe aus dem reinen Repository-Stand.
-
-Was **ich** noch beisteuern kann: `fdroid lint`/`fdroid build` im Container (Schritt 7, Probe 2) — dafür braucht es Docker; und die Rezeptur auf den Tag anpassen, der am Ende wirklich veröffentlicht wird.
+Was **ich** noch beisteuern kann: `fdroid lint`/`fdroid build` im Container (Schritt 7, Probe 2) — Docker ist auf diesem Rechner vorhanden und läuft, geprüft 2026-08-17; und die Rezeptur auf einen späteren Tag anpassen, falls nicht `v0.33.5` veröffentlicht wird.
 
 ## Quellen
 
