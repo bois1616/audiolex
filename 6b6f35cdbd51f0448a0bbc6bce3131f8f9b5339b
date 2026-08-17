@@ -1,0 +1,1 @@
+{"version":1,"generator":"Qwen-Coder","files":{"docs/adr/0013-sicherung-eigener-aufnahmen.md":{"aiChars":400,"humanChars":0,"percent":100,"surface":"cli"}},"summary":{"aiPercent":100,"aiChars":400,"humanChars":0,"totalFilesTouched":1,"surfaces":["cli"]},"surfaceBreakdown":{"cli":{"aiChars":400,"percent":100}},"excludedGenerated":[],"excludedGeneratedCount":0,"promptCount":0}
