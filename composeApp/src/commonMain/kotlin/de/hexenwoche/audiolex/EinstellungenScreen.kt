@@ -58,10 +58,11 @@ import kotlin.math.roundToInt
  * setting picks the corpus entries the training screens work on (Wörter /
  * Sätze, ADR-0009 point 4 -- a plain setting, not a preset). The third is the
  * noise overlay shared by both training modes: a switch, and -- only while
- * on -- an SNR slider and a scenario choice drawn from the merged catalog
- * (bundled `noise.json` plus the user's own noises, Backlog M4 "Eigene
- * Störgeräusche", AC2); under the scenario choice a TextButton opens the
- * own-noise management screen (AC3). The
+ * on -- an SNR slider and a scenario choice drawn from the catalog of the
+ * user's own noises (Backlog M4 "Eigene Störgeräusche", AC2; nothing is
+ * bundled any more since ADR-0014, so an empty catalog gets a line saying
+ * so instead of an empty radio group); under the scenario choice a
+ * TextButton opens the own-noise management screen (AC3). The
  * fourth is the "Ausgabe" section (Backlog M4 "Kopfhörer-Bogen Batch A",
  * ADR-0011): which [OutputSetup] is currently detected, so a wrong detection
  * is at least visible to the user. The fifth is "Kanäle" (Backlog M4
@@ -352,16 +353,30 @@ fun EinstellungenScreen(
 
                 Text("Szenario", style = MaterialTheme.typography.titleMedium)
 
-                Column(
-                    modifier = Modifier.fillMaxWidth().selectableGroup(),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
-                ) {
-                    for (scenario in scenarios) {
-                        RadioOption(
-                            label = scenario.label,
-                            selected = noiseScenario == scenario.id,
-                            onSelect = { onNoiseScenarioChange(scenario.id) },
-                        )
+                if (scenarios.isEmpty()) {
+                    // The published normal case, not an edge case (ADR-0014):
+                    // nothing is bundled any more, so until the user records
+                    // or imports a sound there is nothing to choose. An empty
+                    // radio group under a "Szenario" heading would look
+                    // broken; this says what is missing and the TextButton
+                    // right below is the way there.
+                    Text(
+                        "Noch kein Geräusch vorhanden — der Ton bleibt sauber.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().selectableGroup(),
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                    ) {
+                        for (scenario in scenarios) {
+                            RadioOption(
+                                label = scenario.label,
+                                selected = noiseScenario == scenario.id,
+                                onSelect = { onNoiseScenarioChange(scenario.id) },
+                            )
+                        }
                     }
                 }
 

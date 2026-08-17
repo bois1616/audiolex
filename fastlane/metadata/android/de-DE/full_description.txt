@@ -1,0 +1,19 @@
+AudioLex trainiert das Verstehen gesprochener Wörter, wenn Hören und Verstehen auseinanderfallen: Der Schall kommt an, wird aber nicht mehr zuverlässig als Sprache erkannt. Das passiert nach einseitigem Hörverlust, und ein Hörgerät allein löst es nicht — es macht laut, nicht verständlich. Der Weg vom Klang zum Wort will wieder geübt werden.
+
+Zwei Modi, beide auf dasselbe Ziel:
+
+Lernmodus — ein Wort wird gespielt, der Text steht dabei. Das baut die Verbindung zwischen dem, was ankommt, und dem, was es bedeutet.
+
+Prüfmodus — das Wort wird gespielt, die Karte bleibt verdeckt. Man entscheidet selbst, wie gut es saß. Aus dieser Bewertung ergibt sich, wann das Wort wiederkommt: nach einer Minute, nach zehn, nach einem Tag, einer Woche oder einem Monat.
+
+Mitgeliefert sind 72 Wörter und Sätze auf Deutsch: 68 aus einer freien Sprachsynthese, vier von echten Stimmen eingesprochen. Eigene Aufnahmen kommen dazu: Wörter oder Sätze einsprechen, verschriftlichen, trainieren. Mehrere Sprecher lassen sich getrennt halten und einzeln zu- oder abschalten — eine vertraute Stimme ist eine andere Übung als eine fremde.
+
+Wer schwerer üben will, legt ein Störgeräusch unter die Sprache und stellt den Abstand zwischen beiden in Dezibel ein. Drei Trainingsstufen setzen das mit einem Tipp: Einfach ohne Geräusch, Schwierig mit deutlichem Sprachvorsprung, Fortgeschritten mit dem Geräusch über der Sprache. Ein Geräusch ist dabei — aufgenommen in einem Bus. Eigene lassen sich aufnehmen oder als WAV-Datei importieren.
+
+Für das Training mit Kopfhörern gibt es die Kanalwahl links, rechts oder beide — sinnvoll, wenn nur ein Ohr trainiert werden soll. Läuft der Ton über ein Bluetooth-Hörgerät, wird Stereo dort mono summiert; die App erkennt das und zeigt die Kanalwahl als unwirksam an, statt eine Wirkung vorzutäuschen.
+
+Was AudioLex nicht tut: Es fordert keine Internet-Berechtigung an, hat kein Konto, keine Tracker, keine Werbung. Wortschatz, Bewertungen und Sitzungsverlauf bleiben auf dem Gerät — nicht als Zusage, sondern weil die App technisch nichts übertragen kann. Eine Sicherung schreibt eigene Aufnahmen, eigene Geräusche und den Sitzungsverlauf auf Tastendruck als ZIP-Datei in die eigenen Dokumente. Was danach damit passiert, entscheidet man selbst.
+
+AudioLex ist ein Übungswerkzeug, kein medizinisches Produkt. Es ersetzt weder die Beratung beim Hörgeräteakustiker noch die Abklärung in der HNO-Heilkunde.
+
+Die App ist für einen einzelnen Menschen entstanden, der genau dieses Problem hat. Das merkt man ihr an: Sie ist auf Deutsch, sie ist nüchtern, und sie erklärt sich nicht von selbst.

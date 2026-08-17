@@ -92,19 +92,22 @@ class SettingsRepositoryTest {
 
         assertEquals(false, loaded.noiseEnabled)
         assertEquals(5, loaded.snrDb)
-        assertEquals("restaurant", loaded.noiseScenario)
+        // No scenario on a fresh install: nothing is bundled since the
+        // licensed loops were removed (ADR-0014, v0.32.0), and the user's own
+        // noises are the whole catalog.
+        assertEquals("", loaded.noiseScenario)
     }
 
     @Test
     fun savedNoiseSettingsRoundtrip() = runTest {
         val repository = newRepository()
 
-        repository.save(AppSettings(ThemeMode.SYSTEM, noiseEnabled = true, snrDb = -5, noiseScenario = "verkehr"))
+        repository.save(AppSettings(ThemeMode.SYSTEM, noiseEnabled = true, snrDb = -5, noiseScenario = "eigen-abc123"))
         val loaded = repository.load()
 
         assertEquals(true, loaded.noiseEnabled)
         assertEquals(-5, loaded.snrDb)
-        assertEquals("verkehr", loaded.noiseScenario)
+        assertEquals("eigen-abc123", loaded.noiseScenario)
     }
 
     @Test
@@ -120,9 +123,25 @@ class SettingsRepositoryTest {
     }
 
     @Test
-    fun blankStoredNoiseScenarioFallsBackToRestaurant() = runTest {
+    fun blankStoredNoiseScenarioStaysBlank() = runTest {
         val db = newDatabase()
         db.settingsDao().upsert(SettingsEntity(themeMode = "SYSTEM", noiseScenario = ""))
+
+        val loaded = newRepository(db).load()
+
+        // Blank is the "keins gewählt" value, no longer a corrupted one: the
+        // mapper must not invent an id the catalog cannot hold (v0.32.0).
+        assertEquals("", loaded.noiseScenario)
+    }
+
+    @Test
+    fun storedBundledNoiseScenarioIdSurvivesTheMapperUntouched() = runTest {
+        val db = newDatabase()
+        // An install that predates v0.32.0 still holds one of the removed
+        // bundled ids. The mapper passes it through unchanged -- resolving it
+        // against the actual catalog is the composeApp boundary's job, which
+        // is the only place that knows what exists.
+        db.settingsDao().upsert(SettingsEntity(themeMode = "SYSTEM", noiseScenario = "restaurant"))
 
         val loaded = newRepository(db).load()
 

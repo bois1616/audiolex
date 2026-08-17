@@ -45,7 +45,7 @@ AudioLex ist eine Hörtrainings-App (Android zuerst, iOS-Option offen) zum Wiede
 - **Namensraum**: `de.hexenwoche.audiolex`
 - **Kein Netzwerk-/Cloud-Code in Phase 1** — Datenhaltung strikt lokal.
 - **Keine neuen Gradle-Module ohne ADR**: Komponenten wachsen zuerst als Pakete in `:core` (srs, audio, corpus, session), Modul-Split erst bei echtem Bedarf.
-- **Audiodateien** nicht ins Repo committen, solange die Versionierungsstrategie offen ist (Backlog `[PROP]` Git-LFS); Metadaten (JSON/MD) sind ok.
+- **Audiodateien:** Was ausgeliefert wird, **gehört ins Repo** (Autor-Entscheid 2026-08-17 — F-Droid baut aus dem Quelltext, ein Buildserver ohne die WAVs liefert eine stumme App). Bedingung: Weitergabe erlaubt **und** Herkunft in der README des jeweiligen Ordners; ein Eintrag ohne Herkunftszeile ist ein Release-Blocker. Fremdlizenziertes bleibt draußen — Autor-Bibliothek `resources/sounds/` (gitignoriert). Damit ist die frühere Regel („nicht committen, Versionierungsstrategie offen", `[PROP]` Git-LFS) überholt.
 - **Korpus generisch halten**: nichts Hörverlust-spezifisches ins Datenmodell verdrahten (spätere Vokabeltrainer-Nutzung, Konzept 3.4).
 
 ## 6) Modellzuteilung (Richtwert)
@@ -57,7 +57,8 @@ AudioLex ist eine Hörtrainings-App (Android zuerst, iOS-Option offen) zum Wiede
 
 ## 7) Umgebung
 
-- Entwicklung unter WSL2 (Debian), JDK 21, Android SDK unter `~/Android/Sdk` (Pfad in `local.properties`, nicht versioniert).
+- Entwicklung unter **nativem Debian** (GNOME auf Wayland; früher stand hier WSL2 — Autor-Korrektur 2026-08-17), JDK 21, Android SDK unter `~/Android/Sdk` (Pfad in `local.properties`, nicht versioniert).
+- **Screenshots am Rechner** nur mit `gnome-screenshot -f <datei>.png`; `import`/`scrot`/`xwd` liefern unter Wayland nichts. Ein *bestimmter* Screen ist am Desktop nicht ansteuerbar (kein `xdotool`/`ydotool`) — dafür aufs Gerät gehen: `adb exec-out screencap -p > x.png`, navigieren per `adb shell input tap`.
 - Schnelle Iteration über das **Desktop-Target**, nicht über den Emulator.
 - Gerätetest: Samsung Galaxy A53 (SM-A536B/DS, Android 16) via adb über WLAN oder USB (usbipd).
 - Deployment aufs Gerät über das `Makefile` im Repo-Root (`make pair` / `make deploy PORT=...`, Details `make help`); Standard-IP 192.168.178.24, bei DHCP-Drift `IP=...` überschreiben. **Kopplungsport, Code und Verbindungsport nennt der Autor je Sitzung neu** — sie sind nicht wiederverwendbar, also danach fragen statt raten. Für eigene `adb`-Aufrufe `export ANDROID_SERIAL=192.168.178.24:<Port>` setzen: `adb devices` listet zusätzlich mDNS-Einträge desselben Geräts, sonst „more than one device".

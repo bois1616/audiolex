@@ -1,18 +1,51 @@
 # AudioLex
 
-Hörtrainings-App zum Wiederaufbau der Zuordnung **Klang → Wort → Bedeutung** nach einseitigem Hörverlust mit Hörgeräteversorgung. Methodisch angelehnt an Spaced-Repetition-Systeme (Anki-Prinzip), aber mit Audio statt Text als Trigger-Reiz.
+Hörtraining für Wortverständnis. Die App spielt ein Wort, man ordnet es zu, und der Abstand bis zur Wiederholung richtet sich danach, wie gut es saß — Spaced Repetition wie bei Anki, aber mit Klang als Reiz statt Schrift.
 
-**Status:** Gerüstphase (M0) · nicht-kommerziell · rein lokale Datenhaltung
+Sie ist für den Fall gebaut, in dem Hören und Verstehen auseinanderfallen: Nach einseitigem Hörverlust kommt der Schall an, wird aber nicht mehr zuverlässig als Sprache erkannt. Ein Hörgerät macht laut, nicht verständlich; der Weg vom Klang zum Wort will wieder geübt werden.
+
+Nicht-kommerziell, ohne Konto, ohne Werbung. Es gibt keine Internet-Berechtigung, also bleiben Wortschatz, Bewertungen und Sitzungsverlauf auf dem Gerät — nicht als Zusage, sondern weil die App technisch nichts übertragen kann.
+
+AudioLex ist ein Übungswerkzeug, kein medizinisches Produkt. Es ersetzt weder den Hörgeräteakustiker noch die HNO-Abklärung.
+
+## Was die App kann
+
+- **Lernmodus** — Wort hören, Text mitlesen. Baut die Verbindung zwischen Gehörtem und Bedeutung.
+- **Prüfmodus** — Wort hören, Karte verdeckt, selbst bewerten. Fünf Stufen von „sofort nochmal" bis „nach einem Monat".
+- **Eigene Aufnahmen** — Wörter und Sätze selbst einsprechen und verschriftlichen. Mehrere Sprecher lassen sich getrennt halten und einzeln zu- oder abschalten; eine vertraute Stimme ist eine andere Übung als eine fremde.
+- **Störgeräusch** — ein Loop unter die Sprache legen und den Abstand in Dezibel einstellen (−5 bis +20 dB). Ein Businnenraum ist mitgeliefert; eigene Geräusche lassen sich aufnehmen oder als WAV importieren.
+- **Trainingsstufen** — Einfach, Schwierig, Fortgeschritten als Ein-Tipp-Voreinstellungen des Störgeräusch-Paars.
+- **Kanalwahl** — links, rechts, beide, wirksam im Stereo-Kopfhörer-Setup. Über ein Bluetooth-Hörgerät wird Stereo mono summiert; die App erkennt das und zeigt die Wahl dort als unwirksam.
+- **Sicherung** — eigene Aufnahmen, eigene Geräusche und der Sitzungsverlauf als ZIP in die eigenen Dokumente, auf Tastendruck.
+
+Mitgeliefert sind 72 Wörter und Sätze auf Deutsch — 68 aus einer freien Sprachsynthese, vier von echten Stimmen eingesprochen — und ein Störgeräusch aus einem Bus.
+
+## Lizenz
+
+Der **Code** steht unter Apache-2.0, siehe [LICENSE](LICENSE).
+
+Die **Inhalte** (Audiodateien, Korpustexte) stehen ausdrücklich außerhalb der Codelizenz und tragen ihre eigene Herkunftsangabe — so festgelegt in [ADR-0014](docs/adr/0014-veroeffentlichung-lizenz.md). Was ausgeliefert wird, muss weitergebbar sein:
+
+| Inhalt | Herkunft | Weitergabe |
+| --- | --- | --- |
+| 68 synthetische Aufnahmen (`voiceId: thorsten`) | Lokal erzeugt mit [Piper](https://github.com/rhasspy/piper), Stimme `de_DE-thorsten-medium` — Modell MIT, Datensatz [Thorsten-Voice](https://github.com/thorstenMueller/Thorsten-Voice) CC0 | CC0-1.0 |
+| 4 Demo-Einsprachen (`voiceId: stephan`, `grete`) | Eigene Aufnahmen, in der App eingesprochen | CC0-1.0; Einverständnis der zweiten Sprecherin liegt dem Autor vor (2026-08-17) |
+| Satz-Einträge (`satz-*`) | Frei paraphrasiert nach Douglas Adams, „Per Anhalter durch die Galaxis", Kap. 1 — keine wörtlichen Zitate ([ADR-0009](docs/adr/0009-satz-korpus-modell.md)) | eigener Text |
+| Gebündeltes Störgeräusch (`files/noise/bus.wav`) | Eigene Aufnahme des Autors, Businnenraum | CC0-1.0 |
+
+Fremdlizenzierte Audiodateien gehören nicht in dieses Repository. Drei zugekaufte Störgeräusch-Loops sind aus genau diesem Grund im August 2026 entfernt worden.
 
 ## Stack
 
-Kotlin Multiplatform + Compose Multiplatform (siehe [ADR-0001](docs/adr/0001-tech-stack-kmp-compose.md)):
+Kotlin Multiplatform + Compose Multiplatform ([ADR-0001](docs/adr/0001-tech-stack-kmp-compose.md)):
 
 | Ziel | Zweck |
 | --- | --- |
 | Android (minSdk 29) | Primäre Zielplattform, Testgerät Galaxy A53 / Android 16 |
-| Desktop (JVM) | Entwicklungs- und Verifikations-Target unter WSL2, kein Emulator nötig |
+| Desktop (JVM) | Entwicklungs- und Verifikations-Target, kein Emulator nötig |
 | iOS | Option, Modulschnitt vorbereitet, nicht aktiviert (braucht macOS-Host) |
+
+Abhängigkeiten: Kotlin/kotlinx, AndroidX (Activity, Room, SQLite), Compose Multiplatform. Keine Play Services, kein Firebase, keine Analytics, keine Werbung.
 
 ## Build & Run
 
@@ -23,9 +56,9 @@ Kotlin Multiplatform + Compose Multiplatform (siehe [ADR-0001](docs/adr/0001-tec
 ./gradlew build                      # alles
 ```
 
-Voraussetzungen: JDK 21, Android SDK (Pfad in `local.properties`).
+Voraussetzungen: JDK 21 (installiert, nicht heruntergeladen — es gibt bewusst kein Toolchain-Provisioning-Plugin), Android SDK mit Pfad in `local.properties`.
 
-**Nach frischem Klon:** Der Wortkorpus (`words.json`, `recordings.json`) ist versioniert, die zugehörigen Audiodateien nicht (siehe `.gitignore`, Versionierungsstrategie offen). Ohne sie startet die App, aber jede Wortwiedergabe schlägt fehl. Einmalig generieren:
+Ein frischer Klon baut vollständig: Die Korpus-Audios sind versioniert. Neu erzeugen lassen sie sich mit
 
 ```bash
 cd tools
@@ -43,3 +76,4 @@ Details: [tools/generate_tts.py](tools/generate_tts.py), [ADR-0006](docs/adr/000
 - Entscheidungen: [docs/adr/](docs/adr/)
 - Aufgaben: [docs/backlog.md](docs/backlog.md)
 - Umsetzungsjournal: [docs/umsetzungslog.md](docs/umsetzungslog.md)
+- Weg zur F-Droid-Aufnahme: [docs/fdroid-anmeldung.md](docs/fdroid-anmeldung.md)

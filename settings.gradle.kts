@@ -14,10 +14,14 @@ pluginManagement {
     }
 }
 
-plugins {
-    // Auto-provisions the JDK toolchain (the host only ships a JRE).
-    id("org.gradle.toolchains.foojay-resolver-convention") version "0.8.0"
-}
+// No toolchain-provisioning plugin here, on purpose, and no `plugins { }`
+// block at all: F-Droid's scanner rejects toolchain resolvers because they
+// download a Java runtime from an uncontrolled source, and F-Droid builds this
+// app from source. `jvmToolchain(21)` in :core/:composeApp resolves against an
+// already-installed JDK 21 instead. Which plugin this was and why it is gone:
+// docs/fdroid-anmeldung.md, Schritt 2 -- deliberately named there and not
+// here, because the scanner matches the plugin id as plain text in Gradle
+// files, a comment mentioning it included.
 
 dependencyResolutionManagement {
     repositories {

@@ -1,0 +1,24 @@
+Categories:
+  - Science & Education
+  - Sports & Health
+License: Apache-2.0
+AuthorName: Stephan Reindl
+AuthorEmail: audiolex26@proton.me
+SourceCode: https://github.com/bois1616/audiolex
+IssueTracker: https://github.com/bois1616/audiolex/issues
+
+RepoType: git
+Repo: https://github.com/bois1616/audiolex.git
+
+Builds:
+  - versionName: 0.33.5
+    versionCode: 41
+    commit: v0.33.5
+    subdir: composeApp
+    gradle:
+      - yes
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: 0.33.5
+CurrentVersionCode: 41

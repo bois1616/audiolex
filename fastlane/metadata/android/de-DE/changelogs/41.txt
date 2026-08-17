@@ -1,0 +1,5 @@
+Erste Veröffentlichung.
+
+Enthalten: Lern- und Prüfmodus mit fünfstufiger Selbstbewertung, 72 mitgelieferte Wörter und Sätze (Sprachsynthese plus vier eingesprochene), ein Störgeräusch aus einem Bus, eigene Aufnahmen und eigene Störgeräusche, SNR-Regler mit drei Trainingsstufen, Kanalwahl für Kopfhörer, Sicherung als ZIP.
+
+Alle Daten bleiben auf dem Gerät; die App hat keine Internet-Berechtigung.

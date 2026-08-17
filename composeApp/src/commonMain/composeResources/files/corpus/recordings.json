@@ -474,5 +474,33 @@
     "voiceId": "thorsten",
     "locale": "de-DE",
     "fileRef": "raw/de-DE/satz-zug__thorsten.wav"
+  },
+  {
+    "id": "satz-erster-text__stephan",
+    "wordId": "satz-erster-text",
+    "voiceId": "Stephan (Beispiel)",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/satz-erster-text__stephan.wav"
+  },
+  {
+    "id": "satz-zahlen__stephan",
+    "wordId": "satz-zahlen",
+    "voiceId": "Stephan (Beispiel)",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/satz-zahlen__stephan.wav"
+  },
+  {
+    "id": "test-zwei__stephan",
+    "wordId": "test-zwei",
+    "voiceId": "Stephan (Beispiel)",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/test-zwei__stephan.wav"
+  },
+  {
+    "id": "glenkill__grete",
+    "wordId": "glenkill",
+    "voiceId": "Grete (Beispiel)",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/glenkill__grete.wav"
   }
 ]

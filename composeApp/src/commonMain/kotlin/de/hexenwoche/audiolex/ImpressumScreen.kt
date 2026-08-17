@@ -64,17 +64,35 @@ fun ImpressumScreen(onBeenden: () -> Unit) {
         ) {
             Text("Impressum", style = MaterialTheme.typography.titleMedium)
             Text(
-                "Verantwortlich für diese App:\n\nStephan Reindl\nTelefon: [Nummer entfernt]\nE-Mail: audiolex26@proton.me",
+                "Verantwortlich für diese App:\n\nStephan Reindl\nE-Mail: audiolex26@proton.me",
                 style = MaterialTheme.typography.bodyLarge,
             )
             Text(
-                "Privates, nicht-kommerzielles Projekt ohne öffentlichen Vertrieb.",
+                "Nicht-kommerzielles Projekt. Der Quelltext ist offen (Apache-2.0), " +
+                    "die App wird ohne finanzielle Interessen bereitgestellt.",
                 style = MaterialTheme.typography.bodyLarge,
             )
             Text(
                 "AudioLex ist ein privates Übungswerkzeug, kein professionelles oder " +
                     "medizinisches Produkt. Es ersetzt keine Beratung beim " +
                     "Hörgeräteakustiker und keine Abklärung in der HNO-Heilkunde.",
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Text(
+                "AudioLex ist im Zusammenspiel mit Claude Code entstanden — vibe-codiert: " +
+                    "Idee, Fachkonzept, Entscheidungen und Abnahme kommen vom Autor, ein " +
+                    "großer Teil des Quelltexts von einer KI. Nachprüfbar ist das im offenen " +
+                    "Repository: Jede wesentliche Entscheidung steht dort als ADR, jeder " +
+                    "Umsetzungsschritt im Journal.",
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Text(
+                "Nutzung wie besehen: Die App wird so bereitgestellt, wie sie ist — ohne " +
+                    "Gewährleistung und ohne Zusage, dass das Training wirkt, die App " +
+                    "fehlerfrei läuft oder deine Daten erhalten bleiben. Die Nutzung " +
+                    "erfolgt auf eigenes Risiko; für Schäden daraus wird keine Haftung " +
+                    "übernommen. Dasselbe steht in der Apache-2.0-Lizenz, unter der der " +
+                    "Quelltext steht.",
                 style = MaterialTheme.typography.bodyLarge,
             )
 

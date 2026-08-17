@@ -3,69 +3,71 @@ package de.hexenwoche.audiolex
 import de.hexenwoche.audiolex.core.audio.NoiseLoop
 import de.hexenwoche.audiolex.core.audio.NoiseScenario
 import de.hexenwoche.audiolex.core.audio.OwnNoise
-import de.hexenwoche.audiolex.core.audio.OwnNoiseSource
 import de.hexenwoche.audiolex.core.audio.PcmBuffer
 import de.hexenwoche.audiolex.core.audio.WavFile
 import de.hexenwoche.audiolex.core.audio.mixWithNoise
 import de.hexenwoche.audiolex.core.audio.noiseGainForSnr
+import de.hexenwoche.audiolex.core.audio.parseNoiseCatalog
 import de.hexenwoche.audiolex.core.audio.rms
 import de.hexenwoche.audiolex.core.audio.toMono
 import de.hexenwoche.audiolex.generated.resources.Res
-import kotlinx.serialization.json.Json
 
 /**
  * Shared noise-overlay loading/mixing (Backlog M4 "Störgeräusch-Overlay",
  * ADR-0010): both [LernmodusScreen] and [PruefmodusScreen] mix identically,
  * so the logic lives here once instead of drifting apart between two copies.
+ *
+ * The catalog has two halves, bundled first, the user's own noises after.
+ * What changed with v0.32.0/v0.33.0 is *what may be bundled*: the three
+ * foreign loops (salamisound/Pixabay, "nicht-kommerziell") are gone for good
+ * (ADR-0014), and what ships instead is the author's own recording -- content
+ * whose redistribution nobody has to ask about. The mechanism is the same as
+ * before; the license question is what disappeared.
  */
-private val noiseJson = Json { ignoreUnknownKeys = true }
 
 /**
- * Loads the bundled noise-scenario catalog (`files/noise/noise.json`).
- * Returns an empty list if the file is missing/corrupt (Res.readBytes throws
- * on a fresh checkout without the gitignored assets) -- callers treat that
- * the same as "no scenarios available", not a crash. Since the own noises
- * exist (Backlog M4 "Eigene Störgeräusche", AC2) this is only the bundled
- * half of the catalog; [loadAllNoiseScenarios] is what screens and playback
- * actually use. Kept unchanged as the building block it was before.
+ * Prefix of every own noise's scenario id -- collision-free against bundled
+ * ids, which come from `noise.json`. These ids are *persisted*
+ * ([de.hexenwoche.audiolex.core.settings.AppSettings.noiseScenario]), so the
+ * prefix is also why a stored own-noise choice keeps working across versions.
  */
-internal suspend fun loadNoiseScenarios(): List<NoiseScenario> =
+internal const val OWN_NOISE_SCENARIO_PREFIX: String = "eigen-"
+
+/**
+ * The bundled half of the catalog (`files/noise/noise.json`). Returns an
+ * empty list when the file is missing or unparsable -- `Res.readBytes` throws
+ * on a checkout whose resources were never generated, and an empty bundled
+ * half is a valid state, not an error (ADR-0010 point 4). The parsing itself
+ * lives in `:core` ([parseNoiseCatalog]) so it can be unit-tested without
+ * Compose resources; only the reading is here.
+ */
+internal suspend fun loadBundledNoiseScenarios(): List<NoiseScenario> =
     try {
-        val bytes = Res.readBytes("files/noise/noise.json").decodeToString()
-        noiseJson.decodeFromString<List<NoiseScenario>>(bytes)
+        parseNoiseCatalog(Res.readBytes("files/noise/noise.json").decodeToString())
     } catch (e: Exception) {
         emptyList()
     }
 
-/** Prefix of every own noise's scenario id -- collision-free against bundled ids, which come from `noise.json`. */
-internal const val OWN_NOISE_SCENARIO_PREFIX: String = "eigen-"
-
 /**
- * One own noise as a [NoiseScenario] of the merged catalog (AC2): id
- * prefixed `eigen-` so it can never collide with a bundled id, [fileRef] is
- * the noise's own file name (what [OwnNoiseRepository.bytes] reads), and
- * [source]/[license] carry the provenance the bundled entries use theirs
- * for. The license of a self-recorded or self-imported sound is nobody's
- * but the user's, so it stays empty.
+ * One own noise as a [NoiseScenario] entry: id prefixed so it can never
+ * collide with a bundled one, [fileRef] is the noise's own file name (what
+ * [OwnNoiseRepository.bytes] reads).
  */
 private fun OwnNoise.asScenario(): NoiseScenario = NoiseScenario(
     id = "$OWN_NOISE_SCENARIO_PREFIX$id",
     label = label,
     fileRef = fileName,
-    source = if (source == OwnNoiseSource.IMPORT) "Import" else "Eigene Aufnahme",
-    license = "",
 )
 
 /**
- * The merged catalog (AC2): bundled scenarios plus the user's own noises,
- * in that order -- the bundled ones keep their familiar place, the own ones
- * simply follow. Used by the settings screen for the scenario choice and by
- * [loadNoiseBuffer] for playback, so choice and playback always agree on
- * what exists. The empty-/missing-file fallbacks stay the ones ADR-0010
- * point 4 established: an empty bundled half is not an error.
+ * The merged catalog: bundled scenarios first, then the user's own noises.
+ * Used by the settings screen for the scenario choice and by [loadNoiseBuffer]
+ * for playback, so choice and playback always agree on what exists. Both
+ * halves may be empty -- then there is nothing to mix in and the ADR-0010
+ * point 4 fallback (clean speech) applies.
  */
 internal suspend fun loadAllNoiseScenarios(ownNoiseRepository: OwnNoiseRepository?): List<NoiseScenario> =
-    loadNoiseScenarios() + (ownNoiseRepository?.all() ?: emptyList()).map { it.asScenario() }
+    loadBundledNoiseScenarios() + (ownNoiseRepository?.all() ?: emptyList()).map { it.asScenario() }
 
 /**
  * Loads the noise loop selected by [noiseScenario], defensively, for the
@@ -73,16 +75,20 @@ internal suspend fun loadAllNoiseScenarios(ownNoiseRepository: OwnNoiseRepositor
  * there is nothing to mix in: noise is off, the catalog is empty, or the
  * scenario's WAV is missing/unreadable -- all fall back to clean speech
  * (ADR-0010 point 4), never a crash. An unknown [noiseScenario] id (not in
- * the loaded catalog, e.g. an own noise deleted since the setting was saved)
- * resolves to the catalog's first entry rather than failing outright -- the
- * existing resolution, no extra logic for the own noises (AC2).
+ * the loaded catalog: an own noise deleted since the setting was saved, one
+ * of the loops removed in v0.32.0, or the empty default of a fresh install)
+ * resolves to the catalog's first entry rather than failing outright -- which
+ * is also what makes the bundled entry the effective default without any id
+ * being hard-coded anywhere.
  *
- * Bundled bytes come from the Compose resources as before; an own scenario
- * (id prefix `eigen-`) reads its WAV through [ownNoiseRepository], the
+ * Where the bytes come from follows the id: a bundled scenario reads the
+ * packed Compose resource, an own one (prefix [OWN_NOISE_SCENARIO_PREFIX])
+ * goes through [ownNoiseRepository] -- the
  * [de.hexenwoche.audiolex.core.corpus.RecordingSource.EIGEN] branch of
- * `CorpusLoading.kt`'s [readRecordingBytes] applied to noise. Own
- * recordings and imports are validated to be PCM16 mono 22050 Hz before
- * they enter the collection (AC4), the exact format the mixer requires.
+ * `CorpusLoading.kt`'s [readRecordingBytes] applied to noise. Own recordings
+ * and imports are validated to be PCM16 mono 22050 Hz before they enter the
+ * collection (AC4), and a bundled loop is converted to that same format
+ * (`files/noise/README.md`) -- it is what the mixer requires.
  *
  * The returned [NoiseLoop] carries its RMS precomputed right here, once per
  * load (Backlog "Code-Qualität": Noise-RMS einmalig berechnen statt pro

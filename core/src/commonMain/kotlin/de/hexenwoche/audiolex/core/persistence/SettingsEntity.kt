@@ -17,10 +17,15 @@ import androidx.room.Upsert
  *
  * [noiseEnabled]/[snrDb]/[noiseScenario] (Backlog M4 "Störgeräusch-Overlay",
  * ADR-0010) hold the noise-overlay setting shared by both training modes.
- * [noiseScenario] stores the scenario's `id` from `files/noise/noise.json`
- * as a plain string, not an enum -- the catalog is data, not a compile-time
- * type -- so the "unknown id" fallback (resolve to the first catalog entry)
- * lives where the catalog is loaded (composeApp), not in this mapper.
+ * [noiseScenario] stores the chosen scenario's `id` as a plain string, not an
+ * enum -- the catalog is data, not a compile-time type -- so the "unknown id"
+ * fallback (resolve to the first catalog entry) lives where the catalog is
+ * loaded (composeApp), not in this mapper. It defaults to empty ("keins
+ * gewählt") since the bundled loops were removed (ADR-0014, v0.32.0); rows
+ * written by older versions still carry a bundled id like `restaurant` and
+ * are resolved by that same fallback. Only the Kotlin default changed, never
+ * the column, so the schema and its version are untouched -- the CREATE TABLE
+ * statements deliberately declare no SQL defaults (see [MIGRATION_7_8]).
  *
  * [channelMode] (Backlog M4 "Kopfhörer-Bogen Batch B", ADR-0011) stores the
  * `ChannelMode` enum name, same pattern as [themeMode]/[corpusMode].
@@ -44,7 +49,7 @@ data class SettingsEntity(
     val corpusMode: String = "WOERTER",
     val noiseEnabled: Boolean = false,
     val snrDb: Int = 5,
-    val noiseScenario: String = "restaurant",
+    val noiseScenario: String = "",
     val channelMode: String = "BEIDE",
     val excludedSpeakers: String = "[]",
 )

@@ -39,7 +39,16 @@ enum class ChannelMode { BEIDE, NUR_LINKS, NUR_RECHTS }
 const val SNR_DB_MIN = -5
 const val SNR_DB_MAX = 20
 private const val DEFAULT_SNR_DB = 5
-private const val DEFAULT_NOISE_SCENARIO = "restaurant"
+
+/**
+ * No scenario chosen. There is no meaningful default id any more: since the
+ * three bundled loops were removed (ADR-0014, v0.32.0) the catalog consists
+ * of the user's own noises, and a fresh install has none. The empty id is
+ * resolved where the catalog is known -- the settings screen adopts the first
+ * available scenario as soon as one exists, playback falls back to clean
+ * speech while none does (ADR-0010 point 4).
+ */
+private const val NO_NOISE_SCENARIO = ""
 
 /**
  * One-tap training levels (Backlog M4 "Szenario-Presets Einfach/Schwierig/
@@ -96,7 +105,7 @@ data class AppSettings(
     val corpusMode: CorpusMode = CorpusMode.WOERTER,
     val noiseEnabled: Boolean = false,
     val snrDb: Int = DEFAULT_SNR_DB,
-    val noiseScenario: String = DEFAULT_NOISE_SCENARIO,
+    val noiseScenario: String = NO_NOISE_SCENARIO,
     val channelMode: ChannelMode = ChannelMode.BEIDE,
     /**
      * Which speaker contingents (Batch D replaces the Batch C `CorpusSource`
@@ -145,10 +154,13 @@ fun AppSettings.derivedProfile(): SettingsProfile? =
  * Maps the stored enum names back to the domain enums, not by ordinal
  * (survives reordering the enums) -- unknown/corrupted names fall back to
  * the defaults defensively instead of crashing. [snrDb] outside
- * [SNR_DB_MIN]/[SNR_DB_MAX] and a blank [noiseScenario] are the "kaputt"
- * cases this guards against; an unknown-but-well-formed [noiseScenario] id
- * (a scenario removed from `noise.json` after being saved) is resolved
- * against the loaded catalog at the composeApp boundary instead, since this
+ * [SNR_DB_MIN]/[SNR_DB_MAX] is the "kaputt" case this guards against.
+ *
+ * [noiseScenario] passes through untouched, blank included: blank *is* the
+ * "keins gewählt" value since the bundled loops were removed (v0.32.0), no
+ * longer a corrupted one. Any id the catalog doesn't hold -- a deleted own
+ * noise, or one of the removed bundled ids stored by an older version -- is
+ * resolved against the loaded catalog at the composeApp boundary, since this
  * mapper has no access to that catalog.
  */
 fun SettingsEntity.toDomain(): AppSettings =
@@ -157,7 +169,7 @@ fun SettingsEntity.toDomain(): AppSettings =
         corpusMode = CorpusMode.entries.firstOrNull { it.name == corpusMode } ?: CorpusMode.WOERTER,
         noiseEnabled = noiseEnabled,
         snrDb = snrDb.takeIf { it in SNR_DB_MIN..SNR_DB_MAX } ?: DEFAULT_SNR_DB,
-        noiseScenario = noiseScenario.takeIf { it.isNotBlank() } ?: DEFAULT_NOISE_SCENARIO,
+        noiseScenario = noiseScenario,
         channelMode = ChannelMode.entries.firstOrNull { it.name == channelMode } ?: ChannelMode.BEIDE,
         excludedSpeakers = parseExcludedSpeakers(excludedSpeakers),
     )

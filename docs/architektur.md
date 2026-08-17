@@ -74,7 +74,7 @@ Review-Historie wird roh gespeichert (Bewertung + Zeitpunkt), nicht nur der näc
 ## Teststrategie
 
 1. **Unit (Kern, schnellste Schleife):** `./gradlew :core:jvmTest` — SRS-Scheduling, Mixer/SNR, später WAV-Loader und Session-Logik. Läuft ohne Audiogerät und ohne Android SDK.
-2. **Desktop-Sichtprüfung:** `./gradlew :composeApp:run` — UI-Verhalten, Abläufe; Audio unter WSLg nur als Näherung.
+2. **Desktop-Sichtprüfung:** `./gradlew :composeApp:run` — UI-Verhalten, Abläufe; Audio am Rechner nur als Näherung.
 3. **Gerätetest (verbindlich für Audio):** Debug-APK auf Galaxy A53, real mit Hörgerät — Kanaltrennung, Pegel, Störgeräusch-Empfinden sind nur dort beurteilbar.
 
 ## Plattform-Matrix

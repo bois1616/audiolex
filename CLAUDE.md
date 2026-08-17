@@ -9,7 +9,7 @@ Hörtrainings-App für den Autor selbst (ca. 80 % einseitiger Hörverlust, Hörg
 ## Architektur-Kurzfassung
 
 - `:core` — KMP-Bibliothek (androidTarget + jvm), plattformfreie Logik in Paketen `srs`, `audio`, `corpus`, `session`. Vollständig JVM-unit-testbar.
-- `:composeApp` — Compose-Multiplatform-UI (Android + Desktop). Desktop ist das Dev-Target unter WSL2.
+- `:composeApp` — Compose-Multiplatform-UI (Android + Desktop). Desktop ist das Dev-Target (nativ Debian, GNOME/Wayland).
 - Audio: PCM-Mixing (Kanal-Pegel, Störgeräusch/SNR) in Common-Kotlin; nur die Ausgabe ist expect/actual (`AudioSink`: Android AudioTrack, Desktop javax.sound, iOS später AVAudioEngine).
 - Details: `docs/architektur.md` · Entscheidungen: `docs/adr/`
 
@@ -27,7 +27,8 @@ adb install -r composeApp/build/outputs/apk/debug/composeApp-debug.apk
 - **SRS-Skala (MVP, feste Intervalle, ADR-0005):** Sofort 1 min · Bald 10 min · Später 1 Tag · Gut 1 Woche · Perfekt 1 Monat. Implementiert in `FixedIntervalScheduler`; UI-Labels Deutsch, Code-Enum `ReviewRating` (AGAIN/SOON/LATER/GOOD/PERFECT).
 - **Referenz-Trainings-Setup: BT-Hörgerät, linkes Ohr** (ADR-0007) — Stereo wird dort mono summiert; maßgeblich sind Pegel und Verständlichkeit am trainierten Ohr. Kanaltrennung links/rechts/beide (`StereoGain`) bleibt als Option für Alternativ-Setups (Kabel-Kopfhörer), ist über BT wirkungslos — die UI darf sie dort nicht als wirksam zeigen.
 - **Wortkorpus generisch**: `Word` getrennt von `AudioRecording` (mehrere Sprecher pro Wort) und von `ReviewCard` (SRS-Zustand). Nichts Hörverlust-spezifisches ins Modell verdrahten.
-- Störgeräusch-Overlay: vorproduzierte Loops, Mischung über SNR (dB) — `noiseGainForSnr` im Mixer.
+- Störgeräusch-Overlay: Mischung über SNR (dB) — `noiseGainForSnr` im Mixer. Der Katalog hat zwei Hälften: gebündelt (`files/noise/`, versioniert) und die eigenen Geräusche des Nutzers (Aufnahme/WAV-Import, app-lokal). **Regel seit v0.33.0:** gebündelt werden nur Inhalte, deren Weitergabe erlaubt ist — praktisch eigene Aufnahmen; die drei zugekauften Loops sind weg (ADR-0014, ADR-0010 Nachträge). Leerer Katalog = sauberer Ton, kein Fehlerfall.
+- **Ausgelieferte Audiodateien liegen im Repo** (68 Korpus-WAVs, seit v0.33.0): F-Droid baut aus dem Quelltext. Herkunft und Weitergaberecht gehören in die README des jeweiligen Ordners — ein Eintrag ohne Herkunftszeile ist ein Release-Blocker. Der Weg zur Aufnahme bei F-Droid: `docs/fdroid-anmeldung.md`.
 
 ## Stand & offene Klärungen
 

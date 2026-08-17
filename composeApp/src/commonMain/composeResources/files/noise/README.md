@@ -1,30 +1,60 @@
-# Störgeräusch-Loops
+# Gebündelte Störgeräusche
 
-Gebündelte Störgeräusch-Szenarien für das SNR-Overlay (Backlog M4, ADR-0010). Analog zum Korpus: die Audiodateien (`*.wav`) sind **gitignored**, nur diese `README.md` und `noise.json` (Metadaten) sind versioniert. Auf einem frischen Checkout werden die WAVs per Konvertierung aus der Autor-Quellbibliothek (`resources/sounds/`, Repo-Root, ebenfalls gitignored) neu erzeugt.
+Störgeräusch-Loops, die mit der App ausgeliefert werden (SNR-Overlay, ADR-0010). Anders als früher sind hier **Dateien und Metadaten versioniert** — F-Droid baut aus dem Quelltext, also muss alles Ausgelieferte im Repository liegen.
 
-## Szenarien
+## Was hier liegen darf
 
-| id | Label | Quelle | Lizenz |
-| --- | --- | --- | --- |
-| `verkehr` | Straßenverkehr | [salamisound.de](https://www.salamisound.de/) — `salamisound-4334625-strassenverkehr-mit-autos` | frei für nicht-kommerzielle Nutzung (Autor-Angabe) |
-| `strassenbahn` | Autos & Straßenbahn | [salamisound.de](https://www.salamisound.de/) — `salamisound-1020027-autos-und-strassenbahn-fahren` | frei für nicht-kommerzielle Nutzung (Autor-Angabe) |
-| `restaurant` | Restaurant | [pixabay.com](https://pixabay.com/de) — `38534292-record-street-restaurant-atmosphere-sound-193447` | Pixabay Content License / frei für nicht-kommerzielle Nutzung (Autor-Angabe) |
+Nur Aufnahmen, deren Weitergabe erlaubt ist. Praktisch heißt das: eigene Aufnahmen des Autors. Fremde Loops mit „frei für nicht-kommerzielle Nutzung" sind mit einer Veröffentlichung unvereinbar — die drei früheren Loops (salamisound, Pixabay) sind aus genau diesem Grund entfernt worden (ADR-0014, ADR-0010 Nachtrag). Bei jeder Datei gehören Herkunft und Lizenz in die Tabelle unten, damit ein F-Droid-Prüfer sie findet, ohne fragen zu müssen.
 
-Nutzungskontext: privat, nicht-kommerziell (wie der Korpus). Die Quell-MP3s liegen unter `resources/sounds/` (Autor-Bibliothek, gitignored).
+## Bestand
 
-## Format & Konvertierung
+| id | Label | Datei | Herkunft | Lizenz |
+| --- | --- | --- | --- | --- |
+| `bus` | Bus, innen | `bus.wav` | Eigene Aufnahme des Autors, 2026-08-10, in der App aufgenommen | CC0-1.0 (Autor-Entscheid 2026-08-17) |
 
-Die App decodiert nur PCM16-WAV und der Mixer (`mixWithNoise`) verlangt dieselbe Sample-Rate und Kanalzahl wie das Speech-Signal (Piper: **mono, 22050 Hz**). Die WAVs werden aus den (stereo, 44,1/48 kHz) MP3-Quellen als **kurze (~8 s), gleichmäßig laute Loops aus einem stetigen Abschnitt** erzeugt und auf einheitliche Lautheit normalisiert (`loudnorm`).
+Die Datei ist **byte-identisch** zur Aufnahme vom Testgerät (per SHA-256 belegt): Sie kam schon als 22050 Hz mono PCM16 aus der App-Aufnahme, also im Format, das der Mixer verlangt. Konvertiert wurde nichts, nur umbenannt.
 
-**Warum so (A53-Befund 2026-07-19):** Bei der Per-Wort-Mischung wird immer nur der **Loop-Anfang** gehört (jedes Wort startet das Rauschen bei Sample 0, ein Wort dauert ~1–3 s), und die SNR-Verstärkung wird über die RMS des **ganzen** Loops berechnet. Ein leiser Intro-Abschnitt (die frühere 20-s-Fassung des Verkehrs-Loops war am Anfang ~10 dB leiser als im Schnitt) war dadurch effektiv fast unhörbar. Ein kurzer, stetiger, normalisierter Abschnitt macht Anfang ≈ Schnitt, sodass das Gehörte den eingestellten SNR trifft; 8 s > längster Satz verhindert einen Wrap-Klick beim Loopen.
+## Warum diese Aufnahme unbearbeitet bleibt
 
-```bash
-# <start> = Sekunden-Offset in einen stetigen Abschnitt (Intro/leise Stellen überspringen)
-ffmpeg -y -ss <start> -t 8 -i resources/sounds/<quelle>.mp3 -ac 1 -ar 22050 \
-  -af loudnorm=I=-20:TP=-2:LRA=11 -c:a pcm_s16le \
-  composeApp/src/commonMain/composeResources/files/noise/<id>.wav
-```
+Der Konvertierungsweg unten (trimmen auf 8 s, `loudnorm`) war für zugekaufte Loops gedacht und ist hier gegenstandslos — gemessen am 2026-08-17:
 
-Aktueller Bestand (`<start>`-Offsets): verkehr 30 s, strassenbahn 6 s, restaurant 12 s.
+- **Pegelverlauf flach:** In 0,5-s-Fenstern schwankt der Pegel um höchstens ±2,2 dB um den Gesamtschnitt; die ersten 2 s liegen +0,07 dB daneben. Damit trifft das Gehörte den eingestellten SNR, was der ganze Zweck der früheren Normalisierung war (A53-Befund 2026-07-19).
+- **Länge reicht:** 5,6 s, während die längste Aufnahme im Korpus 3,76 s dauert (`satz-zug`). Der Mixer wickelt den Loop per Modulo um; ein Wrap-Klick kann also nicht auftreten, weil kein Wort über das Loop-Ende hinausreicht.
+- **Pegel gesund:** RMS −19,4 dBFS, Peak −1,9 dBFS — praktisch das Ergebnis, das `loudnorm=I=-20:TP=-2` bei den alten Loops erzeugt hat.
 
-Neues Szenario: MP3/WAV nach `resources/sounds/` legen, wie oben (stetigen `<start>` wählen) nach `files/noise/<id>.wav` konvertieren und einen Eintrag in `noise.json` (`id`, `label`, `fileRef`, `source`, `license`) ergänzen.
+**Hörprobe am Hörgerät, 2026-08-17: bestanden.** Urteil des Autors: „sehr gut". Bei „Fortgeschritten" (SNR −5 dB) ist das Geräusch **sehr dominant**, was der Einstellung entspricht — dort liegt das Rauschen über der Sprache —, und lässt sich mit dem Regler leicht zurücknehmen. Von Knistern war keine Rede: Die gemessene Begrenzung (Crest-Faktor 17,5 dB; bei −5 dB laufen 3,1× Verstärkung und damit 1,7 % der Samples in den Clip des Mixers, bei +5 dB 0,035 %) fällt am Ohr nicht auf. Deshalb **kein Limiter-Durchgang** und keine Bearbeitung der Datei; die Zahlen bleiben hier stehen, damit ein späteres Knistern nicht neu gemessen werden muss.
+
+## Ein weiteres Geräusch einsetzen
+
+1. Aufnahme besorgen. Vom Testgerät geht das ohne Root, weil der Debug-Build `debuggable` ist:
+
+   ```bash
+   export ANDROID_SERIAL=192.168.178.24:<Port>
+   adb exec-out "run-as de.hexenwoche.audiolex cat files/eigene-stoergeraeusche/<datei>.wav" > resources/sounds/bus.wav
+   ```
+
+   Welche Datei welches Geräusch ist, steht in `files/eigene-stoergeraeusche/geraeusche.json` (dieselbe `run-as`-Zeile mit `cat`).
+
+2. In das Format bringen, das der Mixer verlangt (22050 Hz, mono, PCM16 — die Piper-Ausgaberate, sonst wird das Rauschen zur Wiedergabe stillschweigend weggelassen). `<start>` in einen gleichmäßig lauten Abschnitt legen, Intro und Löcher überspringen:
+
+   ```bash
+   ffmpeg -y -ss <start> -t 8 -i resources/sounds/bus.wav -ac 1 -ar 22050 \
+     -af loudnorm=I=-20:TP=-2:LRA=11 -c:a pcm_s16le \
+     composeApp/src/commonMain/composeResources/files/noise/bus.wav
+   ```
+
+   **Warum 8 Sekunden und normalisiert** (A53-Befund 2026-07-19): Bei der Per-Wort-Mischung wird immer nur der **Loop-Anfang** gehört — jedes Wort startet das Rauschen bei Sample 0 und dauert 1–3 s —, während die SNR-Verstärkung über die RMS des **ganzen** Loops berechnet wird. Ein leiser Anfang macht das Geräusch dadurch fast unhörbar, obwohl der eingestellte SNR etwas anderes verspricht. Ein kurzer, stetiger, normalisierter Abschnitt macht Anfang ≈ Schnitt; 8 s sind länger als der längste Satz, also klickt es beim Loopen nicht.
+
+3. Eintrag in `noise.json` ergänzen:
+
+   ```json
+   [
+     { "id": "bus", "label": "Bus", "fileRef": "bus.wav" }
+   ]
+   ```
+
+   `id` ist die persistierte Kennung (steht danach in den Einstellungen des Nutzers), `label` der sichtbare Text, `fileRef` der Dateiname in diesem Ordner. Unbekannte Felder werden beim Parsen ignoriert, ein zusätzlicher Kommentar-Schlüssel bricht also nichts.
+
+4. Tabelle oben ausfüllen und den Abschnitt „Inhalte" in der Haupt-README prüfen: Dort steht die Lizenz der ausgelieferten Inhalte.
+
+5. Hörprobe am Gerät, nicht am Desktop — der Pegel ist nur mit dem Hörgerät beurteilbar (AGENTS.md §7, DoD §3).

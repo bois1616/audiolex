@@ -1,0 +1,5 @@
+First release.
+
+Included: learning and exam mode with five-step self-rating, 72 bundled words and sentences (speech synthesis plus four spoken ones), one background noise recorded inside a bus, your own recordings and your own noises, an SNR slider with three difficulty levels, channel choice for headphones, ZIP backup.
+
+All data stays on the device; the app has no internet permission.

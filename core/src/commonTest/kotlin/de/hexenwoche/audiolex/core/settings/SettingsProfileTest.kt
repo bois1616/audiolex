@@ -16,7 +16,7 @@ class SettingsProfileTest {
     private fun settings(
         noiseEnabled: Boolean = false,
         snrDb: Int = 5,
-        noiseScenario: String = "restaurant",
+        noiseScenario: String = "eigen-abc123",
     ): AppSettings =
         AppSettings(ThemeMode.SYSTEM, noiseEnabled = noiseEnabled, snrDb = snrDb, noiseScenario = noiseScenario)
 
@@ -55,7 +55,7 @@ class SettingsProfileTest {
             corpusMode = CorpusMode.SAETZE,
             noiseEnabled = true,
             snrDb = 12,
-            noiseScenario = "verkehr",
+            noiseScenario = "eigen-abc123",
             channelMode = ChannelMode.NUR_LINKS,
             excludedSpeakers = setOf("kerstin"),
         )

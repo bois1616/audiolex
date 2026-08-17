@@ -14,14 +14,14 @@ captures/
 .env
 .envrc
 
-# Audiodaten (Versionierungsstrategie offen, siehe Backlog [PROP] Git-LFS)
-composeApp/src/commonMain/composeResources/files/corpus/**/*.wav
-composeApp/src/commonMain/composeResources/files/corpus/**/*.mp3
-composeApp/src/commonMain/composeResources/files/corpus/**/*.ogg
-# Störgeräusch-Loops (gebündelte Compose-Ressourcen, aus resources/sounds konvertiert)
-composeApp/src/commonMain/composeResources/files/noise/*.wav
-composeApp/src/commonMain/composeResources/files/noise/*.mp3
-composeApp/src/commonMain/composeResources/files/noise/*.ogg
+# Ausgelieferte Audiodaten sind seit v0.33.0 versioniert (Autor-Entscheid
+# 2026-08-17): F-Droid baut aus dem Quelltext, ein Buildserver ohne die WAVs
+# liefert eine stumme App. Damit ist die frühere Ausnahme („Versionierungs-
+# strategie offen", Git-LFS-`[PROP]`) gegenstandslos — Umfang ist unkritisch
+# (68 Korpus-Dateien, 3,6 MB). Bedingung, die dafür gilt: Was unter
+# `composeResources/files/` liegt, muss weitergebbar sein (eigene Aufnahmen
+# oder freie TTS-Erzeugung, siehe die READMEs dort). Fremdlizenziertes gehört
+# nicht ins Repo, sondern in die Autor-Bibliothek unter `resources/sounds/`.
 # Autor-Quellbibliothek: Rohaufnahmen/-geräusche (Störgeräusche jetzt, eigene Wort-/Satzaufnahmen später)
 resources/sounds/*.mp3
 resources/sounds/*.wav

@@ -66,5 +66,9 @@
   { "id": "satz-schlitten", "text": "Im Winter fahren die Kinder gerne mit dem Schlitten.", "language": "de-DE", "syllableCount": 14, "category": "EVERYDAY", "kind": "SENTENCE" },
   { "id": "satz-katze", "text": "Unsere Katze schläft am liebsten auf dem warmen Sofa.", "language": "de-DE", "syllableCount": 15, "category": "EVERYDAY", "kind": "SENTENCE" },
   { "id": "satz-fruehstueck", "text": "Zum Frühstück gibt es heute Brötchen mit Honig und Käse.", "language": "de-DE", "syllableCount": 15, "category": "EVERYDAY", "kind": "SENTENCE" },
-  { "id": "satz-zug", "text": "Der Zug nach Hamburg hat heute leider zwanzig Minuten Verspätung.", "language": "de-DE", "syllableCount": 18, "category": "EVERYDAY", "kind": "SENTENCE" }
+  { "id": "satz-zug", "text": "Der Zug nach Hamburg hat heute leider zwanzig Minuten Verspätung.", "language": "de-DE", "syllableCount": 18, "category": "EVERYDAY", "kind": "SENTENCE" },
+  { "id": "satz-erster-text", "text": "Dies ist mein erster Text.", "language": "de-DE", "syllableCount": 6, "category": "EVERYDAY", "kind": "SENTENCE" },
+  { "id": "satz-zahlen", "text": "Eins zwei drei vier fünf sechs sieben.", "language": "de-DE", "syllableCount": 8, "category": "EVERYDAY", "kind": "SENTENCE" },
+  { "id": "test-zwei", "text": "Test zwei", "language": "de-DE", "syllableCount": 2, "category": "EVERYDAY" },
+  { "id": "glenkill", "text": "Glenkill", "language": "de-DE", "syllableCount": 2, "category": "FOREIGN" }
 ]
