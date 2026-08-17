@@ -64,15 +64,37 @@ Belegt statt behauptet: Der Index wurde per `git checkout-index --prefix` in ein
 
 **Was hier noch offen ist:** die eigenen Einsprachen (Autor, Grete) als Beispiel-Kontingent. Format, die drei Bedingungen und die JSON-Einträge stehen in `files/corpus/README.md`; die Dateien selbst liegen nur auf dem Testgerät.
 
-### Schritt 4 — Repository öffentlich machen und Tags setzen · **beim Autor**
+### Schritt 4 — Repository öffentlich machen und Tags setzen · **halb erledigt**
 
-`origin` ist `git@github.com:bois1616/audiolex.git` und privat. F-Droid braucht ein öffentlich lesbares Repository und je Version einen Tag, den die Rezeptur referenzieren kann; heute leben die Versionen nur in Commit-Messages.
+`origin` ist `git@github.com:bois1616/audiolex.git` und privat. F-Droid braucht ein öffentlich lesbares Repository und je Version einen Tag, den die Rezeptur referenzieren kann.
 
-Konvention: `v<VERSION_NAME>`, also `v0.32.0`. Der Tag gehört an denselben Commit wie der Versions-Bump aus DoD §6, damit „was zeigt die App an" und „was hat F-Droid gebaut" dieselbe Antwort haben. Signierte Tags (`git tag -s`) sind kein Muss, aber der Buildserver kann sie prüfen, und es kostet einmal Einrichtung.
+Konvention: `v<VERSION_NAME>`, also `v0.33.5`. Der Tag gehört an denselben Commit wie der Versions-Bump aus DoD §6, damit „was zeigt die App an" und „was hat F-Droid gebaut" dieselbe Antwort haben. Signierte Tags (`git tag -s`) sind kein Muss, aber der Buildserver kann sie prüfen, und es kostet einmal Einrichtung.
 
-Vor dem Öffentlichmachen einmal durch die Historie schauen: Telefonnummer und E-Mail aus dem Impressum stehen im Quelltext (`ImpressumScreen.kt`) — das ist eine bewusste Angabe und bleibt, aber es sollte eine bewusste bleiben, wenn plötzlich Fremde mitlesen.
+**Was die Sichtbarkeit ändert und was nicht.** Öffentlich heißt Lesen für alle. Schreibrechte hat weiterhin nur, wer als Collaborator eingetragen ist; Fremde können forken und Pull Requests vorschlagen, mehr nicht. Zwei Stellen sind trotzdem einen Blick wert: *Settings → Collaborators* (muss leer sein) und GitHub Actions — ein Fork-PR kann Workflows auslösen. AudioLex hat kein `.github/`, also entfällt das hier. Die Merge-Optionen für Pull Requests vergeben keine Rechte, deren Voreinstellung kann bleiben. Issues gehören eingeschaltet, die Rezeptur verweist darauf.
 
-Deliverable: öffentliches Repo, Tag `v0.32.0` (oder die Version, die veröffentlicht wird).
+**Historie bereinigt, 2026-08-17.** Veröffentlicht wird nicht der aktuelle Stand, sondern jeder Stand. Die Telefonnummer des Autors stand in **40 der 105 Commits** (eingeführt mit v0.16.0) und im aktuellen Stand außer im Impressum auch noch in Backlog und Umsetzungslog — der Entscheid „nur die E-Mail veröffentlichen" war damit nur halb umgesetzt. `git filter-repo --replace-text` hat sie in allen Commits durch `[Nummer entfernt]` ersetzt. Belege: 0 Treffer auf `master` und in den Notes danach (alle 105 Commits durchsucht), Commit-Zahl unverändert 105, und der Baum-Hash des HEAD ist derselbe wie vorher — es hat sich ausschließlich Altes geändert. Wer nachprüft, sollte `git rev-list master` nehmen, nicht `--all`: `refs/remotes/origin/*` zeigt bis zum Push weiter auf den alten Stand bei GitHub und liefert dort erwartungsgemäß Treffer. Das Zeitfenster war genau hier: noch privat, keine Forks, keine fremden Klone. Nach dem Öffentlichmachen ist derselbe Eingriff wirkungslos, weil Klone und Caches die alte Fassung behalten.
+
+Nebenwirkung, die zu wissen ist: Alle Commit-Hashes ab v0.16.0 sind neu, der Push muss also erzwungen werden. `refs/notes/ai-attribution` (7 Notizen) hing danach an den alten Hashes und ist über die `commit-map` von `filter-repo` neu angehängt worden.
+
+**Beim Autor bleiben zwei Wege.** Der empfohlene, weil er die Frage ganz erledigt: das GitHub-Repository löschen (*Settings → Danger Zone → Delete this repository*), gleichnamig neu anlegen — privat oder direkt öffentlich — und den bereinigten Stand hineinschieben:
+
+```bash
+git push -u origin master
+git push origin v0.33.5
+git push origin refs/notes/ai-attribution   # optional, die KI-Attributionsnotizen
+```
+
+Der bequemere Weg ist ein Force-Push auf das bestehende Repository:
+
+```bash
+git fetch origin                            # stellt die Lease-Grundlage wieder her
+git push --force-with-lease origin master
+git push origin v0.33.5
+```
+
+Warum trotzdem Löschen die bessere Wahl ist: GitHub behält nach einem Force-Push die unerreichbaren Objekte und liefert sie weiter aus, wenn man den genauen Hash kennt. Diese Hashes waren nie öffentlich, das Risiko ist praktisch keins — aber „praktisch keins" ist ein schwächeres Ergebnis als „weg", und darum ging der Aufwand. Voraussetzung fürs Löschen ist nur, dass am Repository nichts hängt, was erhalten bleiben soll (Issues, Stars, Forks); bei einem privaten Einzelprojekt ist das gegeben.
+
+Deliverable: öffentliches Repo, Tag `v0.33.5` sichtbar, Historie ohne die Nummer.
 
 ### Schritt 5 — Impressum und README auf „veröffentlicht" umstellen · **erledigt**
 
@@ -214,18 +236,19 @@ Alternative, falls der Autor die Rezeptur nicht selbst schreiben will: ein Antra
 | Was | Wo | Zustand |
 | --- | --- | --- |
 | `LICENSE` (Apache-2.0) | Repo-Root | **erledigt** |
-| 68 Korpus-WAVs im Index | `files/corpus/raw/de-DE/` | **erledigt** |
+| 72 Korpus-WAVs im Index | `files/corpus/raw/de-DE/` | **erledigt** — 68 synthetisch, 4 eingesprochen |
 | Toolchain-Plugin entfernt | `settings.gradle.kts` | **erledigt** |
-| Öffentliches Repository | GitHub | **Autor** |
-| Git-Tag je Version (`v0.33.5`) | Repo | **Autor** |
+| Öffentliches Repository | GitHub | **Autor** — Sichtbarkeit umstellen |
+| Git-Tag je Version (`v0.33.5`) | Repo | **erledigt**, lokal — pushen bleibt |
+| Historie ohne Telefonnummer | Repo | **erledigt** — `filter-repo`, 40 Commits |
 | `short_description.txt` (≤80) | `fastlane/metadata/android/<locale>/` | **erledigt**, de + en |
 | `full_description.txt` (≤4000) | dito | **erledigt**, de + en |
 | `title.txt` (≤50) | dito | **erledigt** |
 | `images/icon.png` (512×512) | dito | **erledigt** |
-| `changelogs/36.txt` (≤500) | dito | **erledigt**, de + en |
+| `changelogs/41.txt` (≤500) | dito | **erledigt**, de + en |
 | Korrigierter Impressum-Satz | `ImpressumScreen.kt` | **erledigt** |
 | Rezeptur `de.hexenwoche.audiolex.yml` | `fdroid/metadata/`, gehört in den Fork | **erledigt**, einsetzen bleibt |
-| Vier Screenshots | `images/phoneScreenshots/` | **erledigt** — vom A53, alle aus Build 0.33.5 |
+| Vier Screenshots | `images/phoneScreenshots/` | **erledigt** — vom A53, alle aus Build 0.33.4 |
 | Gebündeltes Störgeräusch (Bus) | `files/noise/bus.wav` + `noise.json` | **erledigt** — vom Gerät geholt, unbearbeitet |
 | Lizenz der eigenen Aufnahmen | README-Tabelle | **erledigt** — CC0-1.0 (Autor-Entscheid) |
 | Datenschutzerklärung unter Web-Adresse | — | **nicht nötig** — das verlangt Google Play, nicht F-Droid |
@@ -288,7 +311,7 @@ Für `en-US/full_description.txt` genügt eine Übersetzung des deutschen Texts.
 
 Stand 2026-08-17, nachdem er die Gerätedaten geliefert und die offenen Entscheide getroffen hat. Übrig sind drei Dinge.
 
-**1. Das Repository öffentlich machen und taggen.** GitHub-Sichtbarkeit umstellen, `git tag -a v0.33.5`, pushen. Vorher der Blick, ob alle lokalen Commits hinaus sollen. Im Impressum steht jetzt nur noch die E-Mail-Adresse, keine Telefonnummer mehr (Autor-Entscheid) — F-Droid selbst verlangt kein Impressum; ob österreichisches Recht für eine nicht-kommerzielle App mehr fordert, ist eine Frage an jemanden mit Zulassung, nicht an diese Anleitung.
+**1. Den bereinigten Stand hinaufschieben und die Sichtbarkeit umstellen.** Committet ist alles, der Tag `v0.33.5` liegt lokal am richtigen Commit, die Historie ist um die Telefonnummer bereinigt — die genauen Kommandos und die Wahl zwischen „Repository neu anlegen" und „Force-Push" stehen in Schritt 4. Was nur er entscheiden kann: ob das Repository hinausgeht. Im Impressum steht nur noch die E-Mail-Adresse — F-Droid selbst verlangt kein Impressum; ob österreichisches Recht für eine nicht-kommerzielle App mehr fordert, ist eine Frage an jemanden mit Zulassung, nicht an diese Anleitung.
 
 **2. GitLab-Konto, Fork, Merge Request** — Schritt 9 führt das für jemanden durch, der es noch nie gemacht hat. Ein Konto kann ich nicht anlegen und keinen Antrag in seinem Namen stellen.
 
