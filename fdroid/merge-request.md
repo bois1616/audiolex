@@ -10,7 +10,7 @@ New app: AudioLex
 
 Zwei Voraussetzungen prüft niemand für dich, sie stehen aber in der Vorlage: Der Fork muss **öffentlich** sein, und der Zweig `de.hexenwoche.audiolex` darf **nicht geschützt** sein — F-Droid merged per Fast-Forward und muss vorher rebasen können.
 
-Eine Stelle im Text unten ist noch zu entscheiden, sie ist markiert.
+Der Text ist vollständig; die einzige offene Frage — reproduzierbare Builds — ist entschieden und unten begründet.
 
 ---
 
@@ -30,7 +30,7 @@ Eine Stelle im Text unten ist noch zu entscheiden, sie ist markiert.
 ## Suggested
 
 * [ ] External repos are added as git submodules instead of srclibs — the app has neither.
-* [ ] Enable [Reproducible Builds](https://f-droid.org/docs/Reproducible_Builds) — ⟨ENTSCHEIDUNG, siehe unten⟩
+* [ ] Enable [Reproducible Builds](https://f-droid.org/docs/Reproducible_Builds) — No, I don't want this.
 * [ ] Multiple apks for native code — the app has no native code. The 30 MB are bundled audio (73 WAV files, 4.3 MB compressed assets plus the Compose runtime); splitting by ABI would not change that.
 
 ---
@@ -64,28 +64,24 @@ checked before opening this, in case it saves a round trip:
 
 ---
 
-## Die offene Entscheidung: reproduzierbare Builds
+## Entschieden: F-Droid signiert (Autor-Entscheid 2026-08-17)
 
-Die Vorlage schreibt dazu: *„if you don't enable reproducible build then the apk
-will be signed with our key so you can't enable it later."* Das ist eine
-Einbahnstraße, deshalb hier die Datenlage.
+Die Vorlage will das ausdrücklich so notiert haben — Kästchen leer lassen und
+„No, I don't want this." dahinterschreiben. Das ist oben bereits eingetragen.
 
-**Dafür spricht:** Die technische Voraussetzung ist nachweislich erfüllt. Zwei
-Builds desselben Tags — einer mit dem Android-SDK des Entwicklungsrechners, einer
-im F-Droid-Container mit deren SDK und deren nachgeladenem Gradle — ergaben ein
-**byte-identisches** APK (30 400 285 Bytes, gleicher SHA-256). Nutzer könnten
-später zwischen F-Droid-Fassung und einer selbst gebauten wechseln.
+Warum so, damit die Entscheidung später nachvollziehbar ist: Die technische
+Voraussetzung wäre erfüllt gewesen. Zwei Builds desselben Tags — einer mit dem
+Android-SDK des Entwicklungsrechners, einer im F-Droid-Container mit deren SDK
+und deren nachgeladenem Gradle — ergaben ein **byte-identisches** APK
+(30 400 285 Bytes, gleicher SHA-256). Dagegen standen drei Dinge: Der Nachweis
+stammt von **einer** Maschine, während F-Droid über verschiedene hinweg
+vergleicht. Die Zusage gilt nicht einmalig, sondern für jede künftige Version —
+reproduziert ein Build nach einem Gradle- oder AGP-Sprung nicht mehr, bleibt das
+Update liegen, bis es wieder passt. Und ein eigener Signaturschlüssel muss für
+die Lebensdauer der App sicher verwahrt werden; geht er verloren, gibt es keine
+Updates mehr.
 
-**Dagegen spricht:** Der Nachweis stammt von **einer** Maschine mit einem Kernel
-und einer JDK-Hauptversion; F-Droid vergleicht über verschiedene Maschinen
-hinweg. Und die Zusage gilt nicht einmalig, sondern für **jede künftige Version**:
-Reproduziert ein Build nach einem Gradle- oder AGP-Sprung nicht mehr, bleibt das
-Update liegen, bis es wieder passt. Dazu kommt ein eigener Signaturschlüssel, der
-für die Lebensdauer der App sicher aufbewahrt werden muss — geht er verloren,
-gibt es keine Updates mehr.
-
-**Empfehlung für die erste Aufnahme: nicht ankreuzen**, F-Droid signieren lassen.
-Das ist der Normalfall, hat die wenigsten beweglichen Teile, und der Preis ist
-benannt statt versteckt. Wer es doch will, kreuzt an und ergänzt
-`AllowedAPKSigningKeys` in der Rezeptur — dann aber vor dem Absenden, nicht
-danach.
+Der Preis dieser Entscheidung ist benannt und akzeptiert: Sie lässt sich nicht
+nachholen. Die Vorlage sagt dazu *„you can't enable it later"*, weil das APK dann
+mit F-Droids Schlüssel signiert ist und Nutzer nicht auf eine anders signierte
+Fassung aktualisieren können.

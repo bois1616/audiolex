@@ -12,7 +12,9 @@
 
 - **Rezeptur:** `versionName: 0.33.6`, `versionCode: 42`, `commit: v0.33.6`, `CurrentVersion`/`CurrentVersionCode` nachgezogen.
 
-- **Wie verifiziert:** `./gradlew build` grün, `:core:jvmTest` mit `--rerun-tasks` **210** Fälle / 0 Fehler. Die Probe, die zählt — `fdroid checkupdates` gegen den gepushten Tag —, steht noch aus: `checkupdates` liest die Tags aus dem **entfernten** Repository, also erst nach `git push origin v0.33.6` prüfbar.
+- **Wie verifiziert:** `./gradlew build` grün, `:core:jvmTest` mit `--rerun-tasks` **210** Fälle / 0 Fehler. Und die Probe, die zählt, ist nach dem Push gelaufen: `fdroid checkupdates -v` gegen den echten Tag meldet jetzt wörtlich `..got package=de.hexenwoche.audiolex, version=0.33.6, vercode=42` statt „Couldn't find any version information". Die älteren Tags liefern weiterhin `None` — sie tragen ja die Variablen-Fassung —, was folgenlos ist, weil F-Droid den neuesten auswertet.
+
+- **Reproduzierbare Builds: Autor-Entscheid, F-Droid signiert.** Die Datenlage sprach dafür (zwei byte-identische Builds), drei Dinge dagegen: Der Nachweis stammt von einer Maschine, während F-Droid über verschiedene hinweg vergleicht; die Zusage gilt für jede künftige Version, nicht einmalig; und ein eigener Signaturschlüssel müsste auf Lebenszeit sicher verwahrt werden. Der Preis ist benannt und akzeptiert — die MR-Vorlage sagt ausdrücklich, dass es sich nicht nachholen lässt. Im MR-Text steht das Kästchen leer mit dem von der Vorlage verlangten Zusatz „No, I don't want this.".
 
 - **Nebenbefund aus der MR-Vorlage** (`.gitlab/merge_request_templates/App inclusion.md`, gelesen im geklonten Fork): Der Titel muss dem Format „New app: app name" folgen, der Fork muss öffentlich und der Zweig **ungeschützt** sein (F-Droid merged per Fast-Forward), und zu reproduzierbaren Builds steht dort ausdrücklich: *„if you don't enable reproducible build then the apk will be signed with our key so you can't enable it later"*. Das ist eine Einbahnstraße und gehört vor dem Absenden entschieden — Datenlage dazu in Schritt 8 (zwei byte-identische Builds).
 
