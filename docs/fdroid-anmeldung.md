@@ -129,28 +129,52 @@ Vier Bilder reichen und sollten zeigen, worum es geht: Startbildschirm, Lernmodu
 
 Die tatsächlichen Texte liegen in den Dateien; die Entwürfe unten im Abschnitt „Textvorlagen" sind ihre Quelle und bleiben zum Nachlesen stehen.
 
-### Schritt 7 — Den Build so testen, wie F-Droid ihn testet · **halb erledigt**
+### Schritt 7 — Den Build so testen, wie F-Droid ihn testet · **erledigt**
 
 Ein grüner lokaler Build sagt wenig über einen Buildserver, der weder `local.properties` noch die Autor-Bibliothek kennt. Zwei Proben:
 
 ```bash
 # 1. Frischer Klon aus dem öffentlichen Repo, nichts danebengelegt
-git clone https://github.com/bois1616/audiolex.git /tmp/fdroid-probe && cd /tmp/fdroid-probe
-./gradlew :composeApp:assembleRelease
+git clone --branch v0.33.5 --depth 1 https://github.com/bois1616/audiolex.git /tmp/fdroid-probe
+cd /tmp/fdroid-probe && ./gradlew :composeApp:assembleRelease --no-daemon
 
-# 2. F-Droids eigene Werkzeuge, im Container
-git clone --depth=1 https://gitlab.com/fdroid/fdroidserver ~/fdroidserver
-docker run --rm -itu vagrant --entrypoint /bin/bash \
+# 2. F-Droids eigene Werkzeuge, im Container.
+#    Das Image ist reine Bauumgebung (JDK 21, SDK, gradlew-fdroid) und enthaelt
+#    fdroidserver NICHT -- das wird als Checkout hineingemountet.
+git clone --depth=1 --branch 2.4.5 https://gitlab.com/fdroid/fdroidserver ~/fdroidserver
+docker run --rm -u vagrant -w /build \
   -v ~/fdroiddata:/build:z -v ~/fdroidserver:/home/vagrant/fdroidserver:Z \
-  registry.gitlab.com/fdroid/fdroidserver:buildserver
-# im Container:
-fdroid readmeta && fdroid rewritemeta de.hexenwoche.audiolex \
-  && fdroid lint de.hexenwoche.audiolex && fdroid build -v -l de.hexenwoche.audiolex
+  --entrypoint /bin/bash registry.gitlab.com/fdroid/fdroidserver:buildserver -lc '
+    export PATH=/home/vagrant/fdroidserver:$PATH
+    git config --global --add safe.directory /build
+    fdroid readmeta && fdroid lint de.hexenwoche.audiolex \
+      && fdroid rewritemeta de.hexenwoche.audiolex \
+      && fdroid build -v -l de.hexenwoche.audiolex'
 ```
+
+Vier Fallgruben stecken in diesen zwölf Zeilen, alle am 2026-08-17 einzeln hineingetreten:
+
+- **`fdroid` liegt nicht auf dem `PATH`.** Es kommt aus dem gemounteten Checkout, also `export PATH=/home/vagrant/fdroidserver:$PATH` — sonst `command not found`.
+- **`bash -lc`, nicht `bash -c`.** `ANDROID_HOME=/opt/android-sdk` steht im Profil des Benutzers `vagrant`; eine Nicht-Login-Shell sieht es nicht, und der Build sucht dann ins Leere.
+- **Das Datenverzeichnis muss ein Git-Repository sein.** Reproduzierbare Builds brauchen `SOURCE_DATE_EPOCH`; fdroidserver holt den aus dem Git-Log des Quellverzeichnisses und fällt, solange das noch nicht geklont ist, auf den Commit-Zeitstempel der Rezeptur im `fdroiddata`-Repo zurück. Ohne `.git` gibt es `None`, und der Lauf stirbt mit `TypeError: str expected, not NoneType` — ein Fehlerbild, das nach Bug aussieht und keiner ist.
+- **`fdroid lint` prüft Kategorien gegen `config/`.** Ohne `config/categories.yml` und die Kategorie-Icons aus `fdroiddata` beanstandet es *jede* Kategorie und stirbt später an einer fehlenden `category_connectivity.png`. Im echten Fork ist das da; für eine Probe ohne Vollklon reicht `curl -sL "https://gitlab.com/fdroid/fdroiddata/-/archive/master/fdroiddata-master.tar.gz?path=config"` (445 KB).
 
 **Probe 1 ist gelaufen (2026-08-17), in der Variante, die ohne öffentliches Repo auskommt:** `git checkout-index -a --prefix=<leeres Verzeichnis>` exportiert genau den Repository-Stand, `ANDROID_HOME` aus der Umgebung ersetzt das fehlende `local.properties`, `./gradlew :composeApp:assembleRelease --no-daemon` läuft durch. Damit sind zwei der drei Vermutungen erledigt: Der Desktop-Zielteil des KMP-Moduls stört den Android-Release-Build nicht, und KSP/Room laufen durch. **Mit dem echten Klon wiederholt (2026-08-17, nach Schritt 4):** `git clone --branch v0.33.5 --depth 1` von GitHub in ein leeres Verzeichnis, kein `local.properties`, `ANDROID_HOME` aus der Umgebung, `./gradlew :composeApp:assembleRelease --no-daemon` — grün. Der Klon bringt 72 Korpus-WAVs und `bus.wav` mit, die Telefonnummer steht in keiner Datei. Am fertigen APK nachgesehen (`aapt2 dump badging`): `de.hexenwoche.audiolex`, versionCode **41**, versionName **0.33.5**, minSdk 29, compileSdk 35 — dieselben Werte, die die Rezeptur erwartet. Im APK liegen 72 Korpus-WAVs, `bus.wav` mit 247 004 Bytes (byte-identisch mit der Aufnahme vom Gerät) und `noise.json`; die Assets wiegen 4,3 MB, das APK 29 MB. Nebenbefund: Compose Resources packt auch die beiden Herkunfts-READMEs mit ein (10 KB) — kein Schaden, es heißt nur, dass diese Texte ausgeliefert werden.
 
-**Probe 2 ist offen** und braucht Docker: Ob die Gradle-Version aus dem Wrapper (8.11.1) in F-Droids Buildumgebung vorhanden ist, ob `fdroid lint` etwas an der Rezeptur auszusetzen hat und ob der Scanner noch irgendwo anschlägt, beantwortet nur `fdroid build`. Der Lauf lohnt sich vor dem Merge Request, nicht danach — im Merge Request ist ein durchgefallener Build öffentlich.
+**Probe 2 ist gelaufen (2026-08-17), mit fdroidserver 2.4.5 im Image `registry.gitlab.com/fdroid/fdroidserver:buildserver`** (2,37 GB). Ergebnis der Reihe nach:
+
+| Schritt | Ergebnis |
+| --- | --- |
+| `fdroid readmeta` | ok |
+| `fdroid lint de.hexenwoche.audiolex` | **Rückgabe 0**, keine Beanstandung |
+| `fdroid rewritemeta` | kein Unterschied — die Rezeptur ist kanonisch formatiert |
+| Scanner (`suss`-Signaturdaten) | **kein Fund** — er hätte den Build sonst abgebrochen |
+| `fdroid build -v -l` | **1 build succeeded**, `BUILD SUCCESSFUL in 1m 29s` |
+| Ergebnis | `unsigned/de.hexenwoche.audiolex_41.apk` (30 400 285 Bytes) + Quelltext-Tarball (4,9 MB) |
+
+Damit sind die drei offenen Fragen beantwortet. **Gradle 8.11.1 ist verfügbar:** fdroidserver lädt es selbst nach (`Downloading missing gradle version 8.11.1`) und prüft die Summe (`gradle-8.11.1-bin.zip: OK`). Nebenbei die Antwort auf eine Frage, die gar nicht gestellt war: fdroidserver **entfernt** `gradle/wrapper/gradle-wrapper.jar` vor dem Bauen und nimmt sein eigenes, verifiziertes Gradle — die vorkompilierte Jar-Datei im Repo ist also kein Aufnahmehindernis, sie wird ignoriert. **Der Scanner schlägt nirgends an**, auch nicht bei den 73 mitgelieferten WAV-Dateien. Und der Build läuft ohne Sonderbehandlung durch: kein `prebuild`, kein `sudo`-Block, kein `rm` in der Rezeptur.
+
+**Nebenbefund mit Tragweite:** Das APK aus dem Container ist **byte-identisch** mit dem aus Probe 1 — gleiche 30 400 285 Bytes, gleicher SHA-256, obwohl das eine mit dem SDK dieses Rechners und das andere mit F-Droids SDK und deren nachgeladenem Gradle gebaut wurde. Das ist die technische Voraussetzung für reproduzierbare Builds (Schritt 8). Beweiskraft aber mit Maß: zwei Läufe auf **einer** Maschine, gleicher Kernel, gleiche JDK-Hauptversion. Für eine Zusage an F-Droid wäre ein Vergleich über verschiedene Maschinen nötig.
 
 ### Schritt 8 — Die Rezeptur schreiben · **erledigt**
 
@@ -187,7 +211,7 @@ CurrentVersionCode: 36
 
 `AntiFeatures` bleibt leer, solange nichts Unfreies mitreist. Die Liste, gegen die ein Prüfer abgleicht: Ads, KnownVuln, NonFreeAdd, NonFreeAssets, NonFreeDep, NonFreeNet, NoSourceSince, NSFW, TetheredNet, Tracking. `NonFreeAssets` wäre der Eintrag gewesen, den die alten Störgeräusch-Loops eingebracht hätten.
 
-Zur Signatur: F-Droid signiert mit eigenem Schlüssel, das ist der Normalfall und für den Anfang das Richtige. Reproduzierbare Builds mit `AllowedAPKSigningKeys` (die App wird dann mit dem Schlüssel des Autors ausgeliefert und F-Droid verifiziert nur) gelten als gute Praxis, verlangen aber Bit-Gleichheit zwischen zwei Builds und kosten Einrichtung. Der Preis dafür, das später zu ändern: Nutzer können nicht von einer F-Droid-signierten auf eine anders signierte Version aktualisieren, sie müssen neu installieren. Wenn es also je passieren soll, dann besser vor der ersten Veröffentlichung als danach.
+Zur Signatur: F-Droid signiert mit eigenem Schlüssel, das ist der Normalfall und für den Anfang das Richtige. **Neu seit Probe 2 (2026-08-17):** Die technische Voraussetzung für den anderen Weg ist nachweislich erfüllt — zwei Builds desselben Tags, einmal mit dem SDK dieses Rechners und einmal im F-Droid-Container, ergaben ein byte-identisches APK. Trotzdem bleibt die Empfehlung für die erste Veröffentlichung, F-Droid signieren zu lassen: Der Nachweis stammt von einer einzigen Maschine, und eine erste Anmeldung mit zusätzlichem Reproduzierbarkeits-Versprechen hat mehr bewegliche Teile, als ein erster Merge Request braucht. Der Befund ist festgehalten, damit die Entscheidung später auf Zahlen statt auf Vermutungen fußt. Reproduzierbare Builds mit `AllowedAPKSigningKeys` (die App wird dann mit dem Schlüssel des Autors ausgeliefert und F-Droid verifiziert nur) gelten als gute Praxis, verlangen aber Bit-Gleichheit zwischen zwei Builds und kosten Einrichtung. Der Preis dafür, das später zu ändern: Nutzer können nicht von einer F-Droid-signierten auf eine anders signierte Version aktualisieren, sie müssen neu installieren. Wenn es also je passieren soll, dann besser vor der ersten Veröffentlichung als danach.
 
 ### Schritt 9 — Merge Request stellen · **beim Autor**
 
@@ -245,6 +269,7 @@ Alternative, falls der Autor die Rezeptur nicht selbst schreiben will: ein Antra
 | Vier Screenshots | `images/phoneScreenshots/` | **erledigt** — vom A53, alle aus Build 0.33.4 |
 | Gebündeltes Störgeräusch (Bus) | `files/noise/bus.wav` + `noise.json` | **erledigt** — vom Gerät geholt, unbearbeitet |
 | Lizenz der eigenen Aufnahmen | README-Tabelle | **erledigt** — CC0-1.0 (Autor-Entscheid) |
+| `fdroid lint` + `fdroid build` im Container | lokal, Schritt 7 | **erledigt** — lint 0, Build erfolgreich, Scanner ohne Fund |
 | Datenschutzerklärung unter Web-Adresse | — | **nicht nötig** — das verlangt Google Play, nicht F-Droid |
 
 Für die „Neu"-Liste im Client braucht ein Eintrag: Name, Icon, Kurz- und Langbeschreibung, Lizenz, mindestens einen Änderungstext, mindestens ein Bild und mindestens eine Übersetzung. Ohne diese Teile wird die App aufgenommen, taucht aber prominent nirgends auf.
@@ -288,7 +313,7 @@ Erledigt und damit nicht mehr auf dieser Liste:
 
 Eine Kleinigkeit, die kein Blocker ist: **Akzent der Demo-Einsprachen.** Sie sind als `locale: de-DE` eingetragen, weil sich das am Schreibtisch nicht feststellen lässt. Sind sie österreichisch gefärbt, gehört `de-AT` hinein (und die Dateien in ein `raw/de-AT/`).
 
-Was **ich** noch beisteuern kann: `fdroid lint`/`fdroid build` im Container (Schritt 7, Probe 2) — Docker ist auf diesem Rechner vorhanden und läuft, geprüft 2026-08-17; und die Rezeptur auf einen späteren Tag anpassen, falls nicht `v0.33.5` veröffentlicht wird.
+Was **ich** noch beisteuern kann: die Rezeptur auf einen späteren Tag anpassen, falls nicht `v0.33.5` veröffentlicht wird — und Rückfragen des Paketierers im Merge Request mit dir durchgehen. Probe 2 aus Schritt 7 ist gelaufen: `fdroid lint` sauber, `fdroid build` erfolgreich, Scanner ohne Fund.
 
 ## Quellen
 
