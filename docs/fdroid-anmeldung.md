@@ -68,7 +68,7 @@ Belegt statt behauptet: Der Index wurde per `git checkout-index --prefix` in ein
 
 `origin` ist `git@github.com:bois1616/audiolex.git` und privat. F-Droid braucht ein öffentlich lesbares Repository und je Version einen Tag, den die Rezeptur referenzieren kann.
 
-Konvention: `v<VERSION_NAME>`, also `v0.33.5`. Der Tag gehört an denselben Commit wie der Versions-Bump aus DoD §6, damit „was zeigt die App an" und „was hat F-Droid gebaut" dieselbe Antwort haben. Signierte Tags (`git tag -s`) sind kein Muss, aber der Buildserver kann sie prüfen, und es kostet einmal Einrichtung.
+Konvention: `v<VERSION_NAME>`, also `v0.33.6`. Der Tag gehört an denselben Commit wie der Versions-Bump aus DoD §6, damit „was zeigt die App an" und „was hat F-Droid gebaut" dieselbe Antwort haben. Signierte Tags (`git tag -s`) sind kein Muss, aber der Buildserver kann sie prüfen, und es kostet einmal Einrichtung.
 
 **Was die Sichtbarkeit ändert und was nicht.** Öffentlich heißt Lesen für alle. Schreibrechte hat weiterhin nur, wer als Collaborator eingetragen ist; Fremde können forken und Pull Requests vorschlagen, mehr nicht. Zwei Stellen sind trotzdem einen Blick wert: *Settings → Collaborators* (muss leer sein) und GitHub Actions — ein Fork-PR kann Workflows auslösen. AudioLex hat kein `.github/`, also entfällt das hier. Die Merge-Optionen für Pull Requests vergeben keine Rechte, deren Voreinstellung kann bleiben. Issues gehören eingeschaltet, die Rezeptur verweist darauf.
 
@@ -110,11 +110,11 @@ fastlane/metadata/android/en-US/full_description.txt    max 4000 Zeichen
 fastlane/metadata/android/en-US/title.txt               max 50 Zeichen
 fastlane/metadata/android/en-US/images/icon.png         512×512
 fastlane/metadata/android/en-US/images/phoneScreenshots/1.png …
-fastlane/metadata/android/en-US/changelogs/41.txt       max 500 Zeichen, Dateiname = versionCode
+fastlane/metadata/android/en-US/changelogs/42.txt       max 500 Zeichen, Dateiname = versionCode
 fastlane/metadata/android/de-DE/…                       dieselbe Struktur
 ```
 
-**Erledigt 2026-08-17:** Die Struktur steht für `de-DE` und `en-US`, mit Titel, Kurz- und Langbeschreibung, Änderungstext für versionCode 41 und Icon. Zeichenzahlen nachgezählt, Stand nach allen Nachträgen des Tages: Kurzbeschreibung 76 bzw. 79 von 80 erlaubten, Langbeschreibung 2599 bzw. 2309 von 4000, Änderungstext 398 bzw. 388 von 500. Die Tabelle im Abschnitt Textvorlagen führt alle acht Dateien.
+**Erledigt 2026-08-17:** Die Struktur steht für `de-DE` und `en-US`, mit Titel, Kurz- und Langbeschreibung, Änderungstext für versionCode 42 und Icon. Zeichenzahlen nachgezählt, Stand nach allen Nachträgen des Tages: Kurzbeschreibung 76 bzw. 79 von 80 erlaubten, Langbeschreibung 2599 bzw. 2309 von 4000, Änderungstext 398 bzw. 388 von 500. Die Tabelle im Abschnitt Textvorlagen führt alle acht Dateien.
 
 Zum Icon: Es existierte nur als Vektor (adaptive icon). Die Pfade sind ein gefüllter Punkt und drei rechte Halbkreis-Bögen mit runden Enden — ImageMagicks interner SVG-Renderer verwarf sie, also wurde das Icon analytisch gerastert (`icon.png`, 512×512, 4×4-Supersampling, innerer 72er-Bereich des 108er-Canvas, den eine Launcher-Maske zeigt). Das Skript dazu ist keine Projektdatei; wird das Icon geändert, ist es in einer Viertelstunde neu geschrieben oder besser gleich in Inkscape gezeichnet.
 
@@ -135,7 +135,7 @@ Ein grüner lokaler Build sagt wenig über einen Buildserver, der weder `local.p
 
 ```bash
 # 1. Frischer Klon aus dem öffentlichen Repo, nichts danebengelegt
-git clone --branch v0.33.5 --depth 1 https://github.com/bois1616/audiolex.git /tmp/fdroid-probe
+git clone --branch v0.33.6 --depth 1 https://github.com/bois1616/audiolex.git /tmp/fdroid-probe
 cd /tmp/fdroid-probe && ./gradlew :composeApp:assembleRelease --no-daemon
 
 # 2. F-Droids eigene Werkzeuge, im Container.
@@ -257,13 +257,13 @@ Alternative, falls der Autor die Rezeptur nicht selbst schreiben will: ein Antra
 | 72 Korpus-WAVs im Index | `files/corpus/raw/de-DE/` | **erledigt** — 68 synthetisch, 4 eingesprochen |
 | Toolchain-Plugin entfernt | `settings.gradle.kts` | **erledigt** |
 | Öffentliches Repository | GitHub | **erledigt** — anonym über HTTPS geprüft |
-| Git-Tag je Version (`v0.33.5`) | Repo | **erledigt** — gepusht, löst auf `754a339` auf |
+| Git-Tag je Version | Repo | `v0.33.5` gepusht; **`v0.33.6` ist der, den die Rezeptur baut** |
 | Historie ohne Telefonnummer | Repo | **erledigt** — `filter-repo`, 40 Commits |
 | `short_description.txt` (≤80) | `fastlane/metadata/android/<locale>/` | **erledigt**, de + en |
 | `full_description.txt` (≤4000) | dito | **erledigt**, de + en |
 | `title.txt` (≤50) | dito | **erledigt** |
 | `images/icon.png` (512×512) | dito | **erledigt** |
-| `changelogs/41.txt` (≤500) | dito | **erledigt**, de + en |
+| `changelogs/42.txt` (≤500) | dito | **erledigt**, de + en |
 | Korrigierter Impressum-Satz | `ImpressumScreen.kt` | **erledigt** |
 | Rezeptur `de.hexenwoche.audiolex.yml` | `fdroid/metadata/`, gehört in den Fork | **erledigt**, einsetzen bleibt |
 | Vier Screenshots | `images/phoneScreenshots/` | **erledigt** — vom A53, alle aus Build 0.33.4 |
@@ -283,11 +283,11 @@ Die Texte selbst stehen als Dateien unter `fastlane/metadata/android/<locale>/` 
 | `de-DE/title.txt` | 8 | 50 |
 | `de-DE/short_description.txt` | 76 | 80 |
 | `de-DE/full_description.txt` | 2599 | 4000 |
-| `de-DE/changelogs/41.txt` | 398 | 500 |
+| `de-DE/changelogs/42.txt` | 398 | 500 |
 | `en-US/title.txt` | 8 | 50 |
 | `en-US/short_description.txt` | 79 | 80 |
 | `en-US/full_description.txt` | 2309 | 4000 |
-| `en-US/changelogs/41.txt` | 388 | 500 |
+| `en-US/changelogs/42.txt` | 388 | 500 |
 
 Gezählt werden **Zeichen, nicht Bytes**. Bei Umlauten ist das ein Unterschied, der die Kurzbeschreibung an der 80er-Grenze kippen lässt — `wc -c` liegt dort zu hoch. Nachzählen:
 

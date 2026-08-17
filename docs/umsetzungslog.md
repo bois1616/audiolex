@@ -1,5 +1,21 @@
 # Umsetzungs-Log (Neueste Einträge zuerst)
 
+## 2026-08-17 (Claude: **F-Droids Update-Erkennung repariert — v0.33.6**)
+
+- **Was:** `fdroid checkupdates` meldete „Couldn't find any version information". Der Build lief, der Lint war sauber — aber die **automatische Update-Erkennung** wäre blind geblieben: Bei `UpdateCheckMode: Tags` hätte jede neue Version einen eigenen Merge Request gebraucht, obwohl die Rezeptur `AutoUpdateMode: Version` verspricht. Die MR-Vorlage von `fdroiddata` führt Auto-Update unter *Strongly Recommended*.
+
+- **Warum es scheiterte, gemessen statt vermutet:** fdroidserver liest die Version mit zwei Regexen aus dem Gradle-File — `\b[Vv]ersionCode\s*=?\s*["'(]*([0-9][0-9_]*)` und das Gegenstück für `versionName`. Beide verlangen ein **Literal** direkt hinter dem Schlüsselwort; Gradle wird nicht ausgewertet. In `composeApp/build.gradle.kts` stand `versionCode = appVersionCode` — eine Variable, die per Regex aus `AppVersion.kt` gelesen wurde. Also fand F-Droid nichts.
+
+- **Wie behoben (Autor-Entscheid aus drei vorgelegten Wegen):** `versionCode = 42` und `versionName = "0.33.6"` stehen jetzt als Literale in `defaultConfig`, mit ausführlichem Kommentar, warum sie Literale bleiben **müssen**. Die Doppelpflege kostet nur, wenn sie auseinanderläuft — also verhindert eine `check()`-Zusicherung genau das: Sie vergleicht die Literale mit den aus `AppVersion.kt` gelesenen Werten und bricht den Build ab, bevor ein APK entsteht. **Belegt**, nicht behauptet: `versionCode` testweise auf 99 gesetzt, `assembleDebug` bricht ab mit „Version drift: build.gradle.kts says 0.33.6 (99), AppVersion.kt says 0.33.6 (42)". Damit bleibt die Garantie aus DoD §6 erhalten (angezeigte Version = gebaute Version), nur wird sie jetzt erzwungen statt abgeleitet. AGENTS.md §6 und der Kopfkommentar von `AppVersion.kt` sind entsprechend umgeschrieben.
+
+- **Store-Text mitgezogen:** `changelogs/41.txt` hieß „Erste Veröffentlichung" — versionCode 41 wird aber nie veröffentlicht, die Rezeptur zeigt jetzt auf `v0.33.6`. Die Datei ist per `git mv` zu `changelogs/42.txt` geworden, in beiden Sprachen; Inhalt unverändert, Zeichenzahlen bleiben 398/388.
+
+- **Rezeptur:** `versionName: 0.33.6`, `versionCode: 42`, `commit: v0.33.6`, `CurrentVersion`/`CurrentVersionCode` nachgezogen.
+
+- **Wie verifiziert:** `./gradlew build` grün, `:core:jvmTest` mit `--rerun-tasks` **210** Fälle / 0 Fehler. Die Probe, die zählt — `fdroid checkupdates` gegen den gepushten Tag —, steht noch aus: `checkupdates` liest die Tags aus dem **entfernten** Repository, also erst nach `git push origin v0.33.6` prüfbar.
+
+- **Nebenbefund aus der MR-Vorlage** (`.gitlab/merge_request_templates/App inclusion.md`, gelesen im geklonten Fork): Der Titel muss dem Format „New app: app name" folgen, der Fork muss öffentlich und der Zweig **ungeschützt** sein (F-Droid merged per Fast-Forward), und zu reproduzierbaren Builds steht dort ausdrücklich: *„if you don't enable reproducible build then the apk will be signed with our key so you can't enable it later"*. Das ist eine Einbahnstraße und gehört vor dem Absenden entschieden — Datenlage dazu in Schritt 8 (zwei byte-identische Builds).
+
 ## 2026-08-17 (Claude: **F-Droid-Deployment vorbereitet — v0.33.0 → v0.33.5**)
 
 - **Was:** Auftrag des Autors, alles für die Aufnahme bei F-Droid vorzubereiten, mit zwei inhaltlichen Vorgaben: Es wird mit **eigenen** WAVs gearbeitet (auch Einsprachen von ihm und Grete als Beispiele), und **ein Störgeräusch soll in jedem Fall mitkommen** — seine eigene Bus-Aufnahme („ist nicht ideal, aber legal"). Beides korrigiert Punkt 3 von ADR-0014 und den ersten ADR-0010-Nachtrag von heute Vormittag; beide Nachträge sind entsprechend ergänzt. Sechs der neun Schritte aus `docs/fdroid-anmeldung.md` sind damit erledigt.
