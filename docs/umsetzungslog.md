@@ -1,5 +1,17 @@
 # Umsetzungs-Log (Neueste Einträge zuerst)
 
+## 2026-08-17 (Claude: **Bei F-Droid eingereicht — fdroiddata!46059**)
+
+- **Was:** Der Merge Request steht: [fdroiddata!46059](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/46059), „New app: AudioLex", Ziel `fdroid/fdroiddata:master`, ein Commit mit einer Datei (24 Zeilen Rezeptur). Pipeline grün, mergeable, keine Konflikte. Alle neun Schritte der Anleitung sind damit abgearbeitet; M6 hat kein offenes Item mehr. Kein Codeeingriff, also kein Versionsschritt — die eingereichte Version ist 0.33.6 / Code 42.
+
+- **Vier Stolpersteine, alle beim ersten Mal hineingetreten** und jetzt in Schritt 9 dokumentiert: Die erste Pipeline scheiterte **in derselben Millisekunde, in der sie entstand**, mit null Jobs und ohne YAML-Fehler — das war GitLabs Freigabe-Schranke für neue Konten, nicht die Rezeptur; nach Kontobestätigung lief sie. Das Formular „Run pipeline" steht auf `master`, was beim Fork eines Rezeptur-Repositories die Prüfstrecke über tausende fremder Apps startet statt der eigenen. Die MR-Vorlage überschreibt eine schon eingefügte Beschreibung („Apply template"). Und GitLabs Rich-Text-Editor ist beim Einfügen zäh — auf einfachen Text umschalten.
+
+- **Was die CI von F-Droid bestätigt hat**, diesmal auf deren Maschinen statt in meinem Container: `fdroid build` 316 s, `checkupdates` 175 s, `fdroid lint` 157 s, `rewritemeta`, `check source code`, `check apk`, `schema validation` — zwölf Jobs, alle grün. Und das Artefakt-Log beweist, was die Vorlage ausdrücklich einfordert (grüner Build heißt nicht automatisch erzeugtes APK): `unsigned/: found 1 matching artifact files and directories`.
+
+- **Zwei Grenzen der Fernbeobachtung**, damit die nächste Sitzung nicht dagegenläuft: Die Job-Liste und die Kommentare von `fdroid/fdroiddata` sind anonym gesperrt (`401`/`404`). Am MR-Objekt selbst sind `head_pipeline.status`, `state`, `labels` und `user_notes_count` lesbar — also ist ablesbar, *ob* jemand kommentiert hat, nicht *was*. Im eigenen Fork ist dagegen alles offen, dort ließen sich Pipelines und Jobs vollständig auslesen.
+
+- **Nicht angekommen:** die Kommandozeile `/label ~"New App"` aus der Vorlage. Sie steht nicht mehr in der Beschreibung, ein Label wurde aber nicht vergeben — naheliegend, weil Labels nur Mitglieder des Zielprojekts setzen dürfen. Sicher belegen lässt es sich nicht, die Systemnotizen sind gesperrt. Folgenlos.
+
 ## 2026-08-17 (Claude: **F-Droids Update-Erkennung repariert — v0.33.6**)
 
 - **Was:** `fdroid checkupdates` meldete „Couldn't find any version information". Der Build lief, der Lint war sauber — aber die **automatische Update-Erkennung** wäre blind geblieben: Bei `UpdateCheckMode: Tags` hätte jede neue Version einen eigenen Merge Request gebraucht, obwohl die Rezeptur `AutoUpdateMode: Version` verspricht. Die MR-Vorlage von `fdroiddata` führt Auto-Update unter *Strongly Recommended*.

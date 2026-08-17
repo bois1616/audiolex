@@ -213,9 +213,18 @@ CurrentVersionCode: 36
 
 Zur Signatur: F-Droid signiert mit eigenem Schlüssel, das ist der Normalfall und für den Anfang das Richtige. **Neu seit Probe 2 (2026-08-17):** Die technische Voraussetzung für den anderen Weg ist nachweislich erfüllt — zwei Builds desselben Tags, einmal mit dem SDK dieses Rechners und einmal im F-Droid-Container, ergaben ein byte-identisches APK. Trotzdem bleibt die Empfehlung für die erste Veröffentlichung, F-Droid signieren zu lassen: Der Nachweis stammt von einer einzigen Maschine, und eine erste Anmeldung mit zusätzlichem Reproduzierbarkeits-Versprechen hat mehr bewegliche Teile, als ein erster Merge Request braucht. Der Befund ist festgehalten, damit die Entscheidung später auf Zahlen statt auf Vermutungen fußt. Reproduzierbare Builds mit `AllowedAPKSigningKeys` (die App wird dann mit dem Schlüssel des Autors ausgeliefert und F-Droid verifiziert nur) gelten als gute Praxis, verlangen aber Bit-Gleichheit zwischen zwei Builds und kosten Einrichtung. Der Preis dafür, das später zu ändern: Nutzer können nicht von einer F-Droid-signierten auf eine anders signierte Version aktualisieren, sie müssen neu installieren. Wenn es also je passieren soll, dann besser vor der ersten Veröffentlichung als danach.
 
-### Schritt 9 — Merge Request stellen · **beim Autor**
+### Schritt 9 — Merge Request stellen · **erledigt**
 
-Der Autor hat mit GitLab bisher nicht gearbeitet (2026-08-17), deshalb hier der Weg in der Reihenfolge, in der man ihn klickt. GitLab ist GitHub sehr ähnlich; die Begriffe unterscheiden sich an einer Stelle: Was auf GitHub „Pull Request" heißt, heißt hier **Merge Request**, kurz MR.
+**Gestellt am 2026-08-17: [fdroiddata!46059](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/46059)** — Titel „New app: AudioLex", Ziel `fdroid/fdroiddata:master`, ein Commit, eine Datei, Pipeline grün, mergeable. Vier Stolpersteine, die dabei Zeit gekostet haben und beim nächsten Mal nicht müssen:
+
+- **Die erste Pipeline scheiterte in derselben Millisekunde, in der sie entstand — mit null Jobs und ohne YAML-Fehler.** Das ist nicht die Rezeptur, das ist GitLabs Freigabe-Schranke für neue Konten: Ohne bestätigtes Konto laufen die Shared Runners nicht an. Nach der Bestätigung (E-Mail plus Captcha) lief sie durch. **Wichtig dabei**, die MR-Vorlage sagt es ausdrücklich: Verlangt GitLab **Telefonnummer oder Kreditkarte**, nichts eingeben — stattdessen im Merge Request vermerken, dass F-Droid die CI anstoßen muss. Deren Runner laufen über GitLabs FOSS-Programm.
+- **Das Formular „Run pipeline" ist auf `master` voreingestellt.** Beim Fork eines Rezeptur-Repositories ist das die Prüfstrecke über mehrere tausend fremde Apps — die eigene Rezeptur liegt auf dem Zweig und wird dort geprüft. Der Link mit vorgewähltem Zweig: `/-/pipelines/new?ref=de.hexenwoche.audiolex`.
+- **Die Vorlage überschreibt, was schon im Feld steht.** Wer den Text zuerst einfügt und danach die Vorlage auswählt, verliert ihn — GitLab warnt, aber der Knopf heißt einladend „Apply template". Reihenfolge: Vorlage wählen, dann deren Inhalt komplett ersetzen.
+- **Der Rich-Text-Editor ist beim Einfügen langsam.** Umschalten auf einfachen Text, dann geht es sofort.
+
+Nicht angekommen ist die Kommandozeile `/label ~"New App"`: Sie steht nicht mehr in der Beschreibung, ein Label wurde aber nicht vergeben — vermutlich, weil Labels nur setzen darf, wer Mitglied des Zielprojekts ist. Folgenlos, ein Paketierer hängt es an.
+
+Der Weg im Einzelnen, in der Reihenfolge, in der man ihn klickt. GitLab ist GitHub sehr ähnlich; die Begriffe unterscheiden sich an einer Stelle: Was auf GitHub „Pull Request" heißt, heißt hier **Merge Request**, kurz MR.
 
 **a) Konto und Fork.** Auf `gitlab.com` registrieren (kostenlos, E-Mail-Bestätigung). Dann `https://gitlab.com/fdroid/fdroiddata` öffnen und oben rechts auf **Fork** klicken → eigener Namensraum als Ziel, Sichtbarkeit öffentlich. Der Fork ist eine eigene Kopie des Rezeptur-Repositories unter dem eigenen Konto; darin darf man alles, ohne bei F-Droid etwas anzurichten. Achtung, das Repository ist groß (mehrere Tausend Rezepturen) — der Fork dauert ein paar Minuten.
 
@@ -298,22 +307,17 @@ python3 -c "import sys;print(len(open(sys.argv[1],encoding='utf-8').read().rstri
 
 Zu jeder neuen Version kommt ein `changelogs/<versionCode>.txt` dazu; die alten bleiben liegen. Die englischen Fassungen sind Übersetzungen, keine eigenen Texte — der englische Eintrag ist die Rückfallebene, nicht die Hauptsache, und darf kürzer sein.
 
-## Was nur der Autor kann
+## Stand
 
-Stand 2026-08-17, abends. Übrig ist **ein** Punkt.
+**Eingereicht am 2026-08-17: [fdroiddata!46059](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/46059).** Alle neun Schritte sind abgearbeitet, die Pipeline am Merge Request ist grün, der Antrag ist mergeable und ohne Konflikte.
 
-**GitLab-Konto, Fork, Merge Request** — Schritt 9 führt das für jemanden durch, der es noch nie gemacht hat. Ein Konto kann ich nicht anlegen und keinen Antrag in seinem Namen stellen. Empfehlung von dort, weil sie leicht untergeht: die Entstehung im Zusammenspiel mit einer KI im Merge Request selbst ansprechen, statt sie unerwähnt zu lassen.
+Offen ist nur noch, was nicht in unserer Hand liegt: Ein Paketierer sieht sich den Antrag an und stellt Rückfragen im Merge Request; die kommen per E-Mail. Zügig antworten hilft, weil ein liegengebliebener MR irgendwann einschläft. Nach dem Merge dauert es etwa 24 bis 48 Stunden, bis die App im Katalog auftaucht — die Signatur läuft nicht vollautomatisch. Baulogs: `https://monitor.f-droid.org/builds/`.
 
-Erledigt und damit nicht mehr auf dieser Liste:
-
-- **Repository öffentlich, Tag gepusht** (2026-08-17): `master` und `v0.33.5` zeigen bei GitHub auf `754a339`, anonym über HTTPS geprüft. Die Historie ist um die Telefonnummer bereinigt, Schritt 4 hält den Ablauf und die zwei Lehren daraus fest.
-- **Die Abnahme am Hörgerät** — Urteil des Autors: „Der Hörtest ist sehr gut." Das Bus-Geräusch ist bei „Fortgeschritten" sehr dominant, lässt sich aber über den Regler leicht korrigieren; von Knistern keine Rede. Damit ist der offene Messbefund geschlossen (bei SNR −5 dB laufen 1,7 % der Samples in die Begrenzung des Mixers) — **kein** Limiter-Durchgang auf `bus.wav`, die Datei bleibt, wie sie vom Gerät kam.
-- **Die lokalen Doubletten auf dem A53 sind aufgeräumt:** Die vier eigenen Aufnahmen und das eigene Bus-Geräusch waren identisch mit dem, was jetzt mitgeliefert wird, und sind nach Autor-Entscheid vom Gerät entfernt worden. Auf fremden Geräten konnte die Doppelung nie auftreten.
-- Außerdem: LICENSE, Toolchain-Plugin, 72 Korpus-Audios im Index, gebündeltes Bus-Geräusch, Demo-Einsprachen samt Lizenz und Einverständnis, Impressum, README, Store-Texte, Icon, vier Screenshots vom Gerät, Rezeptur, Build-Probe aus dem echten Klon.
+Ab dann trägt die Tag-Disziplin: Ein neuer Tag `v0.34.0` erzeugt über `UpdateCheckMode: Tags` und `AutoUpdateMode: Version` von selbst einen Build-Eintrag, ohne weiteren Merge Request. Voraussetzung ist, dass `versionCode`/`versionName` als **Literale** in `composeApp/build.gradle.kts` stehen bleiben — warum, steht im Kommentar dort und in AGENTS.md §6.
 
 Eine Kleinigkeit, die kein Blocker ist: **Akzent der Demo-Einsprachen.** Sie sind als `locale: de-DE` eingetragen, weil sich das am Schreibtisch nicht feststellen lässt. Sind sie österreichisch gefärbt, gehört `de-AT` hinein (und die Dateien in ein `raw/de-AT/`).
 
-Was **ich** noch beisteuern kann: die Rezeptur auf einen späteren Tag anpassen, falls nicht `v0.33.5` veröffentlicht wird — und Rückfragen des Paketierers im Merge Request mit dir durchgehen. Probe 2 aus Schritt 7 ist gelaufen: `fdroid lint` sauber, `fdroid build` erfolgreich, Scanner ohne Fund.
+Was **ich** noch beitragen kann: Rückfragen des Paketierers mit dir durchgehen — den Text der Kommentare sehe ich von hier aus nicht, die Systemnotizen des Zielprojekts sind anonym gesperrt (`401`), also bitte hereinkopieren. Und die Rezeptur auf einen späteren Tag anpassen, falls doch nicht `v0.33.6` veröffentlicht wird.
 
 ## Quellen
 
