@@ -1,21 +1,3 @@
-# Text für den Merge Request
-
-Vorlage im GitLab-Formular: **App inclusion**. Ihre fett gesetzten Hinweiszeilen ganz oben werden gelöscht — das steht dort ausdrücklich („Please remove above lines!").
-
-Der Titel ist Vorschrift und muss dem Format „New app: app name" folgen:
-
-```text
-New app: AudioLex
-```
-
-Zwei Voraussetzungen prüft niemand für dich, sie stehen aber in der Vorlage: Der Fork muss **öffentlich** sein, und der Zweig `de.hexenwoche.audiolex` darf **nicht geschützt** sein — F-Droid merged per Fast-Forward und muss vorher rebasen können.
-
-**Was ins Beschreibungsfeld kommt, steht in `merge-request-body.md` daneben — die Datei ganz kopieren, sonst nichts.** Sie enthält ausschließlich den englischen Text für GitLab: die Vorlage mit gesetzten Haken, die Projektbeschreibung und die Label-Zeile. Diese Datei hier ist die deutsche Handreichung dazu und gehört *nicht* in den Merge Request.
-
-Unten steht dieselbe Fassung noch einmal im Zusammenhang, damit man sie lesen kann, ohne zwei Dateien nebeneinanderzulegen — maßgeblich ist `merge-request-body.md`.
-
----
-
 ## Required
 
 * [x] The app complies with the [inclusion criteria](https://f-droid.org/docs/Inclusion_Policy)
@@ -63,27 +45,3 @@ checked before opening this, in case it saves a round trip:
   have it found. If that is a problem for inclusion, please tell me directly.
 
 /label ~"New App"
-
----
-
-## Entschieden: F-Droid signiert (Autor-Entscheid 2026-08-17)
-
-Die Vorlage will das ausdrücklich so notiert haben — Kästchen leer lassen und
-„No, I don't want this." dahinterschreiben. Das ist oben bereits eingetragen.
-
-Warum so, damit die Entscheidung später nachvollziehbar ist: Die technische
-Voraussetzung wäre erfüllt gewesen. Zwei Builds desselben Tags — einer mit dem
-Android-SDK des Entwicklungsrechners, einer im F-Droid-Container mit deren SDK
-und deren nachgeladenem Gradle — ergaben ein **byte-identisches** APK
-(30 400 285 Bytes, gleicher SHA-256). Dagegen standen drei Dinge: Der Nachweis
-stammt von **einer** Maschine, während F-Droid über verschiedene hinweg
-vergleicht. Die Zusage gilt nicht einmalig, sondern für jede künftige Version —
-reproduziert ein Build nach einem Gradle- oder AGP-Sprung nicht mehr, bleibt das
-Update liegen, bis es wieder passt. Und ein eigener Signaturschlüssel muss für
-die Lebensdauer der App sicher verwahrt werden; geht er verloren, gibt es keine
-Updates mehr.
-
-Der Preis dieser Entscheidung ist benannt und akzeptiert: Sie lässt sich nicht
-nachholen. Die Vorlage sagt dazu *„you can't enable it later"*, weil das APK dann
-mit F-Droids Schlüssel signiert ist und Nutzer nicht auf eine anders signierte
-Fassung aktualisieren können.
