@@ -25,6 +25,7 @@ audiolex/
 │       │   ├── srs/             # ReviewRating, ReviewCard, ReviewScheduler
 │       │   ├── audio/           # PcmBuffer, Mixer, AudioSink (expect), WavFile
 │       │   ├── corpus/          # Word, AudioRecording, Kategorien
+│       │   ├── i18n/            # UI-Textbestand DE/EN, UiLanguage (ADR-0015)
 │       │   └── session/         # (ab M2) Sitzungssteuerung
 │       ├── commonTest/          # Unit-Tests (laufen als jvmTest)
 │       ├── androidMain/         # actual: AudioTrack-Sink

@@ -6,6 +6,7 @@ import de.hexenwoche.audiolex.core.corpus.LoadedCorpus
 import de.hexenwoche.audiolex.core.corpus.RecordingSource
 import de.hexenwoche.audiolex.core.corpus.mergeCorpus
 import de.hexenwoche.audiolex.core.corpus.parseCorpus
+import de.hexenwoche.audiolex.core.i18n.Strings
 import de.hexenwoche.audiolex.generated.resources.Res
 
 /**
@@ -60,15 +61,19 @@ suspend fun loadCorpus(
  * A missing own recording (deleted between corpus load and playback, AC5)
  * throws rather than returning null: [de.hexenwoche.audiolex.core.session.PlaybackQueue]'s
  * producer already turns any exception from its `produce()` lambda into the
- * existing calm onError path ("Wiedergabe fehlgeschlagen: …"), the same
+ * existing calm onError path ([Strings.playbackFailed]), the same
  * outcome a missing built-in resource would already hit today -- no second
  * failure mechanism needed for the second source.
  */
-suspend fun readRecordingBytes(recording: AudioRecording, ownCorpusRepository: OwnCorpusRepository): ByteArray =
+suspend fun readRecordingBytes(
+    recording: AudioRecording,
+    ownCorpusRepository: OwnCorpusRepository,
+    strings: Strings,
+): ByteArray =
     when (recording.source) {
         RecordingSource.MITGELIEFERT -> Res.readBytes("files/corpus/${recording.fileRef}")
         RecordingSource.EIGEN -> ownCorpusRepository.recordingBytes(recording.fileRef)
-            ?: error("Aufnahme „${recording.fileRef}“ nicht gefunden.")
+            ?: error(strings.recordingFileMissing(recording.fileRef))
     }
 
 /**
@@ -92,14 +97,11 @@ suspend fun readRecordingBytes(recording: AudioRecording, ownCorpusRepository: O
  *   [excludedSpeakers] -- the AC7 bit-identical baseline -- always lands
  *   here, same as before this batch existed.
  */
-fun emptyCorpusHint(excludedSpeakers: Set<String>, availableSpeakers: Set<String>): String {
+fun emptyCorpusHint(excludedSpeakers: Set<String>, availableSpeakers: Set<String>, strings: Strings): String {
     val selected = availableSpeakers - excludedSpeakers
     return when {
-        availableSpeakers.isNotEmpty() && selected.isEmpty() ->
-            "Kein Kontingent ausgewählt. Wähle mindestens eines in den Einstellungen unter „Korpus“ aus."
-        excludedSpeakers.isNotEmpty() ->
-            "Für die ausgewählten Kontingente gibt es dafür aktuell nichts zu trainieren. " +
-                "Passe die Auswahl unter „Korpus“ oder den Trainingsinhalt in den Einstellungen an."
-        else -> "Kein Wort im Korpus vorhanden."
+        availableSpeakers.isNotEmpty() && selected.isEmpty() -> strings.noContingentSelected
+        excludedSpeakers.isNotEmpty() -> strings.nothingForSelectedContingents
+        else -> strings.emptyCorpus
     }
 }

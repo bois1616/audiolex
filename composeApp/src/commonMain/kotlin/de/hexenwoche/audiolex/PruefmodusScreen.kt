@@ -34,6 +34,7 @@ import de.hexenwoche.audiolex.core.audio.WavFile
 import de.hexenwoche.audiolex.core.audio.createAudioSink
 import de.hexenwoche.audiolex.core.corpus.EntryKind
 import de.hexenwoche.audiolex.core.corpus.LoadedCorpus
+import de.hexenwoche.audiolex.core.i18n.Strings
 import de.hexenwoche.audiolex.core.persistence.ReviewCardRepository
 import de.hexenwoche.audiolex.core.persistence.SessionRepository
 import de.hexenwoche.audiolex.core.persistence.allOrSeed
@@ -116,13 +117,17 @@ fun PruefmodusScreen(
     onBeenden: () -> Unit,
     onZumLernmodus: () -> Unit,
 ) {
+    val strings = LocalStrings.current
     val scope = rememberCoroutineScope()
     val sink = remember { createAudioSink() }
     val outputSetup = rememberOutputSetup()
     var state by remember { mutableStateOf<PruefmodusState>(PruefmodusState.Loading) }
-    val queue = remember {
+    // Keyed on `strings` for the same reason as in LernmodusScreen: the queue
+    // outlives a single error, so the catalog it reports with must not be a
+    // stale capture.
+    val queue = remember(strings) {
         PlaybackQueue(sink, scope, onError = { e ->
-            state = PruefmodusState.Error("Wiedergabe fehlgeschlagen: ${e.message}")
+            state = PruefmodusState.Error(strings.playbackFailed(e.message))
         })
     }
     var corpus by remember { mutableStateOf<LoadedCorpus?>(null) }
@@ -202,13 +207,13 @@ fun PruefmodusScreen(
                 // selected" apart from "selected, but empty for this mode".
                 val availableSpeakers = loadCorpus(ownCorpusRepository = ownCorpusRepository)
                     .recordings.map { it.voiceId }.toSet()
-                PruefmodusState.EmptyCorpus(emptyCorpusHint(excludedSpeakers, availableSpeakers))
+                PruefmodusState.EmptyCorpus(emptyCorpusHint(excludedSpeakers, availableSpeakers, strings))
             } else {
                 startedAtEpochMillis = clock.nowEpochMillis()
                 PruefmodusState.Running(ExamSession(round))
             }
         } catch (e: Exception) {
-            state = PruefmodusState.Error("Korpus konnte nicht geladen werden: ${e.message}")
+            state = PruefmodusState.Error(strings.corpusLoadFailed(e.message))
         }
     }
 
@@ -223,7 +228,7 @@ fun PruefmodusScreen(
         val running = state as? PruefmodusState.Running ?: return@LaunchedEffect
         val loaded = corpus ?: return@LaunchedEffect
         playCurrentCard(
-            running.session, loaded, queue, noiseBuffer, snrDb, channelMode, outputSetup, ownCorpusRepository,
+            running.session, loaded, queue, noiseBuffer, snrDb, channelMode, outputSetup, ownCorpusRepository, strings,
         ) { message ->
             state = PruefmodusState.Error(message)
         }
@@ -240,28 +245,28 @@ fun PruefmodusScreen(
             is PruefmodusState.EmptyCorpus -> {
                 Text(current.hint, style = MaterialTheme.typography.headlineSmall)
                 Text(
-                    "Es gibt noch keine Karten zum Üben.",
+                    strings.noCardsToPractise,
                     style = MaterialTheme.typography.bodyLarge,
                 )
-                Button(onClick = onZumLernmodus) { Text("Stattdessen Lernmodus") }
-                Button(onClick = onBeenden) { Text("Zurück zum Start") }
+                Button(onClick = onZumLernmodus) { Text(strings.learningModeInstead) }
+                Button(onClick = onBeenden) { Text(strings.backToStart) }
             }
 
             is PruefmodusState.Error -> {
                 Text(current.message, style = MaterialTheme.typography.bodyLarge)
-                Button(onClick = onBeenden) { Text("Zurück zum Start") }
+                Button(onClick = onBeenden) { Text(strings.backToStart) }
             }
 
             is PruefmodusState.Finished -> {
-                Text("Fertig!", style = MaterialTheme.typography.headlineSmall)
-                Text("${current.ratedCount} Karten bewertet.", style = MaterialTheme.typography.bodyLarge)
+                Text(strings.examFinished, style = MaterialTheme.typography.headlineSmall)
+                Text(strings.cardsRatedSentence(current.ratedCount), style = MaterialTheme.typography.bodyLarge)
                 // Re-queries due cards and starts a fresh session without
                 // leaving the screen (Autor-Finding 2026-07-13). The just-
                 // finished session is already logged (logSessionIfAnyRatings
                 // ran on the transition into Finished), so bumping reloadKey
                 // resets the per-round counters cleanly for the new round.
-                Button(onClick = { reloadKey += 1 }) { Text("Neue Prüfrunde") }
-                Button(onClick = onBeenden) { Text("Zurück zum Start") }
+                Button(onClick = { reloadKey += 1 }) { Text(strings.newExamRound) }
+                Button(onClick = onBeenden) { Text(strings.backToStart) }
             }
 
             is PruefmodusState.Running -> {
@@ -304,11 +309,12 @@ fun PruefmodusScreen(
                         val loaded = corpus ?: return@FilledTonalButton
                         playCurrentCard(
                             session, loaded, queue, noiseBuffer, snrDb, channelMode, outputSetup, ownCorpusRepository,
+                            strings,
                         ) { message ->
                             state = PruefmodusState.Error(message)
                         }
                     }) {
-                        Text("Wiederholen")
+                        Text(strings.repeatPlayback)
                     }
                 }
 
@@ -355,7 +361,7 @@ fun PruefmodusScreen(
                             state = PruefmodusState.Running(next)
                         }
                     }) {
-                        Text("Nächstes")
+                        Text(strings.nextCard)
                     }
                 }
 
@@ -373,7 +379,7 @@ fun PruefmodusScreen(
                     }
                 }) {
                     Text(
-                        "Beenden",
+                        strings.quit,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -393,7 +399,7 @@ fun PruefmodusScreen(
  * (shrink-to-fit vs. 3-line wrap, proportional `lineHeight` for sentences)
  * lives in exactly one place instead of two copies that could drift apart.
  * This function keeps only its own reveal/click affordance -- the
- * "Antippen zum Aufdecken" hint and the tap gesture -- which [TargetTextCard]
+ * "tap to reveal" hint and the tap gesture -- which [TargetTextCard]
  * knows nothing about.
  */
 @Composable
@@ -413,7 +419,7 @@ private fun RevealCard(text: String?, isSentence: Boolean, revealed: Boolean, on
                 // The "tap to reveal" hint is secondary text, not the target
                 // word, so it's set smaller instead of competing with it at
                 // displayLarge (DESIGN.md: secondary content recedes).
-                Text("Antippen zum Aufdecken", style = MaterialTheme.typography.titleMedium)
+                Text(LocalStrings.current.tapToReveal, style = MaterialTheme.typography.titleMedium)
             }
         }
     }
@@ -427,6 +433,8 @@ private fun RevealCard(text: String?, isSentence: Boolean, revealed: Boolean, on
  */
 @Composable
 private fun RatingBar(enabled: Boolean, onRate: (ReviewRating) -> Unit) {
+    val strings = LocalStrings.current
+
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -434,28 +442,12 @@ private fun RatingBar(enabled: Boolean, onRate: (ReviewRating) -> Unit) {
         for (rating in ReviewRating.entries) {
             Button(enabled = enabled, onClick = { onRate(rating) }) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(germanRatingLabel(rating))
-                    Text(germanIntervalHint(rating), style = MaterialTheme.typography.labelSmall)
+                    Text(strings.ratingLabel(rating))
+                    Text(strings.intervalHint(rating), style = MaterialTheme.typography.labelSmall)
                 }
             }
         }
     }
-}
-
-internal fun germanRatingLabel(rating: ReviewRating): String = when (rating) {
-    ReviewRating.AGAIN -> "Sofort"
-    ReviewRating.SOON -> "Bald"
-    ReviewRating.LATER -> "Später"
-    ReviewRating.GOOD -> "Gut"
-    ReviewRating.PERFECT -> "Perfekt"
-}
-
-private fun germanIntervalHint(rating: ReviewRating): String = when (rating) {
-    ReviewRating.AGAIN -> "1 min"
-    ReviewRating.SOON -> "10 min"
-    ReviewRating.LATER -> "1 Tag"
-    ReviewRating.GOOD -> "1 Woche"
-    ReviewRating.PERFECT -> "1 Monat"
 }
 
 private fun playCurrentCard(
@@ -467,23 +459,24 @@ private fun playCurrentCard(
     channelMode: ChannelMode,
     outputSetup: OutputSetup,
     ownCorpusRepository: OwnCorpusRepository,
+    strings: Strings,
     onError: (String) -> Unit,
 ) {
     val word = corpus.wordById(session.currentCard.wordId)
     if (word == null) {
-        onError("Wort zu Karte „${session.currentCard.wordId}“ nicht gefunden.")
+        onError(strings.wordForCardNotFound(session.currentCard.wordId))
         return
     }
     val recording = corpus.recordingFor(word.id)
     if (recording == null) {
-        onError("Keine Aufnahme für „${word.text}“ gefunden.")
+        onError(strings.noRecordingFound(word.text))
         return
     }
     // Decode inside the queue producer so a fast double-tap on "Wiederholen"
     // cancels the previous decode+play atomically instead of racing two
     // AudioTracks (same fix as Lernmodus, Autor-Finding 2026-07-13).
     queue.play {
-        val bytes = readRecordingBytes(recording, ownCorpusRepository)
+        val bytes = readRecordingBytes(recording, ownCorpusRepository, strings)
         val speech = WavFile.decode(bytes)
         val mixed = mixWithOptionalNoise(speech, noiseBuffer, snrDb)
         applyChannelMode(mixed, channelMode, outputSetup)

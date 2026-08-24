@@ -41,6 +41,16 @@ import androidx.room.Upsert
  * not the destructive fallback -- same reasoning as
  * [MIGRATION_6_7][de.hexenwoche.audiolex.core.persistence.MIGRATION_6_7]:
  * existing SRS cards and session history must survive the jump.
+ *
+ * [uiLanguage] (ADR-0015) stores the
+ * [de.hexenwoche.audiolex.core.i18n.UiLanguage] enum name, same pattern as
+ * [themeMode]/[corpusMode]/[channelMode]. Default `"SYSTEM"` means "follow
+ * the device language", which is why the upgrade needs no data written: an
+ * install that was German because the app only spoke German stays German on
+ * a German device. Carried by
+ * [MIGRATION_8_9][de.hexenwoche.audiolex.core.persistence.MIGRATION_8_9], a
+ * plain column append like [MIGRATION_6_7] rather than the table rebuild
+ * [MIGRATION_7_8] needed.
  */
 @Entity
 data class SettingsEntity(
@@ -52,6 +62,7 @@ data class SettingsEntity(
     val noiseScenario: String = "",
     val channelMode: String = "BEIDE",
     val excludedSpeakers: String = "[]",
+    val uiLanguage: String = "SYSTEM",
 )
 
 @Dao

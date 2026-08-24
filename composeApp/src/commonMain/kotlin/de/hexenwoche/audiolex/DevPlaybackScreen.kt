@@ -27,6 +27,7 @@ import de.hexenwoche.audiolex.core.audio.WavFile
 import de.hexenwoche.audiolex.core.audio.createAudioSink
 import de.hexenwoche.audiolex.core.audio.createAudioSource
 import de.hexenwoche.audiolex.core.corpus.AudioRecording
+import de.hexenwoche.audiolex.core.i18n.Strings
 import de.hexenwoche.audiolex.core.corpus.LoadedCorpus
 import de.hexenwoche.audiolex.core.session.PlaybackQueue
 import kotlinx.coroutines.CancellationException
@@ -66,6 +67,7 @@ import kotlinx.coroutines.withContext
  */
 @Composable
 fun DevPlaybackScreen(ownCorpusRepository: OwnCorpusRepository) {
+    val strings = LocalStrings.current
     var corpus by remember { mutableStateOf<LoadedCorpus?>(null) }
     var status by remember { mutableStateOf("Lade Korpus…") }
     val scope = rememberCoroutineScope()
@@ -138,7 +140,7 @@ fun DevPlaybackScreen(ownCorpusRepository: OwnCorpusRepository) {
                     // Decode + mix happen inside the producer (AC1): a fast
                     // follow-up tap cancels this job, decode included,
                     // instead of two decodes racing to the sink.
-                    queue.play { buildTwoWordsPerEar(left, right, gain, ownCorpusRepository) }
+                    queue.play { buildTwoWordsPerEar(left, right, gain, ownCorpusRepository, strings) }
                 },
             ) {
                 Text(label)
@@ -160,7 +162,7 @@ fun DevPlaybackScreen(ownCorpusRepository: OwnCorpusRepository) {
                 onClick = {
                     val rec = recording ?: return@Button
                     status = "Spiele „${word.text}“ (${rec.voiceId})…"
-                    queue.play { decodeRecording(rec, ownCorpusRepository) }
+                    queue.play { decodeRecording(rec, ownCorpusRepository, strings) }
                 },
             ) {
                 Text(word.text)
@@ -308,9 +310,18 @@ private fun MikrofonRohtestSection(queue: PlaybackQueue) {
     }
 }
 
-private suspend fun decodeRecording(recording: AudioRecording, ownCorpusRepository: OwnCorpusRepository): PcmBuffer =
+// The dev channel test keeps its German labels (ADR-0015 Nicht-Ziele) -- it
+// is an instrument, not a product screen. The catalog is threaded through
+// here anyway, because `readRecordingBytes` needs one for the
+// "recording missing" case and inventing a second, German-only message for
+// it would be a copy that can drift.
+private suspend fun decodeRecording(
+    recording: AudioRecording,
+    ownCorpusRepository: OwnCorpusRepository,
+    strings: Strings,
+): PcmBuffer =
     withContext(Dispatchers.Default) {
-        val bytes = readRecordingBytes(recording, ownCorpusRepository)
+        val bytes = readRecordingBytes(recording, ownCorpusRepository, strings)
         WavFile.decode(bytes)
     }
 
@@ -326,10 +337,11 @@ private suspend fun buildTwoWordsPerEar(
     rightRecording: AudioRecording,
     gain: StereoGain,
     ownCorpusRepository: OwnCorpusRepository,
+    strings: Strings,
 ): PcmBuffer =
     withContext(Dispatchers.Default) {
-        val left = WavFile.decode(readRecordingBytes(leftRecording, ownCorpusRepository))
-        val right = WavFile.decode(readRecordingBytes(rightRecording, ownCorpusRepository))
+        val left = WavFile.decode(readRecordingBytes(leftRecording, ownCorpusRepository, strings))
+        val right = WavFile.decode(readRecordingBytes(rightRecording, ownCorpusRepository, strings))
         require(left.sampleRate == right.sampleRate) { "sample rates differ" }
         require(left.channels == 1 && right.channels == 1) { "expected mono corpus recordings" }
 

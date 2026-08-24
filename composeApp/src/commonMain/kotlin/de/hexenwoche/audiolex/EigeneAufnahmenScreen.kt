@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import de.hexenwoche.audiolex.core.audio.createAudioSink
 import de.hexenwoche.audiolex.core.corpus.EntryKind
 import de.hexenwoche.audiolex.core.corpus.OwnEntry
+import de.hexenwoche.audiolex.core.i18n.Strings
 import de.hexenwoche.audiolex.core.persistence.SessionRepository
 import de.hexenwoche.audiolex.core.session.PlaybackQueue
 import de.hexenwoche.audiolex.core.time.Clock
@@ -72,11 +73,12 @@ fun EigeneAufnahmenScreen(
     clock: Clock,
     onBeenden: () -> Unit,
 ) {
+    val strings = LocalStrings.current
     val scope = rememberCoroutineScope()
     val sink = remember { createAudioSink() }
     var status by remember { mutableStateOf<String?>(null) }
-    val queue = remember {
-        PlaybackQueue(sink, scope, onError = { e -> status = "Wiedergabe fehlgeschlagen: ${e.message}" })
+    val queue = remember(strings) {
+        PlaybackQueue(sink, scope, onError = { e -> status = strings.playbackFailed(e.message) })
     }
     val permission = rememberRecordingPermissionState()
     val backup = rememberBackupActions()
@@ -144,7 +146,7 @@ fun EigeneAufnahmenScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("Eigene Aufnahmen", style = MaterialTheme.typography.headlineLarge)
+        Text(strings.ownRecordings, style = MaterialTheme.typography.headlineLarge)
 
         Column(
             modifier = Modifier
@@ -157,28 +159,29 @@ fun EigeneAufnahmenScreen(
                 Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
 
-            Text("Neue Aufnahme", style = MaterialTheme.typography.titleMedium)
+            Text(strings.sectionNewRecording, style = MaterialTheme.typography.titleMedium)
 
             OutlinedTextField(
                 value = newText,
                 onValueChange = { newText = it },
-                label = { Text("Text") },
+                label = { Text(strings.fieldText) },
                 modifier = Modifier.fillMaxWidth(),
             )
 
             Column(modifier = Modifier.fillMaxWidth().selectableGroup()) {
-                KindOption(label = "Wort", selected = newKind == EntryKind.WORD, onSelect = { kindOverride = EntryKind.WORD })
-                KindOption(
-                    label = "Satz",
-                    selected = newKind == EntryKind.SENTENCE,
-                    onSelect = { kindOverride = EntryKind.SENTENCE },
-                )
+                for (kind in EntryKind.entries) {
+                    KindOption(
+                        label = strings.kindLabel(kind),
+                        selected = newKind == kind,
+                        onSelect = { kindOverride = kind },
+                    )
+                }
             }
 
             OutlinedTextField(
                 value = newSpeaker,
                 onValueChange = { newSpeaker = it },
-                label = { Text("Sprecher (optional)") },
+                label = { Text(strings.fieldSpeakerOptional) },
                 modifier = Modifier.fillMaxWidth(),
             )
 
@@ -210,8 +213,7 @@ fun EigeneAufnahmenScreen(
             // block -- the decision stays the user's.
             if (recorder.buffer != null && newText.isBlank()) {
                 Text(
-                    "Ohne Text lässt sich der Eintrag nicht trainieren. " +
-                        "Du kannst ihn später über „Text ändern“ nachtragen.",
+                    strings.untranscribedHint,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -232,22 +234,23 @@ fun EigeneAufnahmenScreen(
                     }
                 },
             ) {
-                Text("Speichern")
+                Text(strings.save)
             }
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-            Text("Meine Einträge", style = MaterialTheme.typography.titleMedium)
+            Text(strings.sectionMyEntries, style = MaterialTheme.typography.titleMedium)
 
             if (isLoading) {
                 CircularProgressIndicator()
             } else if (entries.isEmpty()) {
-                Text("Noch keine eigenen Aufnahmen.", style = MaterialTheme.typography.bodyLarge)
+                Text(strings.noOwnRecordingsYet, style = MaterialTheme.typography.bodyLarge)
             } else {
                 val sorted = entries.sortedByDescending { it.createdAtEpochMillis }
                 sorted.forEachIndexed { index, entry ->
                     EntryRow(
                         entry = entry,
+                        strings = strings,
                         queue = queue,
                         repository = repository,
                         permission = permission,
@@ -272,7 +275,7 @@ fun EigeneAufnahmenScreen(
                         onToggleReRecord = {
                             reRecordingId = if (reRecordingId == entry.id) null else entry.id
                         },
-                        onPlaybackMissing = { status = "Keine Aufnahme für „${entry.text}“ vorhanden." },
+                        onPlaybackMissing = { status = strings.noRecordingAvailable(entry.text) },
                         onDeleteRequested = { pendingDeleteId = entry.id },
                     )
                     if (index < sorted.lastIndex) {
@@ -283,7 +286,7 @@ fun EigeneAufnahmenScreen(
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-            Text("Sicherung", style = MaterialTheme.typography.titleMedium)
+            Text(strings.sectionBackup, style = MaterialTheme.typography.titleMedium)
 
             // AC6: after this version the system backup is off (AC4), so a
             // user who never exports has *less* protection than before. That
@@ -291,8 +294,7 @@ fun EigeneAufnahmenScreen(
             // not a recurring nag: ADR-0013 hands the decision to the user
             // on purpose.
             Text(
-                "Eigene Aufnahmen, eigene Störgeräusche und dein Sitzungsverlauf liegen sonst nur auf diesem Gerät. " +
-                    "Der Export legt alles als ZIP-Datei in deinen Dokumenten ab — was danach damit geschieht, entscheidest du.",
+                strings.backupExplainer,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -305,12 +307,12 @@ fun EigeneAufnahmenScreen(
                     onClick = {
                         scope.launch {
                             isBackupBusy = true
-                            status = runExport(repository, ownNoiseRepository, sessionRepository, backup, clock)
+                            status = runExport(repository, ownNoiseRepository, sessionRepository, backup, clock, strings)
                             isBackupBusy = false
                         }
                     },
                 ) {
-                    Text("Exportieren")
+                    Text(strings.export)
                 }
                 Button(
                     enabled = !isBackupBusy,
@@ -323,7 +325,7 @@ fun EigeneAufnahmenScreen(
                                 isBackupBusy = false
                             } else {
                                 scope.launch {
-                                    status = runImport(repository, ownNoiseRepository, sessionRepository, bytes)
+                                    status = runImport(repository, ownNoiseRepository, sessionRepository, bytes, strings)
                                     reload()
                                     isBackupBusy = false
                                 }
@@ -331,13 +333,13 @@ fun EigeneAufnahmenScreen(
                         }
                     },
                 ) {
-                    Text("Importieren")
+                    Text(strings.importAction)
                 }
             }
         }
 
         Button(onClick = onBeenden) {
-            Text("Zurück")
+            Text(strings.back)
         }
     }
 
@@ -345,13 +347,8 @@ fun EigeneAufnahmenScreen(
     if (deleteTarget != null) {
         AlertDialog(
             onDismissRequest = { pendingDeleteId = null },
-            title = { Text("Eintrag löschen?") },
-            text = {
-                Text(
-                    "„${deleteTarget.text}“ wird endgültig entfernt, inklusive der Aufnahme. " +
-                        "Das lässt sich nicht rückgängig machen.",
-                )
-            },
+            title = { Text(strings.deleteEntryTitle) },
+            text = { Text(strings.deleteConfirmBody(deleteTarget.text)) },
             confirmButton = {
                 TextButton(onClick = {
                     val id = deleteTarget.id
@@ -361,12 +358,12 @@ fun EigeneAufnahmenScreen(
                         reload()
                     }
                 }) {
-                    Text("Löschen", color = MaterialTheme.colorScheme.error)
+                    Text(strings.delete, color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { pendingDeleteId = null }) {
-                    Text("Abbrechen", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(strings.cancel, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             },
         )
@@ -376,6 +373,7 @@ fun EigeneAufnahmenScreen(
 @Composable
 private fun EntryRow(
     entry: OwnEntry,
+    strings: Strings,
     queue: PlaybackQueue,
     repository: OwnCorpusRepository,
     permission: RecordingPermissionState,
@@ -398,22 +396,22 @@ private fun EntryRow(
             OutlinedTextField(
                 value = editedText,
                 onValueChange = onEditedTextChange,
-                label = { Text("Text") },
+                label = { Text(strings.fieldText) },
                 modifier = Modifier.fillMaxWidth(),
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(enabled = editedText.isNotBlank(), onClick = onSaveEdit) {
-                    Text("Speichern")
+                    Text(strings.save)
                 }
                 TextButton(onClick = onCancelEdit) {
-                    Text("Abbrechen", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(strings.cancel, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         } else {
             Text(entry.text, style = MaterialTheme.typography.bodyLarge)
             val speakerPart = if (entry.speaker.isNotBlank()) " · ${entry.speaker}" else ""
             Text(
-                "${germanKindLabel(entry.kind)}$speakerPart · ${formatTimestamp(entry.createdAtEpochMillis, zoneId)}",
+                "${strings.kindLabel(entry.kind)}$speakerPart · ${formatTimestamp(entry.createdAtEpochMillis, zoneId)}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -434,16 +432,16 @@ private fun EntryRow(
                         if (audio == null) onPlaybackMissing() else queue.play(audio)
                     }
                 }) {
-                    Text("Anhören")
+                    Text(strings.listen)
                 }
                 FilledTonalButton(onClick = onStartEdit) {
-                    Text("Text ändern")
+                    Text(strings.editText)
                 }
                 FilledTonalButton(onClick = onToggleReRecord) {
-                    Text(if (isReRecording) "Aufnahme schließen" else "Neu aufnehmen")
+                    Text(if (isReRecording) strings.closeRecording else strings.reRecord)
                 }
                 TextButton(onClick = onDeleteRequested) {
-                    Text("Löschen", color = MaterialTheme.colorScheme.error)
+                    Text(strings.delete, color = MaterialTheme.colorScheme.error)
                 }
             }
         }
@@ -453,7 +451,7 @@ private fun EntryRow(
             // created when this row opens its re-record panel, released
             // when it closes (DisposableEffect inside rememberRecorderController).
             val recorder = rememberRecorderController()
-            RecorderControls(recorder = recorder, permission = permission, queue = queue, recordLabel = "Neu aufnehmen")
+            RecorderControls(recorder = recorder, permission = permission, queue = queue, recordLabel = strings.reRecord)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(
                     enabled = recorder.buffer != null && !recorder.isRecording && !recorder.isBusy,
@@ -465,10 +463,10 @@ private fun EntryRow(
                         }
                     },
                 ) {
-                    Text("Übernehmen")
+                    Text(strings.applyRecording)
                 }
                 TextButton(onClick = onToggleReRecord) {
-                    Text("Abbrechen", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(strings.cancel, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -498,6 +496,12 @@ private fun KindOption(label: String, selected: Boolean, onSelect: () -> Unit) {
  * path ends in a sentence the user can act on -- including the one where the
  * file couldn't be written, which is otherwise indistinguishable from a
  * successful backup that simply isn't there when it's needed.
+ *
+ * The sentence is assembled from catalog pieces rather than formatted from a
+ * template (ADR-0015): the count phrases and the joiner are per-language, so
+ * German gets "zwei Aufnahme(n) und eine Sitzung(en)" in its own shorthand
+ * and English gets proper plurals, without either having to fit the other's
+ * grammar.
  */
 private suspend fun runExport(
     repository: OwnCorpusRepository,
@@ -505,29 +509,32 @@ private suspend fun runExport(
     sessions: SessionRepository,
     backup: BackupActions,
     clock: Clock,
+    strings: Strings,
 ): String {
     val now = clock.nowEpochMillis()
     val export = exportBackup(repository, ownNoises, sessions, now)
     if (export.exported == 0 && export.sessions == 0 && export.noises == 0) {
-        return "Nichts zu sichern: Es gibt noch keine Aufnahme, kein Geräusch und keine Sitzung."
+        return strings.nothingToBackUp
     }
     val location = backup.saveToDocuments(backupFileName(now), export.bytes)
-        ?: return "Sicherung fehlgeschlagen — die Datei konnte nicht geschrieben werden."
+        ?: return strings.backupWriteFailed
 
     // AC5: all three kinds named separately. A backup that holds recordings
     // but no noises/sessions yet says so by staying silent about them, not
     // by claiming "0".
-    val what = buildList {
-        if (export.exported > 0) add("${export.exported} Aufnahme(n)")
-        if (export.noises > 0) add("${export.noises} Geräusch(e)")
-        if (export.sessions > 0) add("${export.sessions} Sitzung(en)")
-    }.joinToString(", ").let { joinLastWithUnd(it) }
+    val what = strings.joinLast(
+        buildList {
+            if (export.exported > 0) add(strings.recordingCount(export.exported))
+            if (export.noises > 0) add(strings.noiseCount(export.noises))
+            if (export.sessions > 0) add(strings.sessionCount(export.sessions))
+        },
+    )
     val skipped = if (export.skippedWithoutRecording > 0) {
-        " ${export.skippedWithoutRecording} Eintrag/Einträge ohne Aufnahme sind nicht enthalten."
+        strings.backupSkippedWithoutRecording(export.skippedWithoutRecording)
     } else {
         ""
     }
-    return "$what gesichert nach $location.$skipped"
+    return strings.backupSaved(what, location) + skipped
 }
 
 /**
@@ -540,10 +547,10 @@ private suspend fun runImport(
     ownNoises: OwnNoiseRepository,
     sessions: SessionRepository,
     bytes: ByteArray,
+    strings: Strings,
 ): String =
     when (val result = importBackup(bytes, repository, ownNoises, sessions)) {
-        ArchiveImport.Unreadable ->
-            "Diese Datei ist keine AudioLex-Sicherung oder beschädigt. Es wurde nichts verändert."
+        ArchiveImport.Unreadable -> strings.archiveUnreadable
 
         is ArchiveImport.Merged -> buildString {
             // AC5: the three kinds are reported separately, and each stays
@@ -551,47 +558,31 @@ private suspend fun runImport(
             // without a sitzungen/ or stoergeraeusche/ folder must not read
             // as "0 Sitzungen"/"0 Geräusche".
             val added = buildList {
-                if (result.added > 0) add("${result.added} Eintrag/Einträge")
-                if (result.noisesAdded > 0) add("${result.noisesAdded} Geräusch(e)")
-                if (result.sessionsAdded > 0) add("${result.sessionsAdded} Sitzung(en)")
+                if (result.added > 0) add(strings.entryCount(result.added))
+                if (result.noisesAdded > 0) add(strings.noiseCount(result.noisesAdded))
+                if (result.sessionsAdded > 0) add(strings.sessionCount(result.sessionsAdded))
             }
             val known = buildList {
-                if (result.alreadyPresent > 0) add("${result.alreadyPresent} Eintrag/Einträge")
-                if (result.noisesAlreadyPresent > 0) add("${result.noisesAlreadyPresent} Geräusch(e)")
-                if (result.sessionsAlreadyPresent > 0) add("${result.sessionsAlreadyPresent} Sitzung(en)")
+                if (result.alreadyPresent > 0) add(strings.entryCount(result.alreadyPresent))
+                if (result.noisesAlreadyPresent > 0) add(strings.noiseCount(result.noisesAlreadyPresent))
+                if (result.sessionsAlreadyPresent > 0) add(strings.sessionCount(result.sessionsAlreadyPresent))
             }
             when {
                 added.isNotEmpty() -> {
-                    append("${joinLastWithUnd(added.joinToString(", "))} übernommen")
-                    if (known.isNotEmpty()) append(", ${joinLastWithUnd(known.joinToString(", "))} waren schon vorhanden")
+                    append(strings.importAdded(strings.joinLast(added)))
+                    if (known.isNotEmpty()) append(strings.importAlsoAlreadyPresent(strings.joinLast(known)))
                     append(".")
                 }
 
-                known.isNotEmpty() ->
-                    append("Nichts hinzugefügt — ${joinLastWithUnd(known.joinToString(", "))} der Sicherung sind bereits vorhanden.")
+                known.isNotEmpty() -> append(strings.importOnlyAlreadyPresent(strings.joinLast(known)))
 
-                else -> append("Nichts hinzugefügt.")
+                else -> append(strings.importNothingAdded)
             }
             if (result.unusable > 0) {
-                append(" ${result.unusable} Eintrag/Einträge der Sicherung waren unvollständig und wurden übersprungen.")
+                append(strings.importSkippedEntries(result.unusable))
             }
             if (result.noisesUnusable > 0) {
-                append(" ${result.noisesUnusable} Geräusch(e) der Sicherung waren unvollständig und wurden übersprungen.")
+                append(strings.importSkippedNoises(result.noisesUnusable))
             }
         }
     }
-
-/** "a, b, c" -> "a, b und c" -- the house style these messages already used for two items, extended to three. */
-private fun joinLastWithUnd(joined: String): String {
-    val parts = joined.split(", ")
-    return when (parts.size) {
-        0, 1 -> joined
-        else -> parts.dropLast(1).joinToString(", ") + " und " + parts.last()
-    }
-}
-
-private fun germanKindLabel(kind: EntryKind): String = when (kind) {
-    EntryKind.WORD -> "Wort"
-    EntryKind.SENTENCE -> "Satz"
-}
-

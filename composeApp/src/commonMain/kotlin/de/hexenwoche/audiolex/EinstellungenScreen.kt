@@ -32,6 +32,7 @@ import de.hexenwoche.audiolex.core.audio.NoiseScenario
 import de.hexenwoche.audiolex.core.audio.OutputSetup
 import de.hexenwoche.audiolex.core.corpus.SpeakerContingent
 import de.hexenwoche.audiolex.core.corpus.speakerContingents
+import de.hexenwoche.audiolex.core.i18n.Strings
 import de.hexenwoche.audiolex.core.settings.ChannelMode
 import de.hexenwoche.audiolex.core.settings.CorpusMode
 import de.hexenwoche.audiolex.core.settings.SNR_DB_MAX
@@ -112,6 +113,8 @@ fun EinstellungenScreen(
     onOpenEigeneStoergeraeusche: () -> Unit,
     onBeenden: () -> Unit,
 ) {
+    val strings = LocalStrings.current
+
     // Loaded once when the screen is entered, just for the scenario labels --
     // the training screens separately (re-)load the actual WAV for mixing.
     // The merged catalog (bundled + own noises, Backlog M4 "Eigene
@@ -149,7 +152,7 @@ fun EinstellungenScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("Einstellungen", style = MaterialTheme.typography.headlineLarge)
+        Text(strings.settings, style = MaterialTheme.typography.headlineLarge)
 
         // Only this middle section scrolls -- title above and "Zurück" below
         // stay pinned, so the noise section (switch + slider + scenario
@@ -172,79 +175,60 @@ fun EinstellungenScreen(
             // not a tappable option of its own (Nicht-Ziel), just the same
             // reserved styling as the "leiser/lauter" orientation on the SNR
             // slider.
-            Text("Trainingsstufe", style = MaterialTheme.typography.titleMedium)
+            Text(strings.sectionTrainingLevel, style = MaterialTheme.typography.titleMedium)
 
             Column(
                 modifier = Modifier.fillMaxWidth().selectableGroup(),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
-                RadioOption(
-                    label = "Einfach",
-                    selected = activeProfile == SettingsProfile.EINFACH,
-                    onSelect = { onProfileChange(SettingsProfile.EINFACH) },
-                )
-                RadioOption(
-                    label = "Schwierig",
-                    selected = activeProfile == SettingsProfile.SCHWIERIG,
-                    onSelect = { onProfileChange(SettingsProfile.SCHWIERIG) },
-                )
-                RadioOption(
-                    label = "Fortgeschritten",
-                    selected = activeProfile == SettingsProfile.FORTGESCHRITTEN,
-                    onSelect = { onProfileChange(SettingsProfile.FORTGESCHRITTEN) },
-                )
+                for (profile in SettingsProfile.entries) {
+                    RadioOption(
+                        label = strings.profileLabel(profile),
+                        selected = activeProfile == profile,
+                        onSelect = { onProfileChange(profile) },
+                    )
+                }
             }
 
             if (activeProfile == null) {
                 Text(
-                    "Individuell eingestellt",
+                    strings.customLevel,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
-            Text("Erscheinungsbild", style = MaterialTheme.typography.titleMedium)
+            Text(strings.sectionAppearance, style = MaterialTheme.typography.titleMedium)
 
             Column(
                 modifier = Modifier.fillMaxWidth().selectableGroup(),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
-                RadioOption(
-                    label = "System",
-                    selected = themeMode == ThemeMode.SYSTEM,
-                    onSelect = { onThemeModeChange(ThemeMode.SYSTEM) },
-                )
-                RadioOption(
-                    label = "Hell",
-                    selected = themeMode == ThemeMode.LIGHT,
-                    onSelect = { onThemeModeChange(ThemeMode.LIGHT) },
-                )
-                RadioOption(
-                    label = "Dunkel",
-                    selected = themeMode == ThemeMode.DARK,
-                    onSelect = { onThemeModeChange(ThemeMode.DARK) },
-                )
+                for (mode in ThemeMode.entries) {
+                    RadioOption(
+                        label = strings.themeModeLabel(mode),
+                        selected = themeMode == mode,
+                        onSelect = { onThemeModeChange(mode) },
+                    )
+                }
             }
 
-            Text("Trainingsinhalt", style = MaterialTheme.typography.titleMedium)
+            Text(strings.sectionTrainingContent, style = MaterialTheme.typography.titleMedium)
 
             Column(
                 modifier = Modifier.fillMaxWidth().selectableGroup(),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
-                RadioOption(
-                    label = "Wörter",
-                    selected = corpusMode == CorpusMode.WOERTER,
-                    onSelect = { onCorpusModeChange(CorpusMode.WOERTER) },
-                )
-                RadioOption(
-                    label = "Sätze",
-                    selected = corpusMode == CorpusMode.SAETZE,
-                    onSelect = { onCorpusModeChange(CorpusMode.SAETZE) },
-                )
+                for (mode in CorpusMode.entries) {
+                    RadioOption(
+                        label = strings.corpusModeLabel(mode),
+                        selected = corpusMode == mode,
+                        onSelect = { onCorpusModeChange(mode) },
+                    )
+                }
             }
 
-            Text("Korpus", style = MaterialTheme.typography.titleMedium)
+            Text(strings.sectionCorpus, style = MaterialTheme.typography.titleMedium)
 
             if (contingents.isEmpty()) {
                 // Only reachable if the built-in corpus itself somehow
@@ -252,7 +236,7 @@ fun EinstellungenScreen(
                 // always contributes at least one, so this is a defensive
                 // fallback, not an expected state.
                 Text(
-                    "Kein Kontingent verfügbar.",
+                    strings.noContingentAvailable,
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -260,10 +244,10 @@ fun EinstellungenScreen(
                 val allSpeakers = contingents.map { it.speaker }.toSet()
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     TextButton(onClick = { onExcludedSpeakersChange(excludedSpeakers - allSpeakers) }) {
-                        Text("Alle auswählen")
+                        Text(strings.selectAll)
                     }
                     TextButton(onClick = { onExcludedSpeakersChange(excludedSpeakers + allSpeakers) }) {
-                        Text("Alle abwählen")
+                        Text(strings.deselectAll)
                     }
                 }
 
@@ -271,6 +255,7 @@ fun EinstellungenScreen(
                     for (contingent in contingents) {
                         ContingentOption(
                             contingent = contingent,
+                            strings = strings,
                             included = contingent.speaker !in excludedSpeakers,
                             onIncludedChange = { included ->
                                 // AC2, bindend: the *exclusion* is what's
@@ -289,7 +274,7 @@ fun EinstellungenScreen(
                 }
             }
 
-            Text("Störgeräusch", style = MaterialTheme.typography.titleMedium)
+            Text(strings.sectionNoise, style = MaterialTheme.typography.titleMedium)
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -297,7 +282,7 @@ fun EinstellungenScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Switch(checked = noiseEnabled, onCheckedChange = onNoiseEnabledChange)
-                Text("Ein/Aus", style = MaterialTheme.typography.bodyLarge)
+                Text(strings.onOff, style = MaterialTheme.typography.bodyLarge)
             }
 
             if (noiseEnabled) {
@@ -311,8 +296,7 @@ fun EinstellungenScreen(
                 // AC3) -- only the mapping from slider position to dB value
                 // changed, not when it's saved.
                 var draggedSnrDb by remember(snrDb) { mutableStateOf(snrDb) }
-                val snrLabel = if (draggedSnrDb >= 0) "SNR: +$draggedSnrDb dB" else "SNR: $draggedSnrDb dB"
-                Text(snrLabel, style = MaterialTheme.typography.bodyLarge)
+                Text(strings.snrLabel(draggedSnrDb), style = MaterialTheme.typography.bodyLarge)
 
                 // Axis mirrored against the raw SNR value (A53-Befund +
                 // Autor-Entscheid 2026-08-06): a higher SNR means *less*
@@ -330,7 +314,7 @@ fun EinstellungenScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Text(
-                        "leiser",
+                        strings.quieter,
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -345,13 +329,13 @@ fun EinstellungenScreen(
                         modifier = Modifier.weight(1f),
                     )
                     Text(
-                        "lauter",
+                        strings.louder,
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
 
-                Text("Szenario", style = MaterialTheme.typography.titleMedium)
+                Text(strings.sectionScenario, style = MaterialTheme.typography.titleMedium)
 
                 if (scenarios.isEmpty()) {
                     // The published normal case, not an edge case (ADR-0014):
@@ -361,7 +345,7 @@ fun EinstellungenScreen(
                     // broken; this says what is missing and the TextButton
                     // right below is the way there.
                     Text(
-                        "Noch kein Geräusch vorhanden — der Ton bleibt sauber.",
+                        strings.noNoiseYet,
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -385,11 +369,11 @@ fun EinstellungenScreen(
                 // where a missing sound is noticed. Own noises show up in
                 // the radio list above like bundled ones (AC2).
                 TextButton(onClick = onOpenEigeneStoergeraeusche) {
-                    Text("Eigene Störgeräusche")
+                    Text(strings.ownNoises)
                 }
             }
 
-            Text("Ausgabe", style = MaterialTheme.typography.titleMedium)
+            Text(strings.sectionOutput, style = MaterialTheme.typography.titleMedium)
 
             // Read-only, no control -- AC4 of Batch A. Recedes in
             // onSurfaceVariant (DESIGN.md "Sekundäres tritt zurück"); its
@@ -398,17 +382,13 @@ fun EinstellungenScreen(
             // rememberOutputSetup()'s own device-callback registration
             // (ADR-0011 point 4) -- no extra state needed here.
             val outputSetup = rememberOutputSetup()
-            val outputSetupLabel = when (outputSetup) {
-                OutputSetup.STEREO_KOPFHOERER -> "Stereo-Kopfhörer"
-                OutputSetup.HOERGERAET -> "Hörgerät"
-            }
             Text(
-                "$outputSetupLabel erkannt",
+                strings.outputSetupDetected(outputSetup),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
-            Text("Kanäle", style = MaterialTheme.typography.titleMedium)
+            Text(strings.sectionChannels, style = MaterialTheme.typography.titleMedium)
 
             // Wirksam nur im Kopfhörer-Setup (Backlog M4 "Kopfhörer-Bogen
             // Batch B" AC2/AC3, ADR-0011 point 5): the radio group itself
@@ -420,24 +400,14 @@ fun EinstellungenScreen(
                 modifier = Modifier.fillMaxWidth().selectableGroup(),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
-                RadioOption(
-                    label = "Beide",
-                    selected = channelMode == ChannelMode.BEIDE,
-                    enabled = channelSelectionEnabled,
-                    onSelect = { onChannelModeChange(ChannelMode.BEIDE) },
-                )
-                RadioOption(
-                    label = "Nur links",
-                    selected = channelMode == ChannelMode.NUR_LINKS,
-                    enabled = channelSelectionEnabled,
-                    onSelect = { onChannelModeChange(ChannelMode.NUR_LINKS) },
-                )
-                RadioOption(
-                    label = "Nur rechts",
-                    selected = channelMode == ChannelMode.NUR_RECHTS,
-                    enabled = channelSelectionEnabled,
-                    onSelect = { onChannelModeChange(ChannelMode.NUR_RECHTS) },
-                )
+                for (mode in ChannelMode.entries) {
+                    RadioOption(
+                        label = strings.channelModeLabel(mode),
+                        selected = channelMode == mode,
+                        enabled = channelSelectionEnabled,
+                        onSelect = { onChannelModeChange(mode) },
+                    )
+                }
             }
 
             if (!channelSelectionEnabled) {
@@ -445,8 +415,7 @@ fun EinstellungenScreen(
                 // Tonalität) -- erklärt die Physik (das Hörgerät summiert
                 // Stereo zu Mono, ADR-0007/ADR-0011), nicht ein Problem.
                 Text(
-                    "Ohne Wirkung am Hörgerät: Es summiert Stereo automatisch zu Mono. " +
-                        "Verfügbar mit Stereo-Kopfhörern.",
+                    strings.channelsIneffectiveHint,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -454,7 +423,7 @@ fun EinstellungenScreen(
         }
 
         Button(onClick = onBeenden) {
-            Text("Zurück")
+            Text(strings.back)
         }
     }
 }
@@ -497,7 +466,12 @@ private fun RadioOption(label: String, selected: Boolean, enabled: Boolean = tru
 // weight as the "Ohne Wirkung am Hörgerät" explanations elsewhere on this
 // screen (DESIGN.md "Sekundäres tritt zurück").
 @Composable
-private fun ContingentOption(contingent: SpeakerContingent, included: Boolean, onIncludedChange: (Boolean) -> Unit) {
+private fun ContingentOption(
+    contingent: SpeakerContingent,
+    strings: Strings,
+    included: Boolean,
+    onIncludedChange: (Boolean) -> Unit,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -508,9 +482,9 @@ private fun ContingentOption(contingent: SpeakerContingent, included: Boolean, o
     ) {
         Checkbox(checked = included, onCheckedChange = null)
         Column {
-            Text(speakerLabel(contingent.speaker), style = MaterialTheme.typography.bodyLarge)
+            Text(speakerLabel(contingent.speaker, strings), style = MaterialTheme.typography.bodyLarge)
             Text(
-                "${wordCountLabel(contingent.wordCount)}, ${sentenceCountLabel(contingent.sentenceCount)}",
+                "${strings.wordCount(contingent.wordCount)}, ${strings.sentenceCount(contingent.sentenceCount)}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -518,9 +492,9 @@ private fun ContingentOption(contingent: SpeakerContingent, included: Boolean, o
     }
 }
 
-/** An unset speaker field (Batch B allows this) is its own visible contingent (AC4), not a blank label. */
-private fun speakerLabel(speaker: String): String = speaker.ifBlank { "Ohne Sprecher" }
-
-private fun wordCountLabel(count: Int): String = if (count == 1) "1 Wort" else "$count Wörter"
-
-private fun sentenceCountLabel(count: Int): String = if (count == 1) "1 Satz" else "$count Sätze"
+/**
+ * An unset speaker field (Batch B allows this) is its own visible contingent
+ * (AC4), not a blank label. A real speaker name is never translated -- it is
+ * data the user typed.
+ */
+private fun speakerLabel(speaker: String, strings: Strings): String = speaker.ifBlank { strings.noSpeaker }

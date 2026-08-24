@@ -17,6 +17,7 @@ AudioLex ist ein Übungswerkzeug, kein medizinisches Produkt. Es ersetzt weder d
 - **Trainingsstufen** — Einfach, Schwierig, Fortgeschritten als Ein-Tipp-Voreinstellungen des Störgeräusch-Paars.
 - **Kanalwahl** — links, rechts, beide, wirksam im Stereo-Kopfhörer-Setup. Über ein Bluetooth-Hörgerät wird Stereo mono summiert; die App erkennt das und zeigt die Wahl dort als unwirksam.
 - **Sicherung** — eigene Aufnahmen, eigene Geräusche und der Sitzungsverlauf als ZIP in die eigenen Dokumente, auf Tastendruck.
+- **Deutsch oder Englisch** — die Oberfläche gibt es in beiden Sprachen, umschaltbar direkt auf dem Startbildschirm; ohne eigene Wahl folgt sie der Gerätesprache. Eine Kurzanleitung liegt daneben und folgt derselben Einstellung. Übersetzt ist die Bedienung, nicht das Trainingsmaterial ([ADR-0015](docs/adr/0015-ui-lokalisierung.md)).
 
 Mitgeliefert sind 72 Wörter und Sätze auf Deutsch — 68 aus einer freien Sprachsynthese, vier von echten Stimmen eingesprochen — und ein Störgeräusch aus einem Bus.
 

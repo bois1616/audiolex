@@ -2,6 +2,7 @@ package de.hexenwoche.audiolex.core.persistence
 
 import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+import de.hexenwoche.audiolex.core.i18n.UiLanguage
 import de.hexenwoche.audiolex.core.settings.AppSettings
 import de.hexenwoche.audiolex.core.settings.ChannelMode
 import de.hexenwoche.audiolex.core.settings.CorpusMode
@@ -197,6 +198,32 @@ class SettingsRepositoryTest {
 
         assertEquals(emptySet(), loaded.excludedSpeakers)
         // The excludedSpeakers fallback must not take the other field down with it.
+        assertEquals(ThemeMode.DARK, loaded.themeMode)
+    }
+
+    @Test
+    fun loadReturnsSystemLanguageDefaultForFreshDatabase() = runTest {
+        assertEquals(UiLanguage.SYSTEM, newRepository().load().uiLanguage)
+    }
+
+    @Test
+    fun savedUiLanguageRoundtrips() = runTest {
+        val repository = newRepository()
+
+        repository.save(AppSettings(ThemeMode.SYSTEM, uiLanguage = UiLanguage.ENGLISCH))
+
+        assertEquals(UiLanguage.ENGLISCH, repository.load().uiLanguage)
+    }
+
+    @Test
+    fun unknownStoredUiLanguageFallsBackToSystem() = runTest {
+        val db = newDatabase()
+        db.settingsDao().upsert(SettingsEntity(themeMode = "DARK", uiLanguage = "KLINGONISCH"))
+
+        val loaded = newRepository(db).load()
+
+        assertEquals(UiLanguage.SYSTEM, loaded.uiLanguage)
+        // The uiLanguage fallback must not take the other field down with it.
         assertEquals(ThemeMode.DARK, loaded.themeMode)
     }
 }

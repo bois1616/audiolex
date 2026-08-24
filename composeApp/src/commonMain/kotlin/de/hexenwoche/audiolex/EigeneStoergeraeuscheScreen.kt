@@ -35,6 +35,7 @@ import de.hexenwoche.audiolex.core.audio.OwnNoiseSource
 import de.hexenwoche.audiolex.core.audio.WavFile
 import de.hexenwoche.audiolex.core.audio.checkOwnNoiseImport
 import de.hexenwoche.audiolex.core.audio.createAudioSink
+import de.hexenwoche.audiolex.core.i18n.Strings
 import de.hexenwoche.audiolex.core.session.PlaybackQueue
 import de.hexenwoche.audiolex.core.time.Clock
 import kotlinx.coroutines.launch
@@ -60,11 +61,12 @@ fun EigeneStoergeraeuscheScreen(
     clock: Clock,
     onBeenden: () -> Unit,
 ) {
+    val strings = LocalStrings.current
     val scope = rememberCoroutineScope()
     val sink = remember { createAudioSink() }
     var status by remember { mutableStateOf<String?>(null) }
-    val queue = remember {
-        PlaybackQueue(sink, scope, onError = { e -> status = "Wiedergabe fehlgeschlagen: ${e.message}" })
+    val queue = remember(strings) {
+        PlaybackQueue(sink, scope, onError = { e -> status = strings.playbackFailed(e.message) })
     }
     val permission = rememberRecordingPermissionState()
     val backup = rememberBackupActions()
@@ -96,7 +98,7 @@ fun EigeneStoergeraeuscheScreen(
     // and time make takes apart when several get recorded in one sitting.
     LaunchedEffect(recorder.buffer) {
         if (recorder.buffer != null && newLabel.isBlank()) {
-            newLabel = "Aufnahme ${formatTimestamp(clock.nowEpochMillis(), clock.zoneId())}"
+            newLabel = strings.recordingLabelSuggestion(formatTimestamp(clock.nowEpochMillis(), clock.zoneId()))
         }
     }
 
@@ -112,7 +114,7 @@ fun EigeneStoergeraeuscheScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("Eigene Störgeräusche", style = MaterialTheme.typography.headlineLarge)
+        Text(strings.ownNoises, style = MaterialTheme.typography.headlineLarge)
 
         Column(
             modifier = Modifier
@@ -125,7 +127,7 @@ fun EigeneStoergeraeuscheScreen(
                 Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
 
-            Text("Neues Geräusch", style = MaterialTheme.typography.titleMedium)
+            Text(strings.sectionNewNoise, style = MaterialTheme.typography.titleMedium)
 
             // AC3's loop hint, decided against the mixer's behaviour:
             // mixWithNoise restarts the loop from sample 0 for every word,
@@ -133,7 +135,7 @@ fun EigeneStoergeraeuscheScreen(
             // -- leading silence would be heard every time. Said up front,
             // before the first take, not after.
             Text(
-                "Beginne die Aufnahme direkt mit dem Geräusch; Stille am Anfang ist später vor jedem Wort hörbar.",
+                strings.noiseRecordingHint,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -143,7 +145,7 @@ fun EigeneStoergeraeuscheScreen(
             OutlinedTextField(
                 value = newLabel,
                 onValueChange = { newLabel = it },
-                label = { Text("Bezeichnung") },
+                label = { Text(strings.fieldLabel) },
                 modifier = Modifier.fillMaxWidth(),
             )
 
@@ -163,16 +165,16 @@ fun EigeneStoergeraeuscheScreen(
                     }
                 },
             ) {
-                Text("Speichern")
+                Text(strings.save)
             }
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-            Text("Import", style = MaterialTheme.typography.titleMedium)
+            Text(strings.sectionImport, style = MaterialTheme.typography.titleMedium)
 
             if (pendingImport == null) {
                 Text(
-                    "Vorhandene WAV-Dateien können übernommen werden — Format: PCM, mono, 22050 Hz.",
+                    strings.wavImportHint,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -180,7 +182,7 @@ fun EigeneStoergeraeuscheScreen(
                     onClick = {
                         backup.pickWav { picked ->
                             if (picked != null) {
-                                status = importVerdictMessage(picked, onValid = {
+                                status = importVerdictMessage(picked, strings, onValid = {
                                     pendingImport = it
                                     importLabel = labelSuggestionFor(it.displayName)
                                 })
@@ -188,24 +190,28 @@ fun EigeneStoergeraeuscheScreen(
                         }
                     },
                 ) {
-                    Text("WAV-Datei importieren")
+                    Text(strings.importWavFile)
                 }
             } else {
                 // Validated import waiting for a label (AC4): anhören →
                 // Label → speichern, same order-freedom as the mask above.
                 pendingImport?.let { import ->
                     import.displayName?.let {
-                        Text("$it gewählt", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(
+                            strings.fileChosen(it),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         FilledTonalButton(onClick = { queue.play { WavFile.decode(import.bytes) } }) {
-                            Text("Anhören")
+                            Text(strings.listen)
                         }
                     }
                     OutlinedTextField(
                         value = importLabel,
                         onValueChange = { importLabel = it },
-                        label = { Text("Bezeichnung") },
+                        label = { Text(strings.fieldLabel) },
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -221,13 +227,13 @@ fun EigeneStoergeraeuscheScreen(
                                 }
                             },
                         ) {
-                            Text("Speichern")
+                            Text(strings.save)
                         }
                         TextButton(onClick = {
                             pendingImport = null
                             importLabel = ""
                         }) {
-                            Text("Abbrechen", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(strings.cancel, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
@@ -235,21 +241,22 @@ fun EigeneStoergeraeuscheScreen(
 
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-            Text("Meine Geräusche", style = MaterialTheme.typography.titleMedium)
+            Text(strings.sectionMyNoises, style = MaterialTheme.typography.titleMedium)
 
             if (isLoading) {
                 CircularProgressIndicator()
             } else if (noises.isEmpty()) {
-                Text("Noch keine eigenen Geräusche.", style = MaterialTheme.typography.bodyLarge)
+                Text(strings.noOwnNoisesYet, style = MaterialTheme.typography.bodyLarge)
             } else {
                 val sorted = noises.sortedByDescending { it.createdAtEpochMillis }
                 sorted.forEachIndexed { index, noise ->
                     NoiseRow(
                         noise = noise,
+                        strings = strings,
                         queue = queue,
                         repository = repository,
                         zoneId = clock.zoneId(),
-                        onPlaybackMissing = { status = "Keine Aufnahme für „${noise.label}“ vorhanden." },
+                        onPlaybackMissing = { status = strings.noRecordingAvailable(noise.label) },
                         onDeleteRequested = { pendingDeleteId = noise.id },
                     )
                     if (index < sorted.lastIndex) {
@@ -260,7 +267,7 @@ fun EigeneStoergeraeuscheScreen(
         }
 
         Button(onClick = onBeenden) {
-            Text("Zurück")
+            Text(strings.back)
         }
     }
 
@@ -271,13 +278,8 @@ fun EigeneStoergeraeuscheScreen(
         // sure", in the same words.
         AlertDialog(
             onDismissRequest = { pendingDeleteId = null },
-            title = { Text("Geräusch löschen?") },
-            text = {
-                Text(
-                    "„${deleteTarget.label}“ wird endgültig entfernt, inklusive der Aufnahme. " +
-                        "Das lässt sich nicht rückgängig machen.",
-                )
-            },
+            title = { Text(strings.deleteNoiseTitle) },
+            text = { Text(strings.deleteConfirmBody(deleteTarget.label)) },
             confirmButton = {
                 TextButton(onClick = {
                     val id = deleteTarget.id
@@ -291,12 +293,12 @@ fun EigeneStoergeraeuscheScreen(
                         // scenario (AC2, ADR-0010 point 4), nothing to do here.
                     }
                 }) {
-                    Text("Löschen", color = MaterialTheme.colorScheme.error)
+                    Text(strings.delete, color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { pendingDeleteId = null }) {
-                    Text("Abbrechen", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(strings.cancel, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             },
         )
@@ -306,6 +308,7 @@ fun EigeneStoergeraeuscheScreen(
 @Composable
 private fun NoiseRow(
     noise: OwnNoise,
+    strings: Strings,
     queue: PlaybackQueue,
     repository: OwnNoiseRepository,
     zoneId: String,
@@ -316,9 +319,8 @@ private fun NoiseRow(
 
     Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(noise.label, style = MaterialTheme.typography.bodyLarge)
-        val sourceLabel = if (noise.source == OwnNoiseSource.IMPORT) "Importiert" else "Aufgenommen"
         Text(
-            "$sourceLabel · ${formatTimestamp(noise.createdAtEpochMillis, zoneId)}",
+            "${strings.noiseSourceLabel(noise.source)} · ${formatTimestamp(noise.createdAtEpochMillis, zoneId)}",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -334,10 +336,10 @@ private fun NoiseRow(
                     if (audio == null) onPlaybackMissing() else queue.play(audio)
                 }
             }) {
-                Text("Anhören")
+                Text(strings.listen)
             }
             TextButton(onClick = onDeleteRequested) {
-                Text("Löschen", color = MaterialTheme.colorScheme.error)
+                Text(strings.delete, color = MaterialTheme.colorScheme.error)
             }
         }
     }
@@ -350,24 +352,17 @@ private fun NoiseRow(
  * what to do (SOUL-Tonalität), never a bare error code and never a silent
  * conversion.
  */
-private fun importVerdictMessage(picked: PickedFile, onValid: (PickedFile) -> Unit): String? =
+private fun importVerdictMessage(picked: PickedFile, strings: Strings, onValid: (PickedFile) -> Unit): String? =
     when (val check = checkOwnNoiseImport(picked.bytes)) {
         OwnNoiseImportCheck.Ok -> {
             onValid(picked)
             null
         }
 
-        OwnNoiseImportCheck.NotAWav ->
-            "Diese Datei konnte nicht als WAV gelesen werden. " +
-                "Wähle eine WAV-Datei (PCM, 16 Bit) — oder nimm das Geräusch direkt hier auf."
+        OwnNoiseImportCheck.NotAWav -> strings.wavNotReadable
 
-        is OwnNoiseImportCheck.WrongFormat ->
-            "Diese Datei hat ${check.sampleRate} Hz und ${channelCountLabel(check.channels)}. " +
-                "AudioLex übernimmt Störgeräusche nur als WAV mit 22050 Hz, mono — " +
-                "wandle die Datei entsprechend um oder nimm das Geräusch direkt hier auf."
+        is OwnNoiseImportCheck.WrongFormat -> strings.wavWrongFormat(check.sampleRate, check.channels)
     }
-
-private fun channelCountLabel(channels: Int): String = if (channels == 1) "1 Kanal" else "$channels Kanäle"
 
 /** The file name without its `.wav` extension; a timestamp when no name came through. */
 private fun labelSuggestionFor(displayName: String?): String {

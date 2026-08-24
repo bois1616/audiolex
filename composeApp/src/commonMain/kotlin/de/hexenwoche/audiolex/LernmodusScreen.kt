@@ -28,6 +28,7 @@ import de.hexenwoche.audiolex.core.audio.WavFile
 import de.hexenwoche.audiolex.core.audio.createAudioSink
 import de.hexenwoche.audiolex.core.corpus.EntryKind
 import de.hexenwoche.audiolex.core.corpus.LoadedCorpus
+import de.hexenwoche.audiolex.core.i18n.Strings
 import de.hexenwoche.audiolex.core.session.LearningSession
 import de.hexenwoche.audiolex.core.session.PlaybackQueue
 import de.hexenwoche.audiolex.core.settings.ChannelMode
@@ -85,13 +86,19 @@ fun LernmodusScreen(
     ownNoiseRepository: OwnNoiseRepository,
     onBeenden: () -> Unit,
 ) {
+    val strings = LocalStrings.current
     val scope = rememberCoroutineScope()
     val sink = remember { createAudioSink() }
     val outputSetup = rememberOutputSetup()
     var state by remember { mutableStateOf<LernmodusState>(LernmodusState.Loading) }
-    val queue = remember {
+    // `strings` is captured here rather than read at error time: the queue is
+    // remembered for the life of the screen, and switching the language mid-
+    // session is not reachable (the picker sits on the StartScreen). Keyed on
+    // `strings` all the same, so the capture cannot go stale if that ever
+    // changes.
+    val queue = remember(strings) {
         PlaybackQueue(sink, scope, onError = { e ->
-            state = LernmodusState.Error("Wiedergabe fehlgeschlagen: ${e.message}")
+            state = LernmodusState.Error(strings.playbackFailed(e.message))
         })
     }
     var corpus by remember { mutableStateOf<LoadedCorpus?>(null) }
@@ -127,7 +134,7 @@ fun LernmodusScreen(
                 // Wort im Korpus" text Batch C left behind.
                 val availableSpeakers = loadCorpus(ownCorpusRepository = ownCorpusRepository)
                     .recordings.map { it.voiceId }.toSet()
-                LernmodusState.EmptyCorpus(emptyCorpusHint(excludedSpeakers, availableSpeakers))
+                LernmodusState.EmptyCorpus(emptyCorpusHint(excludedSpeakers, availableSpeakers, strings))
             } else {
                 // Shuffled once per session start, then fixed for the rest of
                 // the session (Autor-Requirement 2026-07-12) -- so the word
@@ -136,7 +143,7 @@ fun LernmodusScreen(
                 LernmodusState.Running(LearningSession(loaded.words.shuffled()))
             }
         } catch (e: Exception) {
-            state = LernmodusState.Error("Korpus konnte nicht geladen werden: ${e.message}")
+            state = LernmodusState.Error(strings.corpusLoadFailed(e.message))
         }
     }
 
@@ -151,7 +158,7 @@ fun LernmodusScreen(
         val running = state as? LernmodusState.Running ?: return@LaunchedEffect
         val loaded = corpus ?: return@LaunchedEffect
         playCurrentWord(
-            running.session, loaded, queue, noiseBuffer, snrDb, channelMode, outputSetup, ownCorpusRepository,
+            running.session, loaded, queue, noiseBuffer, snrDb, channelMode, outputSetup, ownCorpusRepository, strings,
         ) { message ->
             state = LernmodusState.Error(message)
         }
@@ -167,20 +174,20 @@ fun LernmodusScreen(
 
             is LernmodusState.EmptyCorpus -> {
                 Text(current.hint, style = MaterialTheme.typography.bodyLarge)
-                Button(onClick = onBeenden) { Text("Zurück zum Start") }
+                Button(onClick = onBeenden) { Text(strings.backToStart) }
             }
 
             is LernmodusState.Error -> {
                 Text(current.message, style = MaterialTheme.typography.bodyLarge)
-                Button(onClick = onBeenden) { Text("Zurück zum Start") }
+                Button(onClick = onBeenden) { Text(strings.backToStart) }
             }
 
             is LernmodusState.Finished -> {
                 Text(
-                    "Fertig! Wörter durchlaufen.",
+                    strings.learningFinished,
                     style = MaterialTheme.typography.headlineSmall,
                 )
-                Button(onClick = onBeenden) { Text("Zurück zum Start") }
+                Button(onClick = onBeenden) { Text(strings.backToStart) }
             }
 
             is LernmodusState.Running -> {
@@ -218,11 +225,12 @@ fun LernmodusScreen(
                     val loaded = corpus ?: return@FilledTonalButton
                     playCurrentWord(
                         session, loaded, queue, noiseBuffer, snrDb, channelMode, outputSetup, ownCorpusRepository,
+                        strings,
                     ) { message ->
                         state = LernmodusState.Error(message)
                     }
                 }) {
-                    Text("Wiederholen")
+                    Text(strings.repeatPlayback)
                 }
 
                 FilledTonalButton(
@@ -232,14 +240,14 @@ fun LernmodusScreen(
                         state = LernmodusState.Running(previous)
                     },
                 ) {
-                    Text("Vorheriges")
+                    Text(strings.previousEntry)
                 }
 
                 Button(onClick = {
                     val next = session.advance()
                     state = if (next == null) LernmodusState.Finished else LernmodusState.Running(next)
                 }) {
-                    Text("Weiter")
+                    Text(strings.nextEntry)
                 }
 
                 TextButton(onClick = {
@@ -247,7 +255,7 @@ fun LernmodusScreen(
                     onBeenden()
                 }) {
                     Text(
-                        "Beenden",
+                        strings.quit,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -274,15 +282,16 @@ private fun playCurrentWord(
     channelMode: ChannelMode,
     outputSetup: OutputSetup,
     ownCorpusRepository: OwnCorpusRepository,
+    strings: Strings,
     onError: (String) -> Unit,
 ) {
     val recording = corpus.recordingFor(session.currentWord.id)
     if (recording == null) {
-        onError("Keine Aufnahme für „${session.currentWord.text}“ gefunden.")
+        onError(strings.noRecordingFound(session.currentWord.text))
         return
     }
     queue.play {
-        val bytes = readRecordingBytes(recording, ownCorpusRepository)
+        val bytes = readRecordingBytes(recording, ownCorpusRepository, strings)
         val speech = WavFile.decode(bytes)
         val mixed = mixWithOptionalNoise(speech, noiseBuffer, snrDb)
         applyChannelMode(mixed, channelMode, outputSetup)

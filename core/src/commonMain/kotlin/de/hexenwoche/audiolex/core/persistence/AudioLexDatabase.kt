@@ -24,7 +24,9 @@ import androidx.sqlite.execSQL
     // Eigen-Korpus Batch D, ADR-0012 Nachtrag "Die Quellentrennung wird
     // durch Kontingente ersetzt") -- MIGRATION_7_8 below, the first jump
     // that actually has to *remove* a column, not just append one.
-    version = 8,
+    // v8 -> v9: uiLanguage column on SettingsEntity (ADR-0015, UI-Sprache) --
+    // MIGRATION_8_9 below, back to a plain append like MIGRATION_6_7.
+    version = 9,
     exportSchema = false,
 )
 @ConstructedBy(AudioLexDatabaseConstructor::class)
@@ -118,6 +120,26 @@ internal val MIGRATION_7_8 = object : Migration(startVersion = 7, endVersion = 8
 }
 
 /**
+ * v8 -> v9 (ADR-0015): adds [SettingsEntity.uiLanguage] with the same
+ * default the Kotlin property declares, so a settings row written before
+ * this migration ran reads back as [de.hexenwoche.audiolex.core.i18n.UiLanguage.SYSTEM]
+ * -- follow the device language -- exactly as a fresh install would. That
+ * default is what makes the upgrade invisible on the author's own device:
+ * German phone, German app, before and after.
+ *
+ * A plain `ALTER TABLE ... ADD COLUMN` is enough here, the same shape as
+ * [MIGRATION_6_7]; only [MIGRATION_7_8] needed the table rebuild, because
+ * only it had to *drop* a column.
+ */
+internal val MIGRATION_8_9 = object : Migration(startVersion = 8, endVersion = 9) {
+    override fun migrate(connection: SQLiteConnection) {
+        connection.execSQL(
+            "ALTER TABLE SettingsEntity ADD COLUMN uiLanguage TEXT NOT NULL DEFAULT 'SYSTEM'",
+        )
+    }
+}
+
+/**
  * Builds the real database from a platform-supplied [RoomDatabase.Builder]
  * (Context-based on Android, file-path-based on jvm) -- :core stays
  * Context-free, the platform-specific builder is created in :composeApp.
@@ -132,7 +154,8 @@ internal val MIGRATION_7_8 = object : Migration(startVersion = 7, endVersion = 8
  * [MIGRATION_6_7] via [RoomDatabase.Builder.addMigrations] instead. v7 -> v8
  * (Backlog Eigen-Korpus Batch D, AC3) adds [MIGRATION_7_8] alongside it, the
  * first migration that has to rebuild the table rather than just append a
- * column. The destructive fallback stays registered underneath as the
+ * column, and v8 -> v9 (ADR-0015, UI-Sprache) [MIGRATION_8_9] after that.
+ * The destructive fallback stays registered underneath as the
  * safety net for any *other* version jump (e.g. a skipped version, or a
  * future schema change neither migration covers) -- it just no longer
  * carries either of the two jumps this app has actually shipped.
@@ -140,6 +163,6 @@ internal val MIGRATION_7_8 = object : Migration(startVersion = 7, endVersion = 8
 fun createAudioLexDatabase(builder: RoomDatabase.Builder<AudioLexDatabase>): AudioLexDatabase =
     builder
         .setDriver(BundledSQLiteDriver())
-        .addMigrations(MIGRATION_6_7, MIGRATION_7_8)
+        .addMigrations(MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
         .fallbackToDestructiveMigration(true)
         .build()

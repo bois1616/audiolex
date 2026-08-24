@@ -18,6 +18,7 @@ import de.hexenwoche.audiolex.core.audio.PcmBuffer
 import de.hexenwoche.audiolex.core.audio.RECORDING_CHANNELS
 import de.hexenwoche.audiolex.core.audio.RECORDING_SAMPLE_RATE
 import de.hexenwoche.audiolex.core.audio.createAudioSource
+import de.hexenwoche.audiolex.core.i18n.Strings
 import de.hexenwoche.audiolex.core.session.PlaybackQueue
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -41,6 +42,32 @@ import kotlinx.coroutines.withContext
  * falls nötig"). No recording-duration limit anywhere: noise loops are
  * minutes long, words are seconds -- the same controller serves both.
  */
+/**
+ * What the recorder is doing, as state rather than as a finished sentence
+ * (ADR-0015). [RecorderController] used to hold a German string directly,
+ * which made it the one place outside a screen that decided wording -- and
+ * it would have had to learn about the language picker to keep doing it.
+ * The controller now reports *what happened*, [recorderStatusText] turns
+ * that into the current language, and the controller stays language-free.
+ */
+internal sealed interface RecorderStatus {
+    data object Idle : RecorderStatus
+    data object Recording : RecorderStatus
+    data object Processing : RecorderStatus
+    data object NoSignal : RecorderStatus
+    data class Finished(val seconds: Int) : RecorderStatus
+    data class Failed(val message: String?) : RecorderStatus
+}
+
+internal fun recorderStatusText(status: RecorderStatus, strings: Strings): String = when (status) {
+    RecorderStatus.Idle -> strings.recorderIdle
+    RecorderStatus.Recording -> strings.recorderRecording
+    RecorderStatus.Processing -> strings.recorderProcessing
+    RecorderStatus.NoSignal -> strings.recorderNoSignal
+    is RecorderStatus.Finished -> strings.recorderFinished(status.seconds)
+    is RecorderStatus.Failed -> strings.recorderFailed(status.message)
+}
+
 internal class RecorderController(
     private val source: AudioSource,
     private val scope: CoroutineScope,
@@ -54,14 +81,14 @@ internal class RecorderController(
         private set
     var buffer by mutableStateOf<PcmBuffer?>(null)
         private set
-    var status by mutableStateOf("Noch keine Aufnahme.")
+    var status by mutableStateOf<RecorderStatus>(RecorderStatus.Idle)
         private set
 
     fun start() {
         chunks.clear()
         buffer = null
         isRecording = true
-        status = "Nimmt auf…"
+        status = RecorderStatus.Recording
         job = scope.launch {
             try {
                 // record() blocks its calling thread between chunks (see the
@@ -78,7 +105,7 @@ internal class RecorderController(
                 // Surfaced, not swallowed (same posture as the Batch A dev
                 // screen): a format mismatch or missing mic is a fact to
                 // report, not a detail to route around.
-                status = "Fehler bei der Aufnahme: ${e.message}"
+                status = RecorderStatus.Failed(e.message)
             }
         }
     }
@@ -87,14 +114,14 @@ internal class RecorderController(
         val currentJob = job ?: return
         isRecording = false
         isBusy = true
-        status = "Verarbeite Aufnahme…"
+        status = RecorderStatus.Processing
         scope.launch {
             try {
                 currentJob.cancelAndJoin()
                 job = null
                 val totalSamples = chunks.sumOf { it.size }
                 if (totalSamples == 0) {
-                    status = "Keine Aufnahme (kein Signal empfangen)."
+                    status = RecorderStatus.NoSignal
                     return@launch
                 }
                 val merged = ShortArray(totalSamples)
@@ -106,7 +133,7 @@ internal class RecorderController(
                 chunks.clear()
                 buffer = PcmBuffer(merged, RECORDING_SAMPLE_RATE, RECORDING_CHANNELS)
                 val seconds = totalSamples / RECORDING_SAMPLE_RATE
-                status = "Aufnahme fertig (~$seconds s)."
+                status = RecorderStatus.Finished(seconds)
             } finally {
                 isBusy = false
             }
@@ -116,7 +143,7 @@ internal class RecorderController(
     /** Clears the current take (e.g. right after it was saved), back to the initial "nothing recorded" state. */
     fun reset() {
         buffer = null
-        status = "Noch keine Aufnahme."
+        status = RecorderStatus.Idle
     }
 
     fun dispose() {
@@ -145,9 +172,15 @@ internal fun RecorderControls(
     recorder: RecorderController,
     permission: RecordingPermissionState,
     queue: PlaybackQueue,
-    recordLabel: String = "Aufnehmen",
+    recordLabel: String? = null,
 ) {
-    Text(recorder.status, style = MaterialTheme.typography.bodyMedium)
+    val strings = LocalStrings.current
+    // Null means "the ordinary Aufnehmen label"; the own-corpus row passes
+    // its own ("Neu aufnehmen"). A default parameter value cannot read the
+    // catalog, so the fallback happens here instead.
+    val label = recordLabel ?: strings.record
+
+    Text(recorderStatusText(recorder.status, strings), style = MaterialTheme.typography.bodyMedium)
 
     when (permission.status) {
         RecordingPermissionStatus.GRANTED -> {
@@ -156,35 +189,34 @@ internal fun RecorderControls(
                     enabled = !recorder.isBusy,
                     onClick = { if (recorder.isRecording) recorder.stop() else recorder.start() },
                 ) {
-                    Text(if (recorder.isRecording) "Stopp" else recordLabel)
+                    Text(if (recorder.isRecording) strings.stopRecording else label)
                 }
                 FilledTonalButton(
                     enabled = !recorder.isRecording && !recorder.isBusy && recorder.buffer != null,
                     onClick = { recorder.buffer?.let { queue.play(it) } },
                 ) {
-                    Text("Anhören")
+                    Text(strings.listen)
                 }
             }
         }
 
         RecordingPermissionStatus.PERMANENTLY_DENIED -> {
             Text(
-                "Mikrofonzugriff wurde dauerhaft abgelehnt. Zum Aufnehmen bitte in den " +
-                    "System-Einstellungen freigeben.",
+                strings.micPermanentlyDenied,
                 style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
             )
             FilledTonalButton(onClick = permission::openSystemSettings) {
-                Text("Einstellungen öffnen")
+                Text(strings.openSystemSettings)
             }
         }
 
         RecordingPermissionStatus.NOT_REQUESTED, RecordingPermissionStatus.DENIED -> {
             Text(
-                "Zum Aufnehmen braucht AudioLex kurz Zugriff auf das Mikrofon.",
+                strings.micNeeded,
                 style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
             )
             FilledTonalButton(onClick = permission::request) {
-                Text("Mikrofon-Berechtigung anfragen")
+                Text(strings.requestMicPermission)
             }
         }
     }

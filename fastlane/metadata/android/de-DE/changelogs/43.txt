@@ -1,0 +1,5 @@
+Die App spricht jetzt Englisch. Auf dem Startbildschirm stehen „Deutsch“ und „English“ nebeneinander; ohne eigene Wahl folgt AudioLex der Gerätesprache.
+
+Neu daneben: eine Kurzanleitung, ebenfalls auf dem Startbildschirm. Sie erklärt die beiden Modi, die fünf Bewertungsstufen und was die Einstellungen tun — in der Sprache, die eingestellt ist.
+
+Der Wortschatz bleibt Deutsch. Übersetzt ist die Bedienung, nicht das Trainingsmaterial.

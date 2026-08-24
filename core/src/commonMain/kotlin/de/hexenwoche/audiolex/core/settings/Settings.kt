@@ -1,6 +1,7 @@
 package de.hexenwoche.audiolex.core.settings
 
 import de.hexenwoche.audiolex.core.corpus.EntryKind
+import de.hexenwoche.audiolex.core.i18n.UiLanguage
 import de.hexenwoche.audiolex.core.persistence.SettingsEntity
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
@@ -96,9 +97,10 @@ private val excludedSpeakersJson = Json { ignoreUnknownKeys = true }
  * the corpus mode, the noise overlay (Backlog M4 "Störgeräusch-Overlay",
  * ADR-0010, [noiseEnabled]/[snrDb]/[noiseScenario] shared by both training
  * modes), the channel selection (Backlog M4 "Kopfhörer-Bogen Batch B",
- * ADR-0011, [channelMode]), and the speaker/contingent selection (Backlog
+ * ADR-0011, [channelMode]), the speaker/contingent selection (Backlog
  * Eigen-Korpus Batch D, ADR-0012 Nachtrag "Die Quellentrennung wird durch
- * Kontingente ersetzt", [excludedSpeakers]).
+ * Kontingente ersetzt", [excludedSpeakers]), and the UI language
+ * ([uiLanguage], ADR-0015).
  */
 data class AppSettings(
     val themeMode: ThemeMode,
@@ -120,6 +122,13 @@ data class AppSettings(
      * other -- no special-cased default.
      */
     val excludedSpeakers: Set<String> = emptySet(),
+    /**
+     * Which language the UI is written in (ADR-0015).
+     * [UiLanguage.SYSTEM] -- follow the device language -- is the default,
+     * so an existing install on a German device is unaffected by the app
+     * having learned a second language.
+     */
+    val uiLanguage: UiLanguage = UiLanguage.SYSTEM,
 )
 
 /**
@@ -172,6 +181,7 @@ fun SettingsEntity.toDomain(): AppSettings =
         noiseScenario = noiseScenario,
         channelMode = ChannelMode.entries.firstOrNull { it.name == channelMode } ?: ChannelMode.BEIDE,
         excludedSpeakers = parseExcludedSpeakers(excludedSpeakers),
+        uiLanguage = UiLanguage.entries.firstOrNull { it.name == uiLanguage } ?: UiLanguage.SYSTEM,
     )
 
 fun AppSettings.toEntity(): SettingsEntity =
@@ -183,6 +193,7 @@ fun AppSettings.toEntity(): SettingsEntity =
         noiseScenario = noiseScenario,
         channelMode = channelMode.name,
         excludedSpeakers = encodeExcludedSpeakers(excludedSpeakers),
+        uiLanguage = uiLanguage.name,
     )
 
 /**

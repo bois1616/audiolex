@@ -35,6 +35,11 @@ import androidx.compose.ui.unit.dp
  * permission (`RECORD_AUDIO`, also in the manifest) -- the "no permissions
  * at all" claim below is retired accordingly, the "no network" one isn't.
  *
+ * Since ADR-0015 this text exists in two languages and follows the picker on
+ * the StartScreen. Both versions say the same thing -- the privacy claims in
+ * particular are statements about the manifest, so a translation that softened
+ * one of them would make it false rather than merely different.
+ *
  * ADR-0013 forced a correction here rather than an addition. The earlier
  * wording -- "Aufnahmen können das Gerät technisch nicht verlassen" -- was
  * false while `allowBackup="true"` stood in the manifest: Android's
@@ -48,12 +53,14 @@ import androidx.compose.ui.unit.dp
  */
 @Composable
 fun ImpressumScreen(onBeenden: () -> Unit) {
+    val strings = LocalStrings.current
+
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("Impressum & Datenschutz", style = MaterialTheme.typography.headlineLarge)
+        Text(strings.imprintAndPrivacy, style = MaterialTheme.typography.headlineLarge)
 
         Column(
             modifier = Modifier
@@ -62,75 +69,28 @@ fun ImpressumScreen(onBeenden: () -> Unit) {
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("Impressum", style = MaterialTheme.typography.titleMedium)
-            Text(
-                "Verantwortlich für diese App:\n\nStephan Reindl\nE-Mail: audiolex26@proton.me",
-                style = MaterialTheme.typography.bodyLarge,
-            )
-            Text(
-                "Nicht-kommerzielles Projekt. Der Quelltext ist offen (Apache-2.0), " +
-                    "die App wird ohne finanzielle Interessen bereitgestellt.",
-                style = MaterialTheme.typography.bodyLarge,
-            )
-            Text(
-                "AudioLex ist ein privates Übungswerkzeug, kein professionelles oder " +
-                    "medizinisches Produkt. Es ersetzt keine Beratung beim " +
-                    "Hörgeräteakustiker und keine Abklärung in der HNO-Heilkunde.",
-                style = MaterialTheme.typography.bodyLarge,
-            )
-            Text(
-                "AudioLex ist im Zusammenspiel mit Claude Code entstanden — vibe-codiert: " +
-                    "Idee, Fachkonzept, Entscheidungen und Abnahme kommen vom Autor, ein " +
-                    "großer Teil des Quelltexts von einer KI. Nachprüfbar ist das im offenen " +
-                    "Repository: Jede wesentliche Entscheidung steht dort als ADR, jeder " +
-                    "Umsetzungsschritt im Journal.",
-                style = MaterialTheme.typography.bodyLarge,
-            )
-            Text(
-                "Nutzung wie besehen: Die App wird so bereitgestellt, wie sie ist — ohne " +
-                    "Gewährleistung und ohne Zusage, dass das Training wirkt, die App " +
-                    "fehlerfrei läuft oder deine Daten erhalten bleiben. Die Nutzung " +
-                    "erfolgt auf eigenes Risiko; für Schäden daraus wird keine Haftung " +
-                    "übernommen. Dasselbe steht in der Apache-2.0-Lizenz, unter der der " +
-                    "Quelltext steht.",
-                style = MaterialTheme.typography.bodyLarge,
-            )
+            Text(strings.imprintHeading, style = MaterialTheme.typography.titleMedium)
+            Paragraph(strings.imprintResponsible)
+            Paragraph(strings.imprintNonCommercial)
+            Paragraph(strings.imprintNotMedical)
+            Paragraph(strings.imprintVibeCoded)
+            Paragraph(strings.imprintAsIs)
 
-            Text("Datenschutz", style = MaterialTheme.typography.titleMedium)
-            Text(
-                "AudioLex hat keine Tracker, keine Analyse-Dienste und keine Werbung.",
-                style = MaterialTheme.typography.bodyLarge,
-            )
-            Text(
-                "Wortschatz, Bewertungen und Sitzungsverlauf liegen ausschließlich lokal " +
-                    "auf diesem Gerät. Es gibt keine Cloud, kein Konto, keine Übertragung ins " +
-                    "Internet.",
-                style = MaterialTheme.typography.bodyLarge,
-            )
-            Text(
-                "AudioLex fordert eine einzige Android-Berechtigung an: Mikrofon, nur für " +
-                    "selbst ausgelöste Aufnahmen eigener Wörter und Sätze. Eine " +
-                    "Internet-Berechtigung gibt es nicht. Die App kann von sich aus nichts " +
-                    "übertragen.",
-                style = MaterialTheme.typography.bodyLarge,
-            )
-            Text(
-                "Eigene Aufnahmen und der Sitzungsverlauf lassen sich sichern: Auf " +
-                    "Tastendruck schreibt AudioLex beides als ZIP-Datei in deine Dokumente. " +
-                    "Das geschieht nur, wenn du es auslöst. Was danach mit der Datei passiert " +
-                    "— kopieren, weitergeben, in eine Cloud laden — entscheidest du.",
-                style = MaterialTheme.typography.bodyLarge,
-            )
-            Text(
-                "Androids automatische Sicherung ist für AudioLex abgeschaltet, weil sie die " +
-                    "Aufnahmen ungefragt in ein Google-Konto übertragen hätte. Das hat eine " +
-                    "Kehrseite: Ohne eigenen Export gibt es keine Kopie.",
-                style = MaterialTheme.typography.bodyLarge,
-            )
+            Text(strings.privacyHeading, style = MaterialTheme.typography.titleMedium)
+            Paragraph(strings.privacyNoTrackers)
+            Paragraph(strings.privacyLocalOnly)
+            Paragraph(strings.privacyOnePermission)
+            Paragraph(strings.privacyBackupIsYours)
+            Paragraph(strings.privacyNoSystemBackup)
         }
 
         Button(onClick = onBeenden) {
-            Text("Zurück")
+            Text(strings.back)
         }
     }
+}
+
+@Composable
+private fun Paragraph(text: String) {
+    Text(text, style = MaterialTheme.typography.bodyLarge)
 }

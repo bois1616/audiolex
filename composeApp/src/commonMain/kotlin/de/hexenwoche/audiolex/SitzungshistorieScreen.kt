@@ -21,6 +21,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import de.hexenwoche.audiolex.core.i18n.Strings
 import de.hexenwoche.audiolex.core.persistence.SessionRepository
 import de.hexenwoche.audiolex.core.session.Session
 import de.hexenwoche.audiolex.core.srs.ReviewRating
@@ -38,6 +39,7 @@ private sealed interface SitzungshistorieState {
  */
 @Composable
 fun SitzungshistorieScreen(repository: SessionRepository, onBeenden: () -> Unit) {
+    val strings = LocalStrings.current
     var state by remember { mutableStateOf<SitzungshistorieState>(SitzungshistorieState.Loading) }
 
     LaunchedEffect(Unit) {
@@ -53,14 +55,14 @@ fun SitzungshistorieScreen(repository: SessionRepository, onBeenden: () -> Unit)
         verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("Sitzungshistorie", style = MaterialTheme.typography.headlineLarge)
+        Text(strings.sessionHistory, style = MaterialTheme.typography.headlineLarge)
 
         when (val current = state) {
             is SitzungshistorieState.Loading -> CircularProgressIndicator()
 
             is SitzungshistorieState.Loaded -> {
                 if (current.sessions.isEmpty()) {
-                    Text("Noch keine Sitzungen.", style = MaterialTheme.typography.bodyLarge)
+                    Text(strings.noSessionsYet, style = MaterialTheme.typography.bodyLarge)
                 } else {
                     Column(
                         modifier = Modifier
@@ -75,7 +77,7 @@ fun SitzungshistorieScreen(repository: SessionRepository, onBeenden: () -> Unit)
                         // per session used to blur into each other once the
                         // list got long.
                         current.sessions.forEachIndexed { index, session ->
-                            SessionRow(session)
+                            SessionRow(session, strings)
                             if (index < current.sessions.lastIndex) {
                                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                             }
@@ -86,33 +88,30 @@ fun SitzungshistorieScreen(repository: SessionRepository, onBeenden: () -> Unit)
         }
 
         Button(onClick = onBeenden) {
-            Text("Zurück")
+            Text(strings.back)
         }
     }
 }
 
 @Composable
-private fun SessionRow(session: Session) {
+private fun SessionRow(session: Session, strings: Strings) {
     Column {
         Text(
             formatTimestamp(session.startedAtEpochMillis, session.zoneId),
             style = MaterialTheme.typography.titleMedium,
         )
-        Text(germanModeLabel(session.mode), style = MaterialTheme.typography.bodyMedium)
+        Text(strings.sessionModeLabel(session.mode), style = MaterialTheme.typography.bodyMedium)
         Text(
-            "${session.ratedCount} Karten bewertet — ${describeRatingCounts(session.ratingCounts)}",
+            strings.sessionSummary(session.ratedCount, describeRatingCounts(session.ratingCounts, strings)),
             style = MaterialTheme.typography.bodyMedium,
         )
     }
 }
 
-private fun germanModeLabel(mode: String): String = when (mode) {
-    "PRUEFMODUS" -> "Prüfmodus"
-    else -> mode
-}
-
-private fun describeRatingCounts(ratingCounts: Map<ReviewRating, Int>): String =
+// "Sofort ×3, Gut ×1" -- the rating labels come from the catalog, the "×n"
+// tally is punctuation and stays the same in every language.
+private fun describeRatingCounts(ratingCounts: Map<ReviewRating, Int>, strings: Strings): String =
     ReviewRating.entries
-        .mapNotNull { rating -> ratingCounts[rating]?.takeIf { it > 0 }?.let { "${germanRatingLabel(rating)} ×$it" } }
-        .ifEmpty { listOf("keine Bewertungen") }
+        .mapNotNull { rating -> ratingCounts[rating]?.takeIf { it > 0 }?.let { "${strings.ratingLabel(rating)} ×$it" } }
+        .ifEmpty { listOf(strings.noRatings) }
         .joinToString(", ")

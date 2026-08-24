@@ -1,0 +1,5 @@
+The app speaks English now. “Deutsch” and “English” sit side by side on the start screen; without a choice of your own, AudioLex follows the device language.
+
+Next to them: a quick guide, also on the start screen. It explains the two modes, the five rating steps and what the settings do — in whichever language is set.
+
+The vocabulary stays German. What is translated is the app, not the training material.
