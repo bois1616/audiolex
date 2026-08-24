@@ -1,6 +1,7 @@
 package de.hexenwoche.audiolex
 
 import de.hexenwoche.audiolex.core.corpus.AudioRecording
+import de.hexenwoche.audiolex.core.corpus.CorpusLanguage
 import de.hexenwoche.audiolex.core.corpus.EntryKind
 import de.hexenwoche.audiolex.core.corpus.LoadedCorpus
 import de.hexenwoche.audiolex.core.corpus.RecordingSource
@@ -37,6 +38,7 @@ suspend fun loadCorpus(
     kind: EntryKind? = null,
     ownCorpusRepository: OwnCorpusRepository? = null,
     excludedSpeakers: Set<String> = emptySet(),
+    language: CorpusLanguage? = null,
 ): LoadedCorpus {
     val builtIn = parseCorpus(
         wordsJson = Res.readBytes("files/corpus/words.json").decodeToString(),
@@ -44,7 +46,7 @@ suspend fun loadCorpus(
         kind = null,
     )
     val ownEntries = ownCorpusRepository?.trainable() ?: emptyList()
-    return mergeCorpus(builtIn.words, builtIn.recordings, ownEntries, kind, excludedSpeakers)
+    return mergeCorpus(builtIn.words, builtIn.recordings, ownEntries, kind, excludedSpeakers, language)
 }
 
 /**
@@ -96,12 +98,24 @@ suspend fun readRecordingBytes(
  * - **Neither**: the pre-existing, generic text (Batch C AC7). An empty
  *   [excludedSpeakers] -- the AC7 bit-identical baseline -- always lands
  *   here, same as before this batch existed.
+ *
+ * [hasEntriesInLanguage] (ADR-0016) is checked before all of them: it says
+ * whether the *unfiltered* corpus holds anything at all under the selected
+ * training language. False means the drawer itself is empty, which no amount
+ * of speaker selection can fix.
  */
-fun emptyCorpusHint(excludedSpeakers: Set<String>, availableSpeakers: Set<String>, strings: Strings): String {
-    val selected = availableSpeakers - excludedSpeakers
-    return when {
-        availableSpeakers.isNotEmpty() && selected.isEmpty() -> strings.noContingentSelected
-        excludedSpeakers.isNotEmpty() -> strings.nothingForSelectedContingents
-        else -> strings.emptyCorpus
-    }
+fun emptyCorpusHint(
+    excludedSpeakers: Set<String>,
+    availableSpeakers: Set<String>,
+    hasEntriesInLanguage: Boolean,
+    strings: Strings,
+): String = when {
+    // Checked first because it is the most specific cause and the easiest to
+    // walk into (ADR-0016): switching to a language nothing is filed under
+    // yet used to end in the generic "Kein Wort im Korpus vorhanden", which
+    // reads like a broken install rather than an empty drawer.
+    !hasEntriesInLanguage -> strings.emptyForLanguage
+    availableSpeakers.isNotEmpty() && (availableSpeakers - excludedSpeakers).isEmpty() -> strings.noContingentSelected
+    excludedSpeakers.isNotEmpty() -> strings.nothingForSelectedContingents
+    else -> strings.emptyCorpus
 }

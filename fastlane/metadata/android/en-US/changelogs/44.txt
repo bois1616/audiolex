@@ -1,0 +1,5 @@
+The corpus is sorted by language now, and there are twenty English examples — ten words, ten sentences, spoken by a public-domain voice.
+
+Under “Training language” in the settings you pick what gets practised. That is separate from the language of the interface: you can train German and read the app in English.
+
+Your own recordings get a language when you create them. It says where the entry shows up — not what is spoken in it.

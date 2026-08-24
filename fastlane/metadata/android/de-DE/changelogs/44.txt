@@ -1,0 +1,5 @@
+Der Korpus ist jetzt nach Sprache sortiert, und es gibt zwanzig englische Beispiele — zehn Wörter, zehn Sätze, gesprochen von einer gemeinfreien Stimme.
+
+In den Einstellungen wählst du unter „Trainingssprache“, was geübt wird. Das ist unabhängig von der Sprache der Oberfläche: Du kannst Deutsch trainieren und die App auf Englisch lesen.
+
+Eigene Aufnahmen bekommen beim Anlegen eine Sprache. Sie sagt, wo der Eintrag erscheint — nicht, was darin gesprochen wird.

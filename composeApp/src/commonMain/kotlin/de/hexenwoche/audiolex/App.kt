@@ -160,6 +160,7 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit, ownCorp
                         )
                         is Screen.Lernmodus -> LernmodusScreen(
                             corpusMode = settings.corpusMode,
+                            corpusLanguage = settings.corpusLanguage,
                             noiseEnabled = settings.noiseEnabled,
                             snrDb = settings.snrDb,
                             noiseScenario = settings.noiseScenario,
@@ -174,6 +175,7 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit, ownCorp
                             sessionRepository = sessionRepository,
                             clock = clock,
                             corpusMode = settings.corpusMode,
+                            corpusLanguage = settings.corpusLanguage,
                             noiseEnabled = settings.noiseEnabled,
                             snrDb = settings.snrDb,
                             noiseScenario = settings.noiseScenario,
@@ -201,6 +203,10 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit, ownCorp
                             corpusMode = settings.corpusMode,
                             onCorpusModeChange = { newMode ->
                                 updateSettings { it.copy(corpusMode = newMode) }
+                            },
+                            corpusLanguage = settings.corpusLanguage,
+                            onCorpusLanguageChange = { newLanguage ->
+                                updateSettings { it.copy(corpusLanguage = newLanguage) }
                             },
                             noiseEnabled = settings.noiseEnabled,
                             onNoiseEnabledChange = { newEnabled ->
@@ -244,6 +250,7 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit, ownCorp
                             // here, so this screen hands all three to it.
                             ownNoiseRepository = ownNoiseRepository,
                             clock = clock,
+                            corpusLanguage = settings.corpusLanguage,
                             onBeenden = { screen = Screen.Start },
                         )
                         is Screen.EigeneStoergeraeusche -> EigeneStoergeraeuscheScreen(

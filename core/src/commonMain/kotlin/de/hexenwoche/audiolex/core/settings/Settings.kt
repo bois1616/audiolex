@@ -1,5 +1,6 @@
 package de.hexenwoche.audiolex.core.settings
 
+import de.hexenwoche.audiolex.core.corpus.CorpusLanguage
 import de.hexenwoche.audiolex.core.corpus.EntryKind
 import de.hexenwoche.audiolex.core.i18n.UiLanguage
 import de.hexenwoche.audiolex.core.persistence.SettingsEntity
@@ -129,6 +130,14 @@ data class AppSettings(
      * having learned a second language.
      */
     val uiLanguage: UiLanguage = UiLanguage.SYSTEM,
+    /**
+     * Which corpus drawer the training screens work on (ADR-0016).
+     * Deliberately independent of [uiLanguage]: training German with an
+     * English interface is a legitimate combination, and coupling the two
+     * would silently switch someone's training set when they only wanted
+     * to read the buttons.
+     */
+    val corpusLanguage: CorpusLanguage = CorpusLanguage.DEUTSCH,
 )
 
 /**
@@ -182,6 +191,8 @@ fun SettingsEntity.toDomain(): AppSettings =
         channelMode = ChannelMode.entries.firstOrNull { it.name == channelMode } ?: ChannelMode.BEIDE,
         excludedSpeakers = parseExcludedSpeakers(excludedSpeakers),
         uiLanguage = UiLanguage.entries.firstOrNull { it.name == uiLanguage } ?: UiLanguage.SYSTEM,
+        corpusLanguage = CorpusLanguage.entries.firstOrNull { it.name == corpusLanguage }
+            ?: CorpusLanguage.DEUTSCH,
     )
 
 fun AppSettings.toEntity(): SettingsEntity =
@@ -194,6 +205,7 @@ fun AppSettings.toEntity(): SettingsEntity =
         channelMode = channelMode.name,
         excludedSpeakers = encodeExcludedSpeakers(excludedSpeakers),
         uiLanguage = uiLanguage.name,
+        corpusLanguage = corpusLanguage.name,
     )
 
 /**

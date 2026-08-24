@@ -51,6 +51,14 @@ import androidx.room.Upsert
  * [MIGRATION_8_9][de.hexenwoche.audiolex.core.persistence.MIGRATION_8_9], a
  * plain column append like [MIGRATION_6_7] rather than the table rebuild
  * [MIGRATION_7_8] needed.
+ *
+ * [corpusLanguage] (ADR-0016) stores the
+ * [de.hexenwoche.audiolex.core.corpus.CorpusLanguage] enum name -- which
+ * drawer of the corpus the training screens draw from. Distinct from
+ * [uiLanguage] on purpose: what the app says and what it plays are two
+ * settings. Default `"DEUTSCH"` because every entry that exists before this
+ * column did is German. Carried by
+ * [MIGRATION_9_10][de.hexenwoche.audiolex.core.persistence.MIGRATION_9_10].
  */
 @Entity
 data class SettingsEntity(
@@ -63,6 +71,7 @@ data class SettingsEntity(
     val channelMode: String = "BEIDE",
     val excludedSpeakers: String = "[]",
     val uiLanguage: String = "SYSTEM",
+    val corpusLanguage: String = "DEUTSCH",
 )
 
 @Dao

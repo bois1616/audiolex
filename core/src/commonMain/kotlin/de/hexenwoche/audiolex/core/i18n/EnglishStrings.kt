@@ -2,6 +2,7 @@ package de.hexenwoche.audiolex.core.i18n
 
 import de.hexenwoche.audiolex.core.audio.OutputSetup
 import de.hexenwoche.audiolex.core.audio.OwnNoiseSource
+import de.hexenwoche.audiolex.core.corpus.CorpusLanguage
 import de.hexenwoche.audiolex.core.corpus.EntryKind
 import de.hexenwoche.audiolex.core.settings.ChannelMode
 import de.hexenwoche.audiolex.core.settings.CorpusMode
@@ -126,6 +127,9 @@ internal object EnglishStrings : Strings {
         "The speakers you selected have nothing to train right now. " +
             "Adjust the selection under “Corpus”, or switch the training content in the settings."
     override val emptyCorpus = "There is no word in the corpus."
+    override val emptyForLanguage =
+        "Nothing is filed under this language yet. Pick another training language in the settings, " +
+            "or record something in this one yourself."
 
     // ---- Settings ----
 
@@ -133,6 +137,9 @@ internal object EnglishStrings : Strings {
     override val customLevel = "Set by hand"
     override val sectionAppearance = "Appearance"
     override val sectionTrainingContent = "Training content"
+    override val sectionTrainingLanguage = "Training language"
+    override val trainingLanguageHint =
+        "Applies to the words and sentences you train — not to the language of the interface."
     override val sectionCorpus = "Corpus"
     override val noContingentAvailable = "No speaker available."
     override val selectAll = "Select all"
@@ -167,6 +174,11 @@ internal object EnglishStrings : Strings {
         CorpusMode.SAETZE -> "Sentences"
     }
 
+    override fun corpusLanguageLabel(language: CorpusLanguage) = when (language) {
+        CorpusLanguage.DEUTSCH -> "German"
+        CorpusLanguage.ENGLISCH -> "English"
+    }
+
     override fun channelModeLabel(mode: ChannelMode) = when (mode) {
         ChannelMode.BEIDE -> "Both"
         ChannelMode.NUR_LINKS -> "Left only"
@@ -189,6 +201,9 @@ internal object EnglishStrings : Strings {
     override val sectionNewRecording = "New recording"
     override val fieldText = "Text"
     override val fieldSpeakerOptional = "Speaker (optional)"
+    override val fieldEntryLanguage = "Language"
+    override val entryLanguageHint =
+        "Decides which training language the entry shows up under — not what is spoken in it."
     override val untranscribedHint =
         "Without a text the entry cannot be trained. You can add it later via “Edit text”."
     override val sectionMyEntries = "My entries"

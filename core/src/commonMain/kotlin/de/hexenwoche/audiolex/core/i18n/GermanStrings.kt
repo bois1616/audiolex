@@ -2,6 +2,7 @@ package de.hexenwoche.audiolex.core.i18n
 
 import de.hexenwoche.audiolex.core.audio.OutputSetup
 import de.hexenwoche.audiolex.core.audio.OwnNoiseSource
+import de.hexenwoche.audiolex.core.corpus.CorpusLanguage
 import de.hexenwoche.audiolex.core.corpus.EntryKind
 import de.hexenwoche.audiolex.core.settings.ChannelMode
 import de.hexenwoche.audiolex.core.settings.CorpusMode
@@ -119,6 +120,9 @@ internal object GermanStrings : Strings {
         "Für die ausgewählten Kontingente gibt es dafür aktuell nichts zu trainieren. " +
             "Passe die Auswahl unter „Korpus“ oder den Trainingsinhalt in den Einstellungen an."
     override val emptyCorpus = "Kein Wort im Korpus vorhanden."
+    override val emptyForLanguage =
+        "In dieser Sprache gibt es noch nichts zu trainieren. Wähle in den Einstellungen eine andere " +
+            "Trainingssprache, oder sprich selbst etwas in dieser Sprache ein."
 
     // ---- Einstellungen ----
 
@@ -126,6 +130,9 @@ internal object GermanStrings : Strings {
     override val customLevel = "Individuell eingestellt"
     override val sectionAppearance = "Erscheinungsbild"
     override val sectionTrainingContent = "Trainingsinhalt"
+    override val sectionTrainingLanguage = "Trainingssprache"
+    override val trainingLanguageHint =
+        "Gilt für Wörter und Sätze im Training — nicht für die Sprache der Oberfläche."
     override val sectionCorpus = "Korpus"
     override val noContingentAvailable = "Kein Kontingent verfügbar."
     override val selectAll = "Alle auswählen"
@@ -160,6 +167,11 @@ internal object GermanStrings : Strings {
         CorpusMode.SAETZE -> "Sätze"
     }
 
+    override fun corpusLanguageLabel(language: CorpusLanguage) = when (language) {
+        CorpusLanguage.DEUTSCH -> "Deutsch"
+        CorpusLanguage.ENGLISCH -> "Englisch"
+    }
+
     override fun channelModeLabel(mode: ChannelMode) = when (mode) {
         ChannelMode.BEIDE -> "Beide"
         ChannelMode.NUR_LINKS -> "Nur links"
@@ -182,6 +194,9 @@ internal object GermanStrings : Strings {
     override val sectionNewRecording = "Neue Aufnahme"
     override val fieldText = "Text"
     override val fieldSpeakerOptional = "Sprecher (optional)"
+    override val fieldEntryLanguage = "Sprache"
+    override val entryLanguageHint =
+        "Legt fest, unter welcher Trainingssprache der Eintrag erscheint — nicht, was darin gesprochen wird."
     override val untranscribedHint =
         "Ohne Text lässt sich der Eintrag nicht trainieren. " +
             "Du kannst ihn später über „Text ändern“ nachtragen."

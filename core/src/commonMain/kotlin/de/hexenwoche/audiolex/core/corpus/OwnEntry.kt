@@ -19,6 +19,16 @@ import kotlinx.serialization.Serializable
  * may not exist yet (an entry saved before its first recording) or may have
  * gone missing since (Backlog AC5) -- callers treat both the same way, a
  * quiet "not available" rather than a crash.
+ *
+ * [language] is the drawer the speaker filed this entry under (ADR-0016), a
+ * BCP-47 tag like [CorpusLanguage.languageTag]. A plain string, not the
+ * enum: which tags exist is data, and an entry written by a later version
+ * that knows more languages must still parse here rather than blow up the
+ * whole file (same rationale as
+ * [de.hexenwoche.audiolex.core.persistence.SettingsEntity.noiseScenario]).
+ * The kotlinx default `"de-DE"` keeps every `eintraege.json` written before
+ * this field valid -- and it is the factually right answer for them, since
+ * the app could only speak German until v0.34.0.
  */
 @Serializable
 data class OwnEntry(
@@ -26,6 +36,7 @@ data class OwnEntry(
     val text: String,
     val kind: EntryKind = EntryKind.WORD,
     val speaker: String = "",
+    val language: String = "de-DE",
     val fileName: String,
     val createdAtEpochMillis: Long,
 )

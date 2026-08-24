@@ -2,6 +2,7 @@ package de.hexenwoche.audiolex.core.persistence
 
 import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+import de.hexenwoche.audiolex.core.corpus.CorpusLanguage
 import de.hexenwoche.audiolex.core.i18n.UiLanguage
 import de.hexenwoche.audiolex.core.settings.AppSettings
 import de.hexenwoche.audiolex.core.settings.ChannelMode
@@ -226,4 +227,46 @@ class SettingsRepositoryTest {
         // The uiLanguage fallback must not take the other field down with it.
         assertEquals(ThemeMode.DARK, loaded.themeMode)
     }
+
+    @Test
+    fun loadReturnsGermanCorpusLanguageDefaultForFreshDatabase() = runTest {
+        assertEquals(CorpusLanguage.DEUTSCH, newRepository().load().corpusLanguage)
+    }
+
+    @Test
+    fun savedCorpusLanguageRoundtrips() = runTest {
+        val repository = newRepository()
+
+        repository.save(AppSettings(ThemeMode.SYSTEM, corpusLanguage = CorpusLanguage.ENGLISCH))
+
+        assertEquals(CorpusLanguage.ENGLISCH, repository.load().corpusLanguage)
+    }
+
+    @Test
+    fun uiLanguageAndCorpusLanguageAreStoredIndependently() = runTest {
+        // ADR-0016 keeps them apart on purpose: English interface, German
+        // training set is a legitimate combination and must survive a save.
+        val repository = newRepository()
+
+        repository.save(
+            AppSettings(
+                ThemeMode.SYSTEM,
+                uiLanguage = UiLanguage.ENGLISCH,
+                corpusLanguage = CorpusLanguage.DEUTSCH,
+            ),
+        )
+
+        val loaded = repository.load()
+        assertEquals(UiLanguage.ENGLISCH, loaded.uiLanguage)
+        assertEquals(CorpusLanguage.DEUTSCH, loaded.corpusLanguage)
+    }
+
+    @Test
+    fun unknownStoredCorpusLanguageFallsBackToGerman() = runTest {
+        val db = newDatabase()
+        db.settingsDao().upsert(SettingsEntity(themeMode = "DARK", corpusLanguage = "SUAHELI"))
+
+        assertEquals(CorpusLanguage.DEUTSCH, newRepository(db).load().corpusLanguage)
+    }
+
 }

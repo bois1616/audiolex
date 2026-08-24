@@ -32,6 +32,7 @@ import de.hexenwoche.audiolex.core.audio.NoiseLoop
 import de.hexenwoche.audiolex.core.audio.OutputSetup
 import de.hexenwoche.audiolex.core.audio.WavFile
 import de.hexenwoche.audiolex.core.audio.createAudioSink
+import de.hexenwoche.audiolex.core.corpus.CorpusLanguage
 import de.hexenwoche.audiolex.core.corpus.EntryKind
 import de.hexenwoche.audiolex.core.corpus.LoadedCorpus
 import de.hexenwoche.audiolex.core.i18n.Strings
@@ -107,6 +108,7 @@ fun PruefmodusScreen(
     sessionRepository: SessionRepository,
     clock: Clock,
     corpusMode: CorpusMode,
+    corpusLanguage: CorpusLanguage,
     noiseEnabled: Boolean,
     snrDb: Int,
     noiseScenario: String,
@@ -186,7 +188,7 @@ fun PruefmodusScreen(
             // EmptyCorpus state below. Loading lives in
             // loadCorpus/parseCorpus (Backlog "Code-Qualität"), shared
             // with Lern- and Dev-Screen.
-            val loaded = loadCorpus(corpusMode.entryKind(), ownCorpusRepository, excludedSpeakers)
+            val loaded = loadCorpus(corpusMode.entryKind(), ownCorpusRepository, excludedSpeakers, corpusLanguage)
             corpus = loaded
             // Loaded once per round, not per card (AC6) -- same defensive
             // fallback to null (clean speech) as Lernmodus. The merged
@@ -205,9 +207,15 @@ fun PruefmodusScreen(
                 // AC6: same reasoning as Lernmodus -- only computed on this
                 // rare path, a second (unfiltered) load to tell "nothing
                 // selected" apart from "selected, but empty for this mode".
-                val availableSpeakers = loadCorpus(ownCorpusRepository = ownCorpusRepository)
-                    .recordings.map { it.voiceId }.toSet()
-                PruefmodusState.EmptyCorpus(emptyCorpusHint(excludedSpeakers, availableSpeakers, strings))
+                // One extra load, filtered by language but not by kind or
+                // speaker: it answers both "is this drawer empty at all"
+                // (ADR-0016) and "which speakers could this language offer"
+                // (Batch D AC6). Only ever runs on this rare empty path.
+                val inLanguage = loadCorpus(ownCorpusRepository = ownCorpusRepository, language = corpusLanguage)
+                val availableSpeakers = inLanguage.recordings.map { it.voiceId }.toSet()
+                PruefmodusState.EmptyCorpus(
+                    emptyCorpusHint(excludedSpeakers, availableSpeakers, inLanguage.words.isNotEmpty(), strings),
+                )
             } else {
                 startedAtEpochMillis = clock.nowEpochMillis()
                 PruefmodusState.Running(ExamSession(round))

@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import de.hexenwoche.audiolex.core.audio.createAudioSink
+import de.hexenwoche.audiolex.core.corpus.CorpusLanguage
 import de.hexenwoche.audiolex.core.corpus.EntryKind
 import de.hexenwoche.audiolex.core.corpus.OwnEntry
 import de.hexenwoche.audiolex.core.i18n.Strings
@@ -71,6 +72,7 @@ fun EigeneAufnahmenScreen(
     sessionRepository: SessionRepository,
     ownNoiseRepository: OwnNoiseRepository,
     clock: Clock,
+    corpusLanguage: CorpusLanguage,
     onBeenden: () -> Unit,
 ) {
     val strings = LocalStrings.current
@@ -106,6 +108,10 @@ fun EigeneAufnahmenScreen(
     var newText by remember { mutableStateOf("") }
     var newSpeaker by remember { mutableStateOf("") }
     var kindOverride by remember { mutableStateOf<EntryKind?>(null) }
+    // Prefilled with the language currently being trained (ADR-0016) --
+    // recording for the drawer you are standing in is the overwhelmingly
+    // common case, and it stays a free choice.
+    var newLanguage by remember(corpusLanguage) { mutableStateOf(corpusLanguage) }
 
     LaunchedEffect(Unit) {
         reload()
@@ -178,6 +184,28 @@ fun EigeneAufnahmenScreen(
                 }
             }
 
+            Text(strings.fieldEntryLanguage, style = MaterialTheme.typography.bodyLarge)
+
+            Column(modifier = Modifier.fillMaxWidth().selectableGroup()) {
+                for (language in CorpusLanguage.entries) {
+                    KindOption(
+                        label = strings.corpusLanguageLabel(language),
+                        selected = newLanguage == language,
+                        onSelect = { newLanguage = language },
+                    )
+                }
+            }
+
+            // The author's own framing (Autor-Entscheid 2026-08-24): this is
+            // a filing decision, not a claim about the audio. Saying so here
+            // is what keeps someone from expecting the app to notice when
+            // they slip an English sentence into the German drawer.
+            Text(
+                strings.entryLanguageHint,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
             OutlinedTextField(
                 value = newSpeaker,
                 onValueChange = { newSpeaker = it },
@@ -226,7 +254,7 @@ fun EigeneAufnahmenScreen(
                 onClick = {
                     val audio = recorder.buffer
                     scope.launch {
-                        repository.add(newText.trim(), newKind, newSpeaker.trim(), audio)
+                        repository.add(newText.trim(), newKind, newSpeaker.trim(), newLanguage, audio)
                         newText = ""
                         kindOverride = null
                         recorder.reset()
@@ -410,8 +438,16 @@ private fun EntryRow(
         } else {
             Text(entry.text, style = MaterialTheme.typography.bodyLarge)
             val speakerPart = if (entry.speaker.isNotBlank()) " · ${entry.speaker}" else ""
+            // Which drawer this entry sits in (ADR-0016) -- worth showing,
+            // because an entry filed under the other language is invisible in
+            // training and its absence would otherwise be a puzzle. An
+            // unknown tag falls back to the raw tag rather than a guess.
+            val languagePart = CorpusLanguage.entries.firstOrNull { it.matches(entry.language) }
+                ?.let { " · ${strings.corpusLanguageLabel(it)}" }
+                ?: " · ${entry.language}"
             Text(
-                "${strings.kindLabel(entry.kind)}$speakerPart · ${formatTimestamp(entry.createdAtEpochMillis, zoneId)}",
+                "${strings.kindLabel(entry.kind)}$languagePart$speakerPart · " +
+                    formatTimestamp(entry.createdAtEpochMillis, zoneId),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

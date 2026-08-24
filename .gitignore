@@ -23,11 +23,15 @@ captures/
 # oder freie TTS-Erzeugung, siehe die READMEs dort). Fremdlizenziertes gehört
 # nicht ins Repo, sondern in die Autor-Bibliothek unter `resources/sounds/`.
 # Autor-Quellbibliothek: Rohaufnahmen/-geräusche (Störgeräusche jetzt, eigene Wort-/Satzaufnahmen später)
-resources/sounds/*.mp3
-resources/sounds/*.wav
-resources/sounds/*.ogg
-resources/sounds/*.m4a
-resources/sounds/*.flac
+# Rekursiv (`**`), seit 2026-08-24: Die frühere Fassung `resources/sounds/*.wav`
+# griff nur eine Ebene tief. Wer die Bibliothek in Unterordner sortiert -- etwa
+# eine Hörprobe je TTS-Stimme -- hätte deren Dateien beim nächsten `git add -A`
+# unbemerkt eingecheckt. Genau die Sorte Unfall, gegen die ADR-0014 steht.
+resources/sounds/**/*.mp3
+resources/sounds/**/*.wav
+resources/sounds/**/*.ogg
+resources/sounds/**/*.m4a
+resources/sounds/**/*.flac
 # Ausnahme: core/src/jvmTest/resources/*.wav ist eine winzige, bewusst
 # eingecheckte Loader-Testfixture, kein Korpus-Inhalt.
 !core/src/jvmTest/resources/*.wav

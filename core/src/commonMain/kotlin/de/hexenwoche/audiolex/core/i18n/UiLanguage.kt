@@ -1,5 +1,7 @@
 package de.hexenwoche.audiolex.core.i18n
 
+import de.hexenwoche.audiolex.core.corpus.primaryLanguageSubtag
+
 /**
  * Which language the UI is written in (ADR-0015). Deliberately *not* the
  * language of the corpus: what the app says and what it plays apart are two
@@ -36,14 +38,10 @@ enum class UiLanguage(val nativeName: String) {
      * fall through to English on a technicality.
      */
     fun resolve(systemTag: String = systemLanguageTag()): UiLanguage = when (this) {
-        SYSTEM -> if (primarySubtagOf(systemTag) == "de") DEUTSCH else ENGLISCH
+        SYSTEM -> if (primaryLanguageSubtag(systemTag) == "de") DEUTSCH else ENGLISCH
         else -> this
     }
 }
-
-/** `de-AT` / `de_DE` / `DE` -> `de`; blank stays blank. */
-private fun primarySubtagOf(tag: String): String =
-    tag.trim().substringBefore('-').substringBefore('_').lowercase()
 
 /**
  * The platform's current language as a BCP-47 primary subtag (`de`, `en`,

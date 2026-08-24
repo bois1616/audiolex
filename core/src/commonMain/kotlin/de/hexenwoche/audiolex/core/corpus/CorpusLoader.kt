@@ -58,7 +58,7 @@ fun parseCorpus(
 private fun OwnEntry.toWord(): Word = Word(
     id = id,
     text = text,
-    language = "de-DE",
+    language = language,
     syllableCount = 0,
     category = WordCategory.EVERYDAY,
     phoneticGroup = null,
@@ -70,7 +70,7 @@ private fun OwnEntry.toRecording(): AudioRecording = AudioRecording(
     id = id,
     wordId = id,
     voiceId = speaker,
-    locale = "de-DE",
+    locale = language,
     fileRef = fileName,
     source = RecordingSource.EIGEN,
 )
@@ -84,6 +84,12 @@ private fun OwnEntry.toRecording(): AudioRecording = AudioRecording(
  * always reads both. An empty [ownEntries] list still yields "nur
  * mitgeliefert" in practice (nothing recorded yet), but that's a fact about
  * the caller's data, not a mode this function branches on.
+ *
+ * [language] is the drawer filter (ADR-0016): entries whose
+ * [Word.language] doesn't match are dropped along with their recordings,
+ * before [kind] and [excludedSpeakers] ever run. Null keeps every drawer --
+ * that is what the Kontingent-Liste needs, which has to show what exists,
+ * not what is currently selected.
  *
  * [kind] filters the merged word list exactly like [parseCorpus] does for
  * the built-in one alone -- applied *after* merging, so it treats both
@@ -107,10 +113,19 @@ fun mergeCorpus(
     ownEntries: List<OwnEntry>,
     kind: EntryKind? = null,
     excludedSpeakers: Set<String> = emptySet(),
+    language: CorpusLanguage? = null,
 ): LoadedCorpus {
     val allWords = builtInWords + ownEntries.map { it.toWord() }
-    val kindFilteredWords = if (kind == null) allWords else allWords.filter { it.kind == kind }
-    val allRecordings = builtInRecordings + ownEntries.map { it.toRecording() }
+    // Language filters first and hardest (ADR-0016): an entry filed under
+    // another drawer is not merely hidden, it must not reach the SRS seeding
+    // either -- otherwise switching to English once would leave English cards
+    // sitting in a German round forever. Null means "every drawer", which is
+    // what the Kontingent-Liste and the dev screen ask for.
+    val languageWords = if (language == null) allWords else allWords.filter { language.matches(it.language) }
+    val languageWordIds = languageWords.map { it.id }.toSet()
+    val kindFilteredWords = if (kind == null) languageWords else languageWords.filter { it.kind == kind }
+    val allRecordings = (builtInRecordings + ownEntries.map { it.toRecording() })
+        .let { if (language == null) it else it.filter { recording -> recording.wordId in languageWordIds } }
 
     if (excludedSpeakers.isEmpty()) return LoadedCorpus(kindFilteredWords, allRecordings)
 

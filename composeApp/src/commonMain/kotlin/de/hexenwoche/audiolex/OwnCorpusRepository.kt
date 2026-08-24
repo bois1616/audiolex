@@ -5,6 +5,7 @@ import de.hexenwoche.audiolex.core.audio.PcmBuffer
 import de.hexenwoche.audiolex.core.audio.WavFile
 import de.hexenwoche.audiolex.core.corpus.BackupContents
 import de.hexenwoche.audiolex.core.corpus.BackupPlan
+import de.hexenwoche.audiolex.core.corpus.CorpusLanguage
 import de.hexenwoche.audiolex.core.corpus.EntryKind
 import de.hexenwoche.audiolex.core.corpus.OwnEntry
 import de.hexenwoche.audiolex.core.corpus.buildBackup
@@ -86,7 +87,13 @@ class OwnCorpusRepository(
      * The file is written before the metadata entry that references it, so
      * a failure in between never produces a ghost entry pointing at nothing.
      */
-    suspend fun add(text: String, kind: EntryKind, speaker: String, audio: PcmBuffer?): OwnEntry =
+    suspend fun add(
+        text: String,
+        kind: EntryKind,
+        speaker: String,
+        language: CorpusLanguage,
+        audio: PcmBuffer?,
+    ): OwnEntry =
         withContext(Dispatchers.IO) {
             val id = newId()
             val fileName = fileNameFor(id)
@@ -96,6 +103,10 @@ class OwnCorpusRepository(
                 text = text,
                 kind = kind,
                 speaker = speaker,
+                // Stored as the tag, not the enum name (ADR-0016): this file
+                // is user data that a later version with more languages has
+                // to keep parsing.
+                language = language.languageTag,
                 fileName = fileName,
                 createdAtEpochMillis = clock.nowEpochMillis(),
             )

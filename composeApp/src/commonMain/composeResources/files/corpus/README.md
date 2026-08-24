@@ -5,7 +5,8 @@ Wortkorpus für AudioLex: Audiodateien und Metadaten, als Compose-Resource unter
 - **Metadaten** (`words.json`, `recordings.json`) und **Audiodateien** sind versioniert. Seit v0.33.0 gilt das auch für die WAVs: F-Droid baut aus dem Quelltext, ein Buildserver ohne sie liefert eine stumme App (Autor-Entscheid 2026-08-17, `docs/fdroid-anmeldung.md` Schritt 3).
 - Format: WAV, PCM16, 22050 Hz, mono — native Piper-Ausgaberate (ADR-0003, ADR-0006).
 - Herkunft und Weitergaberecht jeder Datei gehören hierher. Was nicht weitergegeben werden darf, gehört nicht in dieses Verzeichnis.
-- Erzeugt über `tools/generate_tts.py` (`uv run generate_tts.py` aus `tools/`).
+- Erzeugt über `tools/generate_tts.py` (`uv run generate_tts.py` aus `tools/`). Das Skript rendert nur, was fehlt (`--force` erzwingt alles neu), überspringt Wörter, die bereits eine echte Einsprache haben, und trägt jede Stimme nur für ihre eigene Sprache ein — der Ordner `raw/<locale>/` folgt daraus.
+- **Sprache je Eintrag** (`words.json`, Feld `language`) entscheidet, unter welcher Trainingssprache ein Eintrag erscheint (ADR-0016). Sie ist eine Einordnung, keine Prüfung des Inhalts.
 
 ## Herkunft der Aufnahmen
 
@@ -14,6 +15,7 @@ Wortkorpus für AudioLex: Audiodateien und Metadaten, als Compose-Resource unter
 | `thorsten` | 68 | Lokal erzeugt mit Piper, Stimmodell `de_DE-thorsten-medium` | Modell MIT, Datensatz [Thorsten-Voice](https://github.com/thorstenMueller/Thorsten-Voice) CC0 — CC0-1.0 |
 | `Stephan (Beispiel)` | 3 | Eigene Einsprachen des Autors, in der App aufgenommen (2026-08-07), vom Gerät übernommen | CC0-1.0 (Autor-Entscheid 2026-08-17) |
 | `Grete (Beispiel)` | 1 | Einsprache einer zweiten Sprecherin, in der App aufgenommen (2026-08-07) | CC0-1.0; **Einverständnis der Sprecherin liegt dem Autor vor** (bestätigt 2026-08-17) |
+| `ljspeech` | 20 | Lokal erzeugt mit Piper, Stimmodell `en_US-ljspeech-high` | Modell MIT, Datensatz [LJ Speech](https://keithito.com/LJ-Speech-Dataset/) **public domain** — CC0-1.0 |
 
 **Warum der Zusatz „(Beispiel)" im `voiceId` steht** (A53-Befund 2026-08-17): Die Kontingent-Liste zeigt den `voiceId` wörtlich an, und dieselben Aufnahmen liegen auf dem Gerät des Autors auch als *eigener* Korpus — dort mit `speaker: "Stephan"` bzw. `"Grete"`. Ohne Unterscheidung standen vier Sprecher in der Liste, die sich nur durch Groß-/Kleinschreibung unterschieden („Stephan" und „stephan"). Der Zusatz trennt die mitgelieferte Demo sichtbar von einer echten eigenen Stimme — auf jedem Gerät, nicht nur auf dem des Autors. Dateinamen und Aufnahme-Ids bleiben schlank (`…__stephan.wav`); nur das angezeigte Kontingent trägt den Zusatz.
 
@@ -21,11 +23,15 @@ Die vier Einsprachen sind ausdrücklich **Demo-Beispiele** (Autor-Entscheid 2026
 
 **Offene Kleinigkeit:** Die Einsprachen sind als `locale: de-DE` eingetragen, weil sich der Akzent nicht am Schreibtisch feststellen lässt. Sind sie österreichisch gefärbt, gehört `de-AT` hinein und die Dateien in ein `raw/de-AT/`. Ein Satz des Autors genügt dafür.
 
-Das Stimmodell selbst liegt **nicht** im Repo (`tools/voices/`, gitignoriert, 63 MB) und wird bei Bedarf per Skript geholt. Ausgeliefert werden nur die erzeugten WAVs.
+**Warum ausgerechnet `ljspeech` für Englisch** (geprüft 2026-08-24, ADR-0016): Die Lizenz entschied, nicht der Klang. LJ Speech ist gemeinfrei — die Aufnahmen stammen von LibriVox, die Texte aus Büchern von 1884–1964 —, und die MODEL_CARD sagt ausdrücklich „Trained from scratch", das Modell erbt also nichts. Die naheliegenden Alternativen fallen genau daran: `lessac` ist auf Blizzard 2013 trainiert (Lizenz nur „Research Purposes", schließt Sprachsynthese-Produkte ausdrücklich aus), `ryan` und `hfc_female`/`hfc_male` stehen unter CC BY-**NC**-SA — dieselbe Nicht-kommerziell-Klausel, wegen der die drei zugekauften Störgeräusch-Loops im August rausgeflogen sind —, und `hfc` ist obendrein aus `lessac` feinabgestimmt. Die Stufe „high" statt „medium" folgt dem kerstin-Befund aus M1: Die Kernübung dieser App ist das isolierte Einzelwort, und dort stauchen niedrige Stufen. Gemessen an der ersten Ausgabe: „bread" 0,53 s, „cow" 0,50 s — auf einer Linie mit thorstens „Ball" (0,52 s).
+
+Die Stimmodelle selbst liegen **nicht** im Repo (`tools/voices/`, gitignoriert, 63 MB bzw. 114 MB) und werden bei Bedarf per Skript geholt. Ausgeliefert werden nur die erzeugten WAVs.
 
 ## Herkunft der Satz-Einträge
 
-Die `satz-*`-Einträge (`"kind": "SENTENCE"`) sind motivisch an Douglas Adams, „Per Anhalter durch die Galaxis" (Kapitel 1), angelehnt, aber **frei paraphrasiert** — keine wörtlichen Zitate stehen im Repo (ADR-0009). Kriterium ist akustische Erkennbarkeit beim Mitlesen, nicht Werktreue.
+Die deutschen `satz-*`-Einträge (`"kind": "SENTENCE"`) sind motivisch an Douglas Adams, „Per Anhalter durch die Galaxis" (Kapitel 1), angelehnt, aber **frei paraphrasiert** — keine wörtlichen Zitate stehen im Repo (ADR-0009). Kriterium ist akustische Erkennbarkeit beim Mitlesen, nicht Werktreue.
+
+Die englischen Einträge (`en-*`, `satz-en-*`, seit v0.35.0) sind **frei formuliert**, keine Übersetzungen der deutschen und ohne Vorlage — Alltagssätze mit höchstens acht Wörtern. Eigener Text, keine fremden Rechte daran.
 
 ## Eigene Aufnahmen mitliefern
 

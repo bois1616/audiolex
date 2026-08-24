@@ -1,5 +1,33 @@
 [
   {
+    "id": "satz-erster-text__stephan",
+    "wordId": "satz-erster-text",
+    "voiceId": "Stephan (Beispiel)",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/satz-erster-text__stephan.wav"
+  },
+  {
+    "id": "satz-zahlen__stephan",
+    "wordId": "satz-zahlen",
+    "voiceId": "Stephan (Beispiel)",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/satz-zahlen__stephan.wav"
+  },
+  {
+    "id": "test-zwei__stephan",
+    "wordId": "test-zwei",
+    "voiceId": "Stephan (Beispiel)",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/test-zwei__stephan.wav"
+  },
+  {
+    "id": "glenkill__grete",
+    "wordId": "glenkill",
+    "voiceId": "Grete (Beispiel)",
+    "locale": "de-DE",
+    "fileRef": "raw/de-DE/glenkill__grete.wav"
+  },
+  {
     "id": "ball__thorsten",
     "wordId": "ball",
     "voiceId": "thorsten",
@@ -476,31 +504,143 @@
     "fileRef": "raw/de-DE/satz-zug__thorsten.wav"
   },
   {
-    "id": "satz-erster-text__stephan",
-    "wordId": "satz-erster-text",
-    "voiceId": "Stephan (Beispiel)",
-    "locale": "de-DE",
-    "fileRef": "raw/de-DE/satz-erster-text__stephan.wav"
+    "id": "en-bread__ljspeech",
+    "wordId": "en-bread",
+    "voiceId": "ljspeech",
+    "locale": "en-US",
+    "fileRef": "raw/en-US/en-bread__ljspeech.wav"
   },
   {
-    "id": "satz-zahlen__stephan",
-    "wordId": "satz-zahlen",
-    "voiceId": "Stephan (Beispiel)",
-    "locale": "de-DE",
-    "fileRef": "raw/de-DE/satz-zahlen__stephan.wav"
+    "id": "en-cow__ljspeech",
+    "wordId": "en-cow",
+    "voiceId": "ljspeech",
+    "locale": "en-US",
+    "fileRef": "raw/en-US/en-cow__ljspeech.wav"
   },
   {
-    "id": "test-zwei__stephan",
-    "wordId": "test-zwei",
-    "voiceId": "Stephan (Beispiel)",
-    "locale": "de-DE",
-    "fileRef": "raw/de-DE/test-zwei__stephan.wav"
+    "id": "en-window__ljspeech",
+    "wordId": "en-window",
+    "voiceId": "ljspeech",
+    "locale": "en-US",
+    "fileRef": "raw/en-US/en-window__ljspeech.wav"
   },
   {
-    "id": "glenkill__grete",
-    "wordId": "glenkill",
-    "voiceId": "Grete (Beispiel)",
-    "locale": "de-DE",
-    "fileRef": "raw/de-DE/glenkill__grete.wav"
+    "id": "en-butterfly__ljspeech",
+    "wordId": "en-butterfly",
+    "voiceId": "ljspeech",
+    "locale": "en-US",
+    "fileRef": "raw/en-US/en-butterfly__ljspeech.wav"
+  },
+  {
+    "id": "en-umbrella__ljspeech",
+    "wordId": "en-umbrella",
+    "voiceId": "ljspeech",
+    "locale": "en-US",
+    "fileRef": "raw/en-US/en-umbrella__ljspeech.wav"
+  },
+  {
+    "id": "en-kitchen__ljspeech",
+    "wordId": "en-kitchen",
+    "voiceId": "ljspeech",
+    "locale": "en-US",
+    "fileRef": "raw/en-US/en-kitchen__ljspeech.wav"
+  },
+  {
+    "id": "en-thunder__ljspeech",
+    "wordId": "en-thunder",
+    "voiceId": "ljspeech",
+    "locale": "en-US",
+    "fileRef": "raw/en-US/en-thunder__ljspeech.wav"
+  },
+  {
+    "id": "en-strawberry__ljspeech",
+    "wordId": "en-strawberry",
+    "voiceId": "ljspeech",
+    "locale": "en-US",
+    "fileRef": "raw/en-US/en-strawberry__ljspeech.wav"
+  },
+  {
+    "id": "en-envelope__ljspeech",
+    "wordId": "en-envelope",
+    "voiceId": "ljspeech",
+    "locale": "en-US",
+    "fileRef": "raw/en-US/en-envelope__ljspeech.wav"
+  },
+  {
+    "id": "en-lighthouse__ljspeech",
+    "wordId": "en-lighthouse",
+    "voiceId": "ljspeech",
+    "locale": "en-US",
+    "fileRef": "raw/en-US/en-lighthouse__ljspeech.wav"
+  },
+  {
+    "id": "satz-en-kettle__ljspeech",
+    "wordId": "satz-en-kettle",
+    "voiceId": "ljspeech",
+    "locale": "en-US",
+    "fileRef": "raw/en-US/satz-en-kettle__ljspeech.wav"
+  },
+  {
+    "id": "satz-en-fence__ljspeech",
+    "wordId": "satz-en-fence",
+    "voiceId": "ljspeech",
+    "locale": "en-US",
+    "fileRef": "raw/en-US/satz-en-fence__ljspeech.wav"
+  },
+  {
+    "id": "satz-en-umbrella__ljspeech",
+    "wordId": "satz-en-umbrella",
+    "voiceId": "ljspeech",
+    "locale": "en-US",
+    "fileRef": "raw/en-US/satz-en-umbrella__ljspeech.wav"
+  },
+  {
+    "id": "satz-en-bread__ljspeech",
+    "wordId": "satz-en-bread",
+    "voiceId": "ljspeech",
+    "locale": "en-US",
+    "fileRef": "raw/en-US/satz-en-bread__ljspeech.wav"
+  },
+  {
+    "id": "satz-en-cows__ljspeech",
+    "wordId": "satz-en-cows",
+    "voiceId": "ljspeech",
+    "locale": "en-US",
+    "fileRef": "raw/en-US/satz-en-cows__ljspeech.wav"
+  },
+  {
+    "id": "satz-en-envelope__ljspeech",
+    "wordId": "satz-en-envelope",
+    "voiceId": "ljspeech",
+    "locale": "en-US",
+    "fileRef": "raw/en-US/satz-en-envelope__ljspeech.wav"
+  },
+  {
+    "id": "satz-en-lighthouse__ljspeech",
+    "wordId": "satz-en-lighthouse",
+    "voiceId": "ljspeech",
+    "locale": "en-US",
+    "fileRef": "raw/en-US/satz-en-lighthouse__ljspeech.wav"
+  },
+  {
+    "id": "satz-en-thunder__ljspeech",
+    "wordId": "satz-en-thunder",
+    "voiceId": "ljspeech",
+    "locale": "en-US",
+    "fileRef": "raw/en-US/satz-en-thunder__ljspeech.wav"
+  },
+  {
+    "id": "satz-en-strawberries__ljspeech",
+    "wordId": "satz-en-strawberries",
+    "voiceId": "ljspeech",
+    "locale": "en-US",
+    "fileRef": "raw/en-US/satz-en-strawberries__ljspeech.wav"
+  },
+  {
+    "id": "satz-en-truck__ljspeech",
+    "wordId": "satz-en-truck",
+    "voiceId": "ljspeech",
+    "locale": "en-US",
+    "fileRef": "raw/en-US/satz-en-truck__ljspeech.wav"
   }
 ]

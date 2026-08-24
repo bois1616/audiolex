@@ -2,6 +2,7 @@ package de.hexenwoche.audiolex.core.i18n
 
 import de.hexenwoche.audiolex.core.audio.OutputSetup
 import de.hexenwoche.audiolex.core.audio.OwnNoiseSource
+import de.hexenwoche.audiolex.core.corpus.CorpusLanguage
 import de.hexenwoche.audiolex.core.corpus.EntryKind
 import de.hexenwoche.audiolex.core.settings.ChannelMode
 import de.hexenwoche.audiolex.core.settings.CorpusMode
@@ -116,12 +117,17 @@ interface Strings {
     val nothingForSelectedContingents: String
     val emptyCorpus: String
 
+    /** Nothing is filed under the selected corpus language yet (ADR-0016). */
+    val emptyForLanguage: String
+
     // ---- Einstellungen ----
 
     val sectionTrainingLevel: String
     val customLevel: String
     val sectionAppearance: String
     val sectionTrainingContent: String
+    val sectionTrainingLanguage: String
+    val trainingLanguageHint: String
     val sectionCorpus: String
     val noContingentAvailable: String
     val selectAll: String
@@ -140,6 +146,14 @@ interface Strings {
     fun profileLabel(profile: SettingsProfile): String
     fun themeModeLabel(mode: ThemeMode): String
     fun corpusModeLabel(mode: CorpusMode): String
+
+    /**
+     * The language named in the language the reader is currently using
+     * ("Englisch" in a German UI) -- unlike the UI picker, which names each
+     * language in itself. Here the reader is choosing *content* and is by
+     * definition reading the current UI language.
+     */
+    fun corpusLanguageLabel(language: CorpusLanguage): String
     fun channelModeLabel(mode: ChannelMode): String
     fun outputSetupDetected(setup: OutputSetup): String
     fun snrLabel(snrDb: Int): String
@@ -151,6 +165,8 @@ interface Strings {
     val sectionNewRecording: String
     val fieldText: String
     val fieldSpeakerOptional: String
+    val fieldEntryLanguage: String
+    val entryLanguageHint: String
     val untranscribedHint: String
     val sectionMyEntries: String
     val noOwnRecordingsYet: String

@@ -30,6 +30,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import de.hexenwoche.audiolex.core.audio.NoiseScenario
 import de.hexenwoche.audiolex.core.audio.OutputSetup
+import de.hexenwoche.audiolex.core.corpus.CorpusLanguage
 import de.hexenwoche.audiolex.core.corpus.SpeakerContingent
 import de.hexenwoche.audiolex.core.corpus.speakerContingents
 import de.hexenwoche.audiolex.core.i18n.Strings
@@ -98,6 +99,8 @@ fun EinstellungenScreen(
     onThemeModeChange: (ThemeMode) -> Unit,
     corpusMode: CorpusMode,
     onCorpusModeChange: (CorpusMode) -> Unit,
+    corpusLanguage: CorpusLanguage,
+    onCorpusLanguageChange: (CorpusLanguage) -> Unit,
     noiseEnabled: Boolean,
     onNoiseEnabledChange: (Boolean) -> Unit,
     snrDb: Int,
@@ -143,8 +146,14 @@ fun EinstellungenScreen(
     // selected/excluded -- the list itself must not wobble while the user
     // (de)selects contingents.
     var contingents by remember { mutableStateOf<List<SpeakerContingent>>(emptyList()) }
-    LaunchedEffect(Unit) {
-        contingents = loadCorpus(ownCorpusRepository = ownCorpusRepository).speakerContingents()
+    // Keyed on the training language (ADR-0016): the list shows who has
+    // anything filed under *this* drawer, so switching the language has to
+    // rebuild it. Still deliberately unfiltered by kind and by the current
+    // exclusion -- the counts must not wobble while the user ticks speakers
+    // (Batch D AC4).
+    LaunchedEffect(corpusLanguage) {
+        contingents = loadCorpus(ownCorpusRepository = ownCorpusRepository, language = corpusLanguage)
+            .speakerContingents()
     }
 
     Column(
@@ -227,6 +236,31 @@ fun EinstellungenScreen(
                     )
                 }
             }
+
+            Text(strings.sectionTrainingLanguage, style = MaterialTheme.typography.titleMedium)
+
+            Column(
+                modifier = Modifier.fillMaxWidth().selectableGroup(),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                for (language in CorpusLanguage.entries) {
+                    RadioOption(
+                        label = strings.corpusLanguageLabel(language),
+                        selected = corpusLanguage == language,
+                        onSelect = { onCorpusLanguageChange(language) },
+                    )
+                }
+            }
+
+            // Two language settings exist since ADR-0016 and they do
+            // different things; this line is what keeps them apart for
+            // someone who just switched the interface on the StartScreen and
+            // wonders why the words stayed German.
+            Text(
+                strings.trainingLanguageHint,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
 
             Text(strings.sectionCorpus, style = MaterialTheme.typography.titleMedium)
 
