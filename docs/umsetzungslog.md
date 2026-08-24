@@ -1,5 +1,19 @@
 # Umsetzungs-Log (Neueste Einträge zuerst)
 
+## 2026-08-24 (Claude: **MR 46059 auf 0.35.0 aktualisiert**)
+
+- **Was:** `metadata/de.hexenwoche.audiolex.yml` im Fork auf `0.35.0` / versionCode 44 gehoben, Build-Eintrag `0.33.6` ersetzt statt ergänzt (nie ausgeliefert, F-Droid müsste ihn sonst ohne Nutzen mitbauen — und die Testschlange ist laut linsui lang). Push auf den Branch `de.hexenwoche.audiolex`, MR 46059 zeigt jetzt auf `0e30de98`. Kein Codeeingriff, also kein Versionsschritt. Vorher gepusht: die drei offenen Commits und ein annotiertes Tag `v0.35.0` auf `c174d4ce`.
+
+- **Warum jetzt, und warum kein zweiter MR:** Der MR ist offen, nicht gemergt, die App steht nicht im Katalog. Es gibt also keinen automatischen Update-Pfad — der bestehende MR *ist* der Weg. linsui hat vor fünf Tagen ausdrücklich darum gebeten: „if you release a new version please update this MR."
+
+- **Die zehn Kommentare am MR waren der eigentliche Auslöser** und anonym nicht lesbar (API 401, im Log vom 17.08. schon als Grenze notiert) — der Autor hat sie hereinkopiert. Inhalt: (1) linsui verlangte einen vollen Commit-Hash statt Tag/Branch, längst erledigt; (2) eine statische Prüfung durch Andrew Pozdnakov mit Ergebnis PASS (Apache-2.0, nur `RECORD_AUDIO`, kein `INTERNET`, keine Telemetrie, Piper-Tooling nicht Teil des Android-Builds); (3) linsui: „mostly ready", Test steht aus; (4) **chivalry vor 14 Stunden: „I am not fluent at German. Could you please provide an English UI?"** Genau das ist heute entstanden — der Tester ist entblockt, ohne dass er noch einmal nachfragen musste.
+
+- **Auflage eingehalten:** `commit:` trägt weiter einen vollen 40-Zeichen-Hash, kein Tag. Das Tag existiert trotzdem, weil `UpdateCheckMode: Tags` es für spätere automatische Erkennung braucht.
+
+- **Wie verifiziert, bevor gepusht wurde:** Der gepinnte Commit aus einem `git archive`-Export **ohne `local.properties`** gebaut — so wie F-Droids Buildserver es tut. `:composeApp:assembleRelease` grün, 30,3 MB. Im APK gegengezählt: 93 WAVs, davon 72 unter `raw/de-DE/` und 20 unter `raw/en-US/`, dazu `bus.wav`; `words.json` und `recordings.json` beide enthalten. Rezeptur-YAML geparst: Hash 40 Zeichen hexadezimal, `versionName`/`versionCode` stimmen mit `CurrentVersion`/`CurrentVersionCode` überein.
+
+- **Offen und nicht in unserer Hand:** der Testlauf eines Paketierers. Die MR-Beschreibung behauptet noch „German language interface" — der Satz ist überholt und gehört korrigiert; Text dafür liegt dem Autor vor. Kommentare kann nur er posten, ein GitLab-Token gibt es hier nicht.
+
 ## 2026-08-24 (Claude: **Korpus nach Sprache, englische Beispiele — v0.35.0**)
 
 - **Was:** Zweiter Auftrag des Autors am selben Tag. Der Korpus wird nach Sprache qualifiziert, und es gibt zwanzig englische Beispieleinträge. Version 0.34.0 → **0.35.0**, versionCode 43 → 44 (beide Stellen). Entscheidung samt verworfener Alternativen: **ADR-0016**.
