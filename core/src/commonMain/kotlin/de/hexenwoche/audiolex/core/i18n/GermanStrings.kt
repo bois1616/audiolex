@@ -401,4 +401,24 @@ internal object GermanStrings : Strings {
             "Ohne eigenen Export gibt es keine Kopie. „Exportieren“ legt Aufnahmen, Geräusche und " +
             "Sitzungsverlauf als ZIP in deine Dokumente, „Importieren“ liest sie zurück und fügt nur hinzu, " +
             "was fehlt."
+
+    // ---- Kanaltest ----
+
+    override val channelTestTitle = "Kanaltest"
+    override val channelTestExplainer =
+        "Beide Ohren bekommen gleichzeitig drei verschiedene Wörter. „Nur links“ setzt den rechten " +
+            "Kanal auf exakt null — was dann rechts noch zu hören ist, kommt nicht aus der App."
+    override val channelTestLoading = "Lade Korpus…"
+    override val channelTestReady = "Bereit"
+    override val channelTestTooFewWords =
+        "Für den Kanaltest fehlen Wörter: Er braucht sechs mit Aufnahme in der eingestellten " +
+            "Trainingssprache."
+
+    override fun channelTestLeftEar(words: List<String>) = "Links: ${words.joinToString(" · ")}"
+
+    override fun channelTestRightEar(words: List<String>) = "Rechts: ${words.joinToString(" · ")}"
+
+    override fun channelTestPlaying(channels: String) = "Kanaltest: $channels…"
+
+    override fun channelTestPlayingWord(word: String, speaker: String) = "Spiele „$word“ ($speaker)…"
 }

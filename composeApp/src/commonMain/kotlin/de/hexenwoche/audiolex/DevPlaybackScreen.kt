@@ -1,9 +1,7 @@
 package de.hexenwoche.audiolex
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -20,61 +18,67 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
 import de.hexenwoche.audiolex.core.audio.PcmBuffer
-import de.hexenwoche.audiolex.core.audio.RECORDING_CHANNELS
-import de.hexenwoche.audiolex.core.audio.RECORDING_SAMPLE_RATE
 import de.hexenwoche.audiolex.core.audio.StereoGain
 import de.hexenwoche.audiolex.core.audio.WavFile
+import de.hexenwoche.audiolex.core.audio.concatWithGaps
 import de.hexenwoche.audiolex.core.audio.createAudioSink
-import de.hexenwoche.audiolex.core.audio.createAudioSource
+import de.hexenwoche.audiolex.core.audio.perEarStereo
 import de.hexenwoche.audiolex.core.corpus.AudioRecording
-import de.hexenwoche.audiolex.core.i18n.Strings
+import de.hexenwoche.audiolex.core.corpus.CorpusLanguage
+import de.hexenwoche.audiolex.core.corpus.EntryKind
 import de.hexenwoche.audiolex.core.corpus.LoadedCorpus
+import de.hexenwoche.audiolex.core.i18n.Strings
 import de.hexenwoche.audiolex.core.session.PlaybackQueue
-import kotlinx.coroutines.CancellationException
+import de.hexenwoche.audiolex.core.settings.ChannelMode
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancelAndJoin
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * Playback smoke test for M1 (backlog: Desktop-/Android-Sink verifizieren):
- * loads the real generated corpus and plays a chosen word end-to-end
- * through WavFile + AudioSink. Not the learning-mode UI (that's M2) --
- * kept as a standalone dev screen so it doesn't grow into App.kt's
- * eventual navigation host (Opus-Review 2026-07-07).
+ * The channel test: plays three words into one ear and three *different*
+ * words into the other, simultaneously, with the channel selection applied
+ * on top. Reachable by a long press on the version line (Backlog M4
+ * "Kanaltest aus dem Regelbetrieb ausblenden, aber erreichbar halten").
+ *
+ * It answers one question and deliberately no others: **does the app put
+ * sound where it says it does?** With `Nur links` the right channel carries
+ * exact zeroes ([perEarStereo], unit-tested in `MixerTest`), so anything
+ * still audible on the right is downstream of the app -- the device, the
+ * headset, or a system effect. That makes it the falsifiable instrument for
+ * every channel report, including the one from the F-Droid tester on
+ * 2026-08-27 that this batch answers.
+ *
+ * Two things changed for that report (Autor-Auftrag 2026-08-27):
+ * - **Three words per ear, not one.** A single word is over in half a
+ *   second, which is too short to be sure *where* it came from when that is
+ *   the very thing in question.
+ * - **Both languages.** The screen used to be German-only on the grounds
+ *   that an instrument is not a product screen (ADR-0015 Nicht-Ziele). That
+ *   held while the only person holding the instrument read German; it stops
+ *   holding the moment a test report comes back in English. See the Nachtrag
+ *   in ADR-0015.
+ *
+ * Words come from the corpus language in the settings (ADR-0016), not from
+ * the UI language: those are two questions, and the training drawer is the
+ * one that decides which recordings exist.
  *
  * Playback goes through [PlaybackQueue], same as [LernmodusScreen]/
  * [PruefmodusScreen] (Backlog M4 "Dev-Kanaltest: überlappende Wiedergaben",
- * A53-Befund 2026-08-06): this used to be the one remaining screen calling
- * `sink.play()` directly in a fire-and-forget `scope.launch`, so a fast
- * repeat tap never cancelled the previous playback -- both decode and play
- * happened outside any cancellable job, stacking overlapping `AudioTrack`s.
- * Decode now runs *inside* the queue's producer for both playback paths (the
- * three channel-test buttons and the word list below), same fix as the
- * "Kakaffee" regression in the training screens (Autor-Finding 2026-07-13):
- * decoding first and only then calling `queue.play(buffer)` would still
- * leave the decode step racy.
- *
- * [ownCorpusRepository] exists here only so [decodeRecording]/
- * [buildTwoWordsPerEar] can go through the same [readRecordingBytes] as the
- * training screens (Backlog Eigen-Korpus Batch C, AC5) -- this screen's own
- * [loadCorpus] call below stays unfiltered/mitgeliefert-only as it always
- * has (no source switch here, that's the training screens' territory), so
- * every recording this screen ever plays resolves as
- * [de.hexenwoche.audiolex.core.corpus.RecordingSource.MITGELIEFERT] and the
- * repository is never actually asked for bytes.
+ * A53-Befund 2026-08-06): decode happens *inside* the queue's producer for
+ * both playback paths, so a fast repeat tap cancels the previous playback
+ * whole instead of stacking two overlapping `AudioTrack`s.
  */
 @Composable
-fun DevPlaybackScreen(ownCorpusRepository: OwnCorpusRepository) {
+fun DevPlaybackScreen(ownCorpusRepository: OwnCorpusRepository, corpusLanguage: CorpusLanguage) {
     val strings = LocalStrings.current
     var corpus by remember { mutableStateOf<LoadedCorpus?>(null) }
-    var status by remember { mutableStateOf("Lade Korpus…") }
+    var status by remember { mutableStateOf(strings.channelTestLoading) }
     val scope = rememberCoroutineScope()
     val sink = remember { createAudioSink() }
-    val queue = remember {
+    // Keyed on `strings` like the training screens: the capture cannot go
+    // stale if switching the language mid-screen ever becomes reachable.
+    val queue = remember(strings) {
         PlaybackQueue(sink, scope, onError = { e ->
-            status = "Fehler: ${e.message}"
+            status = strings.playbackFailed(e.message)
         })
     }
 
@@ -89,15 +93,18 @@ fun DevPlaybackScreen(ownCorpusRepository: OwnCorpusRepository) {
         }
     }
 
-    LaunchedEffect(Unit) {
-        // Unfiltered (kind = null): the dev list shows every entry.
-        corpus = loadCorpus()
-        status = "Bereit"
+    LaunchedEffect(corpusLanguage) {
+        corpus = null
+        status = strings.channelTestLoading
+        // Words only, and only the chosen drawer: the sentences are seconds
+        // long each, which would make a six-part sequence a paragraph.
+        corpus = loadCorpus(EntryKind.WORD, ownCorpusRepository, language = corpusLanguage)
+        status = strings.channelTestReady
     }
 
+    Text(strings.channelTestTitle, style = MaterialTheme.typography.titleMedium)
+    Text(strings.channelTestExplainer, style = MaterialTheme.typography.bodyMedium)
     Text(status, style = MaterialTheme.typography.bodyMedium)
-
-    MikrofonRohtestSection(queue)
 
     val currentCorpus = corpus
     if (currentCorpus == null) {
@@ -105,42 +112,50 @@ fun DevPlaybackScreen(ownCorpusRepository: OwnCorpusRepository) {
         return
     }
 
-    // Channel-separation smoke test (backlog M1): plays two *different*
-    // words, one per ear, so the test doesn't rely on judging the same
-    // word's loudness -- with a single hearing aid on one ear, hearing
-    // "which word" is a much clearer signal than "louder/quieter".
-    // Not the learning-mode UI (that's M2's session/settings work).
-    val leftWordRecording = currentCorpus.words.getOrNull(0)?.let { currentCorpus.recordingFor(it.id) }
-    val rightWordRecording = currentCorpus.words.getOrNull(1)?.let { currentCorpus.recordingFor(it.id) }
-    val leftWordText = currentCorpus.words.getOrNull(0)?.text ?: "?"
-    val rightWordText = currentCorpus.words.getOrNull(1)?.text ?: "?"
-    // FlowRow, not Row: the labels carry the word texts ("Nur „Haus“ rechts"),
-    // so the three buttons overflow the A53's width and the last one gets
-    // squeezed into a one-character-wide column. Visible on the device only
-    // once the corpus list below shrank to two entries and stopped drawing
-    // the eye away from it. Same overflow, same remedy as the speaker chips
-    // and the per-entry action row (A53-Befund 2026-08-06). Beyond this
-    // batch's ACs, but shipping a mangled control on the very screen the
-    // batch is about would be worse.
+    // Only words that actually have a recording -- an entry without one would
+    // silently shorten one ear's sequence and make the test lie about what it
+    // played.
+    val playable = currentCorpus.words
+        .mapNotNull { word -> currentCorpus.recordingFor(word.id)?.let { word.text to it } }
+    val leftEar = playable.take(WORDS_PER_EAR)
+    val rightEar = playable.drop(WORDS_PER_EAR).take(WORDS_PER_EAR)
+    if (rightEar.size < WORDS_PER_EAR) {
+        Text(strings.channelTestTooFewWords, style = MaterialTheme.typography.bodyMedium)
+        return
+    }
+
+    Text(strings.channelTestLeftEar(leftEar.map { it.first }), style = MaterialTheme.typography.bodyMedium)
+    Text(strings.channelTestRightEar(rightEar.map { it.first }), style = MaterialTheme.typography.bodyMedium)
+
+    // FlowRow, not Row: three labels don't fit the A53's width in one line
+    // (A53-Befund 2026-08-06, same overflow and same remedy as the speaker
+    // chips). The labels are the ones the settings screen uses for the same
+    // three choices -- a tester comparing "Nur links" here against "Nur
+    // links" there should not have to translate between two wordings.
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        for ((label, gain) in listOf(
-            "Nur „$leftWordText“ links" to StereoGain.LEFT_ONLY,
-            "Beide" to StereoGain.BOTH,
-            "Nur „$rightWordText“ rechts" to StereoGain.RIGHT_ONLY,
-        )) {
+        // Left, both, right -- the ears' own order, not the enum's. The
+        // settings screen lists "Beide" first because that is the default
+        // there; here the row is a picture of the thing being tested.
+        for (mode in listOf(ChannelMode.NUR_LINKS, ChannelMode.BEIDE, ChannelMode.NUR_RECHTS)) {
+            val label = strings.channelModeLabel(mode)
             Button(
-                enabled = leftWordRecording != null && rightWordRecording != null,
                 onClick = {
-                    val left = leftWordRecording ?: return@Button
-                    val right = rightWordRecording ?: return@Button
-                    status = "Kanaltest: $label…"
-                    // Decode + mix happen inside the producer (AC1): a fast
+                    status = strings.channelTestPlaying(label)
+                    // Decode + mix happen inside the producer: a fast
                     // follow-up tap cancels this job, decode included,
                     // instead of two decodes racing to the sink.
-                    queue.play { buildTwoWordsPerEar(left, right, gain, ownCorpusRepository, strings) }
+                    queue.play {
+                        buildWordsPerEar(
+                            leftEar.map { it.second },
+                            rightEar.map { it.second },
+                            mode.stereoGain(),
+                            ownCorpusRepository,
+                            strings,
+                        )
+                    }
                 },
             ) {
                 Text(label)
@@ -148,173 +163,30 @@ fun DevPlaybackScreen(ownCorpusRepository: OwnCorpusRepository) {
         }
     }
 
-    // AC2: only the two words the channel test itself uses, not the whole
-    // corpus. The list had grown to 58 entries including sentences, which
-    // turned the channel tool into a corpus browser -- Autor 2026-08-06:
-    // "für den Test brauche ich nur Ball und Haus". These are the same two
-    // words the per-ear buttons above play, so hearing one on its own is the
-    // natural cross-check when a channel sounds wrong.
+    // The six words on their own, mono, no panning: hearing one by itself is
+    // the cross-check when a channel sounds wrong (AC2 of "Kanaltest aus dem
+    // Regelbetrieb ausblenden" -- the screen is the channel tool, not a
+    // corpus browser, so it lists exactly what the test above uses).
     LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(currentCorpus.words.take(2)) { word ->
-            val recording = currentCorpus.recordingFor(word.id)
+        items(leftEar + rightEar) { (text, recording) ->
             Button(
-                enabled = recording != null,
                 onClick = {
-                    val rec = recording ?: return@Button
-                    status = "Spiele „${word.text}“ (${rec.voiceId})…"
-                    queue.play { decodeRecording(rec, ownCorpusRepository, strings) }
+                    status = strings.channelTestPlayingWord(text, recording.voiceId)
+                    queue.play { decodeRecording(recording, ownCorpusRepository, strings) }
                 },
             ) {
-                Text(word.text)
+                Text(text)
             }
         }
     }
 }
 
-/**
- * Mikrofon-Rohtest (Backlog Eigen-Korpus Batch A, AC5): record, then listen
- * back -- nothing is saved, no text, no corpus link (explicit Nicht-Ziele).
- * Purpose is narrower than it looks: this is where the recording *format*
- * gets checked on a real device before Batch B builds persistence on top of
- * it (ADR-0012 Konsequenzen).
- *
- * Playback goes through the caller's [queue] (same [PlaybackQueue] the rest
- * of this screen uses, AC5), but recording has its own
- * [de.hexenwoche.audiolex.core.audio.AudioSource]/scope -- record and
- * playback are independent capabilities here, unlike the channel-test
- * buttons above which only ever play.
- */
-@Composable
-private fun MikrofonRohtestSection(queue: PlaybackQueue) {
-    val scope = rememberCoroutineScope()
-    val source = remember { createAudioSource() }
-    val permission = rememberRecordingPermissionState()
+/** Words per ear -- three is long enough to localize, short enough to stay one gesture. */
+private const val WORDS_PER_EAR = 3
 
-    val chunks = remember { mutableListOf<ShortArray>() }
-    var recordingJob by remember { mutableStateOf<Job?>(null) }
-    var isRecording by remember { mutableStateOf(false) }
-    // True from "Stopp" tapped until the merge below has actually finished
-    // reading `chunks` -- without this, a fast "Stopp" then "Aufnehmen"
-    // could start clearing/refilling `chunks` while the previous stop's
-    // merge loop is still iterating it (both run on `scope`, but the merge
-    // is itself inside its own suspending `launch`, not synchronous with
-    // the button tap).
-    var isProcessingStop by remember { mutableStateOf(false) }
-    var recordedBuffer by remember { mutableStateOf<PcmBuffer?>(null) }
-    var recordStatus by remember { mutableStateOf("Noch keine Aufnahme.") }
+/** Silence between the words of a sequence, so three words stay three words. */
+private const val WORD_GAP_MILLIS = 350
 
-    DisposableEffect(Unit) {
-        onDispose {
-            recordingJob?.cancel()
-            source.close()
-        }
-    }
-
-    fun startRecording() {
-        chunks.clear()
-        recordedBuffer = null
-        isRecording = true
-        recordStatus = "Nimmt auf…"
-        recordingJob = scope.launch {
-            try {
-                withContext(Dispatchers.IO) {
-                    source.record { chunk -> chunks.add(chunk) }
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                isRecording = false
-                // Surfaced here, not swallowed or silently downgraded to
-                // another format (the whole point of this batch, ADR-0012
-                // Konsequenzen: a format mismatch or missing mic is a fact
-                // to report, not a detail to route around).
-                recordStatus = "Fehler bei der Aufnahme: ${e.message}"
-            }
-        }
-    }
-
-    fun stopRecording() {
-        val job = recordingJob ?: return
-        isRecording = false
-        isProcessingStop = true
-        recordStatus = "Verarbeite Aufnahme…"
-        scope.launch {
-            try {
-                job.cancelAndJoin()
-                recordingJob = null
-                val totalSamples = chunks.sumOf { it.size }
-                if (totalSamples == 0) {
-                    recordStatus = "Keine Aufnahme (kein Signal empfangen)."
-                    return@launch
-                }
-                val merged = ShortArray(totalSamples)
-                var offset = 0
-                for (chunk in chunks) {
-                    chunk.copyInto(merged, offset)
-                    offset += chunk.size
-                }
-                chunks.clear()
-                recordedBuffer = PcmBuffer(merged, RECORDING_SAMPLE_RATE, RECORDING_CHANNELS)
-                val seconds = totalSamples / RECORDING_SAMPLE_RATE
-                recordStatus = "Aufnahme fertig (~$seconds s, $totalSamples Samples)."
-            } finally {
-                isProcessingStop = false
-            }
-        }
-    }
-
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Mikrofon-Rohtest", style = MaterialTheme.typography.titleMedium)
-
-        when (permission.status) {
-            RecordingPermissionStatus.GRANTED -> {
-                Text(recordStatus, style = MaterialTheme.typography.bodyMedium)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(
-                        enabled = !isProcessingStop,
-                        onClick = { if (isRecording) stopRecording() else startRecording() },
-                    ) {
-                        Text(if (isRecording) "Stopp" else "Aufnehmen")
-                    }
-                    Button(
-                        enabled = !isRecording && !isProcessingStop && recordedBuffer != null,
-                        onClick = { recordedBuffer?.let { queue.play(it) } },
-                    ) {
-                        Text("Anhören")
-                    }
-                }
-            }
-
-            RecordingPermissionStatus.PERMANENTLY_DENIED -> {
-                Text(
-                    "Mikrofonzugriff wurde dauerhaft abgelehnt. Zum Aufnehmen bitte in den " +
-                        "System-Einstellungen freigeben.",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                Button(onClick = permission::openSystemSettings) {
-                    Text("Einstellungen öffnen")
-                }
-            }
-
-            RecordingPermissionStatus.NOT_REQUESTED, RecordingPermissionStatus.DENIED -> {
-                Text(
-                    "Zum Aufnehmen braucht AudioLex kurz Zugriff auf das Mikrofon -- nur für " +
-                        "selbst ausgelöste Aufnahmen, nichts läuft im Hintergrund mit.",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                Button(onClick = permission::request) {
-                    Text("Mikrofon-Berechtigung anfragen")
-                }
-            }
-        }
-    }
-}
-
-// The dev channel test keeps its German labels (ADR-0015 Nicht-Ziele) -- it
-// is an instrument, not a product screen. The catalog is threaded through
-// here anyway, because `readRecordingBytes` needs one for the
-// "recording missing" case and inventing a second, German-only message for
-// it would be a copy that can drift.
 private suspend fun decodeRecording(
     recording: AudioRecording,
     ownCorpusRepository: OwnCorpusRepository,
@@ -326,32 +198,24 @@ private suspend fun decodeRecording(
     }
 
 /**
- * Builds a stereo buffer with [leftRecording] panned to the left ear and
- * [rightRecording] panned to the right ear at the same time, then applies
- * [gain] on top (so e.g. LEFT_ONLY silences the right word entirely,
- * proving the ear that hears something is the ear StereoGain intended).
- * Only builds the buffer -- playing it is the caller's (the queue's) job.
+ * Decodes both word sequences, joins each into one mono run, and hands them
+ * to [perEarStereo] -- left sequence to the left ear, right sequence to the
+ * right, [gain] on top. Only builds the buffer; playing it is the queue's
+ * job. The arithmetic itself lives in `:core` and is unit-tested there.
  */
-private suspend fun buildTwoWordsPerEar(
-    leftRecording: AudioRecording,
-    rightRecording: AudioRecording,
+private suspend fun buildWordsPerEar(
+    leftRecordings: List<AudioRecording>,
+    rightRecordings: List<AudioRecording>,
     gain: StereoGain,
     ownCorpusRepository: OwnCorpusRepository,
     strings: Strings,
 ): PcmBuffer =
     withContext(Dispatchers.Default) {
-        val left = WavFile.decode(readRecordingBytes(leftRecording, ownCorpusRepository, strings))
-        val right = WavFile.decode(readRecordingBytes(rightRecording, ownCorpusRepository, strings))
-        require(left.sampleRate == right.sampleRate) { "sample rates differ" }
-        require(left.channels == 1 && right.channels == 1) { "expected mono corpus recordings" }
+        suspend fun sequence(recordings: List<AudioRecording>): PcmBuffer =
+            concatWithGaps(
+                recordings.map { WavFile.decode(readRecordingBytes(it, ownCorpusRepository, strings)) },
+                WORD_GAP_MILLIS,
+            )
 
-        val frameCount = maxOf(left.frameCount, right.frameCount)
-        val stereo = ShortArray(frameCount * 2)
-        for (frame in 0 until frameCount) {
-            val leftSample = left.samples.getOrElse(frame) { 0 }
-            val rightSample = right.samples.getOrElse(frame) { 0 }
-            stereo[frame * 2] = (leftSample * gain.left).toInt().toShort()
-            stereo[frame * 2 + 1] = (rightSample * gain.right).toInt().toShort()
-        }
-        PcmBuffer(stereo, left.sampleRate, channels = 2)
+        perEarStereo(sequence(leftRecordings), sequence(rightRecordings), gain)
     }

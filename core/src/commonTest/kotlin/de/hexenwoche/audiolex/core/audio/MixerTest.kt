@@ -3,6 +3,7 @@ package de.hexenwoche.audiolex.core.audio
 import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class MixerTest {
@@ -95,5 +96,63 @@ class MixerTest {
         val mixedFromLoop = mixWithNoise(speech, loop.buffer, gainFromLoop)
         val mixedLive = mixWithNoise(speech, noise, gainLive)
         assertEquals(mixedLive.samples.toList(), mixedFromLoop.samples.toList())
+    }
+
+    // ---- Kanaltest: Wortfolge je Ohr ----
+
+    @Test
+    fun concatWithGapsPutsSilenceBetweenPartsButNotAroundThem() {
+        val out = concatWithGaps(listOf(mono(100, 100, rate = 1000), mono(-100, rate = 1000)), gapMillis = 3)
+
+        // 3 ms at 1000 Hz mono = 3 silent samples, once, in the middle.
+        assertEquals(listOf<Short>(100, 100, 0, 0, 0, -100), out.samples.toList())
+        assertEquals(1000, out.sampleRate)
+        assertEquals(1, out.channels)
+    }
+
+    @Test
+    fun concatWithGapsOfOnePartIsThatPart() {
+        val out = concatWithGaps(listOf(mono(7, -7, rate = 1000)), gapMillis = 500)
+        assertEquals(listOf<Short>(7, -7), out.samples.toList())
+    }
+
+    @Test
+    fun concatWithGapsRejectsMismatchedSampleRates() {
+        assertFailsWith<IllegalArgumentException> {
+            concatWithGaps(listOf(mono(1, rate = 1000), mono(1, rate = 2000)), gapMillis = 0)
+        }
+    }
+
+    @Test
+    fun perEarStereoKeepsEachSequenceOnItsOwnEar() {
+        val out = perEarStereo(mono(100, 200), mono(-100, -200), StereoGain.BOTH)
+
+        assertEquals(2, out.channels)
+        assertEquals(listOf<Short>(100, -100, 200, -200), out.samples.toList())
+    }
+
+    @Test
+    fun perEarStereoLeftOnlyLeavesExactlyZeroOnTheRightChannel() {
+        // The claim the channel test exists to prove: on the silenced ear the
+        // app sends nothing at all, not merely something quieter. Anything
+        // still audible there is downstream of this function.
+        val out = perEarStereo(mono(30_000, -30_000), mono(30_000, -30_000), StereoGain.LEFT_ONLY)
+
+        assertEquals(listOf<Short>(30_000, 0, -30_000, 0), out.samples.toList())
+    }
+
+    @Test
+    fun perEarStereoPadsTheShorterSideWithSilence() {
+        val out = perEarStereo(mono(100, 200, 300), mono(-100), StereoGain.BOTH)
+
+        assertEquals(listOf<Short>(100, -100, 200, 0, 300, 0), out.samples.toList())
+    }
+
+    @Test
+    fun perEarStereoRejectsStereoInput() {
+        val stereo = PcmBuffer(shortArrayOf(1, 1), 48_000, channels = 2)
+        assertFailsWith<IllegalArgumentException> {
+            perEarStereo(stereo, mono(1), StereoGain.BOTH)
+        }
     }
 }

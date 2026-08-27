@@ -31,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import de.hexenwoche.audiolex.core.corpus.CorpusLanguage
 import de.hexenwoche.audiolex.core.i18n.UiLanguage
 import de.hexenwoche.audiolex.core.i18n.stringsFor
 import de.hexenwoche.audiolex.core.persistence.AudioLexDatabase
@@ -262,6 +263,7 @@ fun App(database: AudioLexDatabase, clock: Clock, onExitApp: () -> Unit, ownCorp
                         )
                         is Screen.DevKanaltest -> DevKanaltestScreen(
                             ownCorpusRepository = ownCorpusRepository,
+                            corpusLanguage = settings.corpusLanguage,
                             onBeenden = { screen = Screen.Start },
                         )
                     }
@@ -452,18 +454,23 @@ private fun LanguageRow(active: UiLanguage, onChange: (UiLanguage) -> Unit) {
 }
 
 @Composable
-private fun DevKanaltestScreen(ownCorpusRepository: OwnCorpusRepository, onBeenden: () -> Unit) {
+private fun DevKanaltestScreen(
+    ownCorpusRepository: OwnCorpusRepository,
+    corpusLanguage: CorpusLanguage,
+    onBeenden: () -> Unit,
+) {
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        // The dev channel test itself stays German (ADR-0015 Nicht-Ziele) --
-        // it is an instrument, not a product screen, and it is reachable only
-        // by a long press nobody finds by accident. Its way out is shared UI,
-        // so that one does follow the language.
+        // The channel test follows the language picker like every other
+        // screen since the F-Droid tester report of 2026-08-27 (ADR-0015
+        // Nachtrag). It stays reachable only by a long press on the version
+        // line -- being an instrument is about who finds it, not about which
+        // language it speaks.
         Button(onClick = onBeenden) {
             Text(LocalStrings.current.back)
         }
-        DevPlaybackScreen(ownCorpusRepository)
+        DevPlaybackScreen(ownCorpusRepository, corpusLanguage)
     }
 }

@@ -416,4 +416,24 @@ internal object EnglishStrings : Strings {
             "without an export of your own there is no copy. “Export” writes recordings, sounds and " +
             "session history into your documents as a ZIP, “Import” reads them back and adds only " +
             "what is missing."
+
+    // ---- Channel test ----
+
+    override val channelTestTitle = "Channel test"
+    override val channelTestExplainer =
+        "Both ears get three different words at the same time. “Left only” sets the right channel to " +
+            "exactly zero — whatever you still hear on the right is not coming from the app."
+    override val channelTestLoading = "Loading corpus…"
+    override val channelTestReady = "Ready"
+    override val channelTestTooFewWords =
+        "Not enough words for the channel test: it needs six with a recording in the training " +
+            "language you picked."
+
+    override fun channelTestLeftEar(words: List<String>) = "Left: ${words.joinToString(" · ")}"
+
+    override fun channelTestRightEar(words: List<String>) = "Right: ${words.joinToString(" · ")}"
+
+    override fun channelTestPlaying(channels: String) = "Channel test: $channels…"
+
+    override fun channelTestPlayingWord(word: String, speaker: String) = "Playing “$word” ($speaker)…"
 }

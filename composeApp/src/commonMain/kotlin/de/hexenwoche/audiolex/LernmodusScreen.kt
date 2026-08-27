@@ -48,7 +48,7 @@ private sealed interface LernmodusState {
 /**
  * Lernmodus (Szenarien S1, S2, S5, S7; Gestalt: DESIGN.md "Trainings-Screens
  * im Detail"). Playback goes exclusively through [PlaybackQueue] -- a direct
- * `sink.play()` call (as in [DevPlaybackScreen], which predates the queue)
+ * `sink.play()` call (as [DevPlaybackScreen] once had, before v0.20.0)
  * would let a fast double-tap on "Wiederholen" overlap two playbacks.
  *
  * [corpusMode] selects which corpus entries the session runs on (Backlog M2

@@ -1,7 +1,17 @@
 # ADR-0015: UI-Sprache Deutsch und Englisch, umschaltbar auf dem Startbildschirm
 
-- **Status:** akzeptiert (Autor-Auftrag 2026-08-24)
+- **Status:** akzeptiert (Autor-Auftrag 2026-08-24) · **Ausnahme Kanaltest zurückgenommen 2026-08-27, siehe Nachtrag**
 - **Datum:** 2026-08-24
+
+> **Nachtrag 2026-08-27: Der Kanaltest spricht jetzt beide Sprachen.**
+>
+> Unter „Alternativen" steht unten, warum der Kanaltest deutsch bleiben durfte: ein Instrument, erreichbar nur über einen langen Druck auf die Versionszeile, den niemand zufällig findet. Die Begründung trug genau so lange, wie der Einzige, der das Instrument in die Hand nimmt, Deutsch liest.
+>
+> Am 2026-08-27 hat der F-Droid-Tester chivalry gemeldet, die Kanalwahl in den Einstellungen habe bei ihm keine Wirkung — mit kabelgebundenem Headset, und der Autor kann den Effekt an seiner Hardware nicht nachstellen. Damit ist der Kanaltest kein internes Werkzeug mehr, sondern **das Beweisstück**, das ein fremder Tester bedienen muss: Er umgeht die Setup-Erkennung, schaltet einen Kanal auf exakt null und beantwortet damit als Einziger die Frage, ob die App den Ton dorthin legt, wo sie es behauptet. Ein deutsches Instrument in englischer Hand beantwortet nichts.
+>
+> Geändert: Die Texte des Kanaltests liegen in beiden Katalogen wie jeder andere Text (`channelTest*` in `Strings.kt`). **Nicht** geändert: der Zugang. Er bleibt der lange Druck auf die Versionszeile — dass es ein Instrument ist, entscheidet sich daran, wer es findet, nicht daran, welche Sprache es spricht.
+>
+> Die **Korpus**-Sprache bleibt davon unberührt: Welche Wörter der Test spielt, entscheidet weiter die Trainingssprache aus den Einstellungen (ADR-0016), nicht die Sprache der Oberfläche.
 
 ## Kontext
 
@@ -37,7 +47,7 @@ Die technische Randbedingung, die die Lösung bestimmt hat: Compose Multiplatfor
 
 **Der Systemsprache folgen, ohne Auswahl.** Wäre die kleinste Lösung und hätte ohne die Auswahl auch keinen Persistenz- und Migrationsaufwand gehabt. Der Autor hat die Auswahl ausdrücklich verlangt; sie ist außerdem das Einzige, was auf einem Gerät hilft, dessen Systemsprache man nicht ändern will.
 
-**Alles übersetzen, auch den Dev-Kanaltest.** Verworfen: Der Kanaltest ist ein Instrument, erreichbar nur über einen langen Druck auf die Versionszeile, den niemand zufällig findet. Sein Wortlaut bleibt deutsch; nur der Weg zurück nutzt geteilte UI und folgt der Sprache.
+**Alles übersetzen, auch den Dev-Kanaltest.** Verworfen: Der Kanaltest ist ein Instrument, erreichbar nur über einen langen Druck auf die Versionszeile, den niemand zufällig findet. Sein Wortlaut bleibt deutsch; nur der Weg zurück nutzt geteilte UI und folgt der Sprache. — **Am 2026-08-27 zurückgenommen** (Nachtrag oben): Sobald ein fremder Tester das Instrument bedienen soll, ist die Sprache keine Kosmetik mehr.
 
 ## Konsequenzen
 

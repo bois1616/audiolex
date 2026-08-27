@@ -80,3 +80,57 @@ fun noiseGainForSnr(speechRms: Double, noiseRms: Double, snrDb: Double): Float {
 
 private fun Int.clampToShort(): Short =
     coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+
+/**
+ * Joins [parts] into one buffer with [gapMillis] of silence between
+ * consecutive parts -- never before the first or after the last, so the
+ * result starts and ends exactly where the audio does.
+ *
+ * Built for the channel test (Autor-Auftrag 2026-08-27, F-Droid-Tester
+ * chivalry): a single word is over in half a second, which is too short to
+ * tell *which* ear it came from when the answer is the thing in question.
+ * Three words in a row give the ear a few seconds to be sure. The gaps are
+ * what keeps them three words instead of one slur.
+ */
+fun concatWithGaps(parts: List<PcmBuffer>, gapMillis: Int): PcmBuffer {
+    require(parts.isNotEmpty()) { "nothing to concatenate" }
+    val first = parts.first()
+    require(parts.all { it.sampleRate == first.sampleRate }) { "sample rates differ" }
+    require(parts.all { it.channels == first.channels }) { "channel counts differ" }
+
+    val gapSamples = first.sampleRate * gapMillis.coerceAtLeast(0) / 1000 * first.channels
+    val out = ShortArray(parts.sumOf { it.samples.size } + gapSamples * (parts.size - 1))
+    var offset = 0
+    for ((index, part) in parts.withIndex()) {
+        if (index > 0) offset += gapSamples
+        part.samples.copyInto(out, offset)
+        offset += part.samples.size
+    }
+    return PcmBuffer(out, first.sampleRate, first.channels)
+}
+
+/**
+ * Puts [left] into the left ear and [right] into the right ear *at the same
+ * time*, then applies [gain] on top -- so [StereoGain.LEFT_ONLY] leaves
+ * exactly zero on the right channel, and what the remaining ear hears is a
+ * different sound than the silenced one would have carried.
+ *
+ * That difference is the point (backlog M1, channel-separation smoke test):
+ * with one hearing aid on one ear, "which words do I hear" is a far clearer
+ * signal than "is this louder or quieter than before". The shorter input is
+ * padded with silence, so a mismatched pair still lines up frame for frame.
+ */
+fun perEarStereo(left: PcmBuffer, right: PcmBuffer, gain: StereoGain): PcmBuffer {
+    require(left.sampleRate == right.sampleRate) { "sample rates differ" }
+    require(left.channels == 1 && right.channels == 1) { "expected mono inputs" }
+
+    val frameCount = maxOf(left.frameCount, right.frameCount)
+    val out = ShortArray(frameCount * 2)
+    for (frame in 0 until frameCount) {
+        val leftSample = left.samples.getOrElse(frame) { 0 }
+        val rightSample = right.samples.getOrElse(frame) { 0 }
+        out[frame * 2] = (leftSample * gain.left).roundToInt().clampToShort()
+        out[frame * 2 + 1] = (rightSample * gain.right).roundToInt().clampToShort()
+    }
+    return PcmBuffer(out, left.sampleRate, channels = 2)
+}

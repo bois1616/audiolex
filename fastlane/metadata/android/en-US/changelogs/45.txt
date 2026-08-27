@@ -1,0 +1,5 @@
+The channel test now plays three words per ear instead of one. A single word is over in half a second — too short to be sure which direction it came from.
+
+It also follows the language picker: English interface, English labels. Which words you hear is still decided by the training language.
+
+The raw microphone test is gone from the channel test. It checked something that has nothing to do with channels; recording lives under “My recordings”.

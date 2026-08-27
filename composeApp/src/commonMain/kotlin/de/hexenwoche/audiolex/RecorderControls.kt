@@ -30,8 +30,9 @@ import kotlinx.coroutines.withContext
 
 /**
  * Records via [AudioSource] into a single merged [PcmBuffer], implementing
- * the record-and-merge flow first written for [DevPlaybackScreen]'s
- * Mikrofon-Rohtest. Holds its own Compose
+ * the record-and-merge flow first written as the Mikrofon-Rohtest in
+ * `DevPlaybackScreen` (that raw test was removed in v0.36.0 once this
+ * controller had made it redundant everywhere). Holds its own Compose
  * [androidx.compose.runtime.State] so every call site (the own-corpus
  * "Neue Aufnahme" section, a row's inline re-record panel, and the own-noise
  * recording mask -- Backlog M4 "Eigene Störgeräusche", AC3) can drive its
@@ -163,9 +164,11 @@ internal fun rememberRecorderController(): RecorderController {
 }
 
 /**
- * "Aufnehmen"/"Stopp" + "Anhören", permission-gated -- the same three
- * [RecordingPermissionStatus] branches as [DevPlaybackScreen]'s
- * Mikrofon-Rohtest, shared by every recording mask in the app.
+ * "Aufnehmen"/"Stopp" + "Anhören", permission-gated -- three
+ * [RecordingPermissionStatus] branches, shared by every recording mask in
+ * the app. Since v0.36.0 this is the *only* place the app asks for the
+ * microphone: the channel test used to have its own copy and no longer
+ * does.
  */
 @Composable
 internal fun RecorderControls(

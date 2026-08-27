@@ -1,0 +1,5 @@
+Der Kanaltest spielt jetzt drei Wörter je Ohr statt einem. Ein einzelnes Wort ist nach einer halben Sekunde vorbei — zu kurz, um sicher zu sagen, aus welcher Richtung es kam.
+
+Er folgt außerdem der Sprachwahl: englische Oberfläche, englische Beschriftung. Welche Wörter gespielt werden, entscheidet weiterhin die Trainingssprache.
+
+Der Mikrofon-Rohtest ist aus dem Kanaltest verschwunden. Er hat dort geprüft, was mit Kanälen nichts zu tun hat; aufnehmen kannst du unter „Eigene Aufnahmen“.

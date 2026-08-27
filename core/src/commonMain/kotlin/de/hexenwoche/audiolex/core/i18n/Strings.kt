@@ -274,4 +274,17 @@ interface Strings {
     val guideOwnRecordingsBody: String
     val guideBackupHeading: String
     val guideBackupBody: String
+
+    // ---- Kanaltest ----
+
+    val channelTestTitle: String
+    val channelTestExplainer: String
+    val channelTestLoading: String
+    val channelTestReady: String
+    val channelTestTooFewWords: String
+
+    fun channelTestLeftEar(words: List<String>): String
+    fun channelTestRightEar(words: List<String>): String
+    fun channelTestPlaying(channels: String): String
+    fun channelTestPlayingWord(word: String, speaker: String): String
 }

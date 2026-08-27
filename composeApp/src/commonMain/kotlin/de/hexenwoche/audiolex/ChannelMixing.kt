@@ -29,10 +29,24 @@ internal fun applyChannelMode(
     outputSetup: OutputSetup,
 ): PcmBuffer {
     if (outputSetup != OutputSetup.STEREO_KOPFHOERER) return speech
-    val gain = when (channelMode) {
-        ChannelMode.BEIDE -> return speech
-        ChannelMode.NUR_LINKS -> StereoGain.LEFT_ONLY
-        ChannelMode.NUR_RECHTS -> StereoGain.RIGHT_ONLY
-    }
-    return speech.toStereoWithGain(gain)
+    if (channelMode == ChannelMode.BEIDE) return speech
+    return speech.toStereoWithGain(channelMode.stereoGain())
+}
+
+/**
+ * The per-ear gain a channel selection stands for. Read by [applyChannelMode]
+ * for the training screens and by [DevPlaybackScreen]'s channel test, so both
+ * mean the same thing by "Nur links" -- the test would otherwise be able to
+ * pass while the setting it stands in for is wrong.
+ *
+ * [ChannelMode.BEIDE] maps to [StereoGain.BOTH] for the channel test, which
+ * builds a stereo buffer either way. [applyChannelMode] deliberately does
+ * *not* go through it in that case: in training, "beide" has to leave the
+ * buffer untouched and mono (ADR-0011 point 5), not widen it to a stereo
+ * copy of itself.
+ */
+internal fun ChannelMode.stereoGain(): StereoGain = when (this) {
+    ChannelMode.BEIDE -> StereoGain.BOTH
+    ChannelMode.NUR_LINKS -> StereoGain.LEFT_ONLY
+    ChannelMode.NUR_RECHTS -> StereoGain.RIGHT_ONLY
 }

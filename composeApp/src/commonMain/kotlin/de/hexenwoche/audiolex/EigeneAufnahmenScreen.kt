@@ -58,8 +58,8 @@ import kotlinx.coroutines.launch
  * `RecorderControls.kt` when the own-noise screen, Backlog M4 "Eigene
  * Störgeräusche", AC3, needed the same recorder): one controller drives the
  * "Neue Aufnahme" section and, inline, a row's re-record panel. The flow
- * itself reimplements [DevPlaybackScreen]'s Mikrofon-Rohtest rather than
- * sharing it -- that screen stays frozen.
+ * started as a reimplementation of the channel test's Mikrofon-Rohtest;
+ * since v0.36.0 that raw test is gone and this is the recorder.
  *
  * Title and "Zurück" stay pinned; only the content between them scrolls
  * (same `Modifier.weight(1f).verticalScroll(...)` pattern as
