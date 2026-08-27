@@ -1,5 +1,17 @@
 # Umsetzungs-Log (Neueste Einträge zuerst)
 
+## 2026-08-27 (Claude: **Übersprechen aufgeklärt: das Mikrofon des Headsets — v0.36.2**)
+
+- **Was:** Der Autor hat mit v0.36.1 am A53 getestet und zwei Dinge mitgebracht. Erstens: Bei verbundenem Hörgerät und danach eingestecktem Headset bekommt das Headset die Priorität — genau dafür fragt die Erkennung seit dem 2026-08-06 nach dem Routing statt nach den verbundenen Geräten, der Fall ist damit ein zweites Mal bestätigt (ADR-0011 Nachtrag). Zweitens, und das ist der eigentliche Fund: **„Wenn ich ein Headset mit Mic habe, bekomme ich einen Übersprecheffekt. Der gewählte Kanal ist dann zwar deutlich lauter, aber der andere ‚spricht' ins Mic, was man hört."** Version 0.36.1 → **0.36.2**, versionCode 46 → 47, Changelog `47.txt` zweisprachig.
+
+- **Damit ist der offene Befund vom 2026-08-06 erledigt, und zwar ohne Codeeingriff am Audiopfad:** Das Übersprechen war „symmetrisch und deutlich leiser" — exakt das Muster einer Mikrofonschleife im Headset. Die App sendet auf dem stummen Kanal exakt Null, seit v0.36.0 auch unit-getestet. Der Zehn-Sekunden-Test, der seit August vorgemerkt war (bei Stille aufs Headset-Mikrofon tippen), hat sich erledigt, ohne dass er nötig wurde. Die Spatializer-Spur von heute Vormittag ist damit ebenfalls abgeräumt: Sie war ohnehin unwahrscheinlich (`isSpatialized=false`), und eine zweite Erklärung braucht es nicht.
+
+- **Was die App daraus lernt, steht jetzt im Kanaltest:** eine ruhige Zeile unter der Erklärung — ein Headset mit Mikrofon trägt den spielenden Hörer leise auf die andere Seite, wer sauber prüfen will, nimmt Kopfhörer ohne Mikrofon. Das ist kein Beiwerk: Für einen fremden Tester ist genau das der Unterschied zwischen „die App trennt nicht" und „mein Headset spricht mit". Ein Dokument hätte es auch gesagt, aber niemand liest Dokumente, während er einen Ton beurteilt.
+
+- **Für chivalrys Befund taugt es trotzdem nur als Zusatzfrage, nicht als Erklärung.** Beim Autor ist der gewählte Kanal „deutlich lauter" — die Richtung ist also hörbar. chivalry meldet gar keinen Unterschied. Wäre allein das Mikrofon im Spiel, müsste er die Richtung hören. Die Erkennungs-Hypothese bleibt vorn, und die Diagnosezeile aus v0.36.1 bleibt die Frage, die sie beantwortet.
+
+- **Wie verifiziert:** `./gradlew build` grün, `:core:jvmTest` 261 Fälle / 0 Fehler. Am Desktop per Screenshot belegt (die neue Zeile sitzt unter der Erklärung, das Layout trägt sie ohne abgeschnittene Ränder). v0.36.2 ist auf dem A53 installiert. Der Gerätescreenshot bleibt offen — das Telefon war während der ganzen Sitzung gesperrt, die Hörproben hat der Autor selbst gefahren.
+
 ## 2026-08-27 (Claude: **Die Erkennung sagt jetzt, was sie sieht — v0.36.1**)
 
 - **Was:** Nachtrag zur Version desselben Tages, ausgelöst durch chivalrys zweite Rückmeldung: „I tested the app on an older phone with 3.5mm jack. The issue just disappeared." Der Kanaltest zeigt jetzt eine Zeile mit dem erkannten Ausgabe-Setup **und** den gemeldeten Gerätetypen im Klartext. Version 0.36.0 → **0.36.1**, versionCode 45 → 46 (Patch-Stelle, weil es ein Testerbefund nach dem Bump ist, AGENTS.md DoD §6), Changelog `46.txt` zweisprachig.

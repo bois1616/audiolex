@@ -1,0 +1,3 @@
+Der Kanaltest sagt jetzt dazu, warum der stummgeschaltete Kanal trotzdem leise mitspricht, wenn ein Headset mit Mikrofon angeschlossen ist: Das Mikrofon nimmt den spielenden Hörer auf, die andere Seite gibt ihn wieder.
+
+Auf dem stummen Kanal sendet die App nichts — die Schleife liegt in der Hardware. Für einen sauberen Test taugen Kopfhörer ohne Mikrofon.

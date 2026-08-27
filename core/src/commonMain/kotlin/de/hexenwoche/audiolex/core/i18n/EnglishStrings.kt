@@ -429,6 +429,9 @@ internal object EnglishStrings : Strings {
         "Not enough words for the channel test: it needs six with a recording in the training " +
             "language you picked."
 
+    override val channelTestMicHint =
+        "A headset with a microphone carries the playing side faintly over to the other one — the mic " +
+            "picks it up. For a clean check, use headphones without a microphone."
     override val channelTestSettingInactive =
         "The channel selection in the settings has no effect with this — the test below still separates the ears."
 

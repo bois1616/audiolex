@@ -414,6 +414,9 @@ internal object GermanStrings : Strings {
         "Für den Kanaltest fehlen Wörter: Er braucht sechs mit Aufnahme in der eingestellten " +
             "Trainingssprache."
 
+    override val channelTestMicHint =
+        "Ein Headset mit Mikrofon trägt den spielenden Hörer leise auf die andere Seite — das Mikrofon " +
+            "nimmt ihn auf. Wer sauber prüfen will, nimmt Kopfhörer ohne Mikrofon."
     override val channelTestSettingInactive =
         "Die Kanalwahl in den Einstellungen ist damit ohne Wirkung — dieser Test spielt trotzdem getrennt."
 

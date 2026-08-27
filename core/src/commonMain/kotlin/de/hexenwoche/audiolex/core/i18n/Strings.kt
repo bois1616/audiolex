@@ -283,6 +283,7 @@ interface Strings {
     val channelTestReady: String
     val channelTestTooFewWords: String
 
+    val channelTestMicHint: String
     val channelTestSettingInactive: String
 
     /**

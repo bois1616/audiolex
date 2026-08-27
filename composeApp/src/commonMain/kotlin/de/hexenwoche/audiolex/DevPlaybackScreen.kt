@@ -106,6 +106,18 @@ fun DevPlaybackScreen(ownCorpusRepository: OwnCorpusRepository, corpusLanguage: 
     Text(strings.channelTestTitle, style = MaterialTheme.typography.titleMedium)
     Text(strings.channelTestExplainer, style = MaterialTheme.typography.bodyMedium)
 
+    // The one thing that regularly makes the sentence above look like a lie
+    // (Autor-Befund 2026-08-27, and the resolution of the open crosstalk
+    // item from 2026-08-06): a headset's own microphone picks up the ear
+    // that is playing and the other side reproduces it faintly. The silenced
+    // channel still carries exact zeroes -- the loop is in the hardware. It
+    // belongs here rather than in a doc nobody reads while listening.
+    Text(
+        strings.channelTestMicHint,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+
     // What the detection actually sees, device types included (chivalry,
     // 2026-08-27). The settings screen shows only the verdict, which is the
     // right amount there; here it is a bug report waiting to be screenshotted,

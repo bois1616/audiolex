@@ -1,0 +1,3 @@
+The channel test now says why the silenced channel can still be faintly audible when a headset with a microphone is plugged in: the mic picks up the ear that is playing, and the other side reproduces it.
+
+The app sends nothing at all on the silenced channel — the loop is in the hardware. For a clean test, use headphones without a microphone.
