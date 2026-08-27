@@ -1,6 +1,6 @@
 # corpus
 
-Wortkorpus für AudioLex: Audiodateien und Metadaten, als Compose-Resource unter `composeApp` (nicht als eigenständiger Top-Level-Ordner), damit alle Targets — inklusive Android, das keinen repo-relativen Dateisystempfad hat — per `Res.readBytes(...)` einheitlich darauf zugreifen (siehe `docs/architektur.md`).
+Wortkorpus für AudioLex: Audiodateien und Metadaten, als Compose-Resource unter `composeApp` (nicht als eigenständiger Top-Level-Ordner), damit alle Targets — inklusive Android, das keinen repo-relativen Dateisystempfad hat — per `Res.readBytes(...)` einheitlich darauf zugreifen (siehe `docs/architecture.md`).
 
 - **Metadaten** (`words.json`, `recordings.json`) und **Audiodateien** sind versioniert. Seit v0.33.0 gilt das auch für die WAVs: F-Droid baut aus dem Quelltext, ein Buildserver ohne sie liefert eine stumme App (Autor-Entscheid 2026-08-17, `docs/fdroid-anmeldung.md` Schritt 3).
 - Format: WAV, PCM16, 22050 Hz, mono — native Piper-Ausgaberate (ADR-0003, ADR-0006).

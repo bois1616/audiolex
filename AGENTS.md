@@ -1,68 +1,69 @@
 # AGENTS.md
 
-Verbindlicher Arbeitsmodus für dieses Repo. Gilt für alle Agenten und Modelle.
+The binding working mode for this repository. Applies to every agent and every model.
 
-## 1) Projekt in einem Satz
+## 1) The project in one sentence
 
-AudioLex ist eine Hörtrainings-App (Android zuerst, iOS-Option offen) zum Wiederaufbau der Zuordnung Klang → Wort → Bedeutung nach einseitigem Hörverlust. Vision und Fachkonzept: `docs/konzept/AudioLex-Konzept.md`.
+AudioLex is a hearing-training app (Android first, iOS an open option) for rebuilding the mapping sound → word → meaning after one-sided hearing loss. Vision and subject-matter concept: `docs/konzept/AudioLex-Konzept.md` (German).
 
-## 2) Arbeitsweise
+## 2) How work happens
 
-- **Backlog-getrieben**: Reihenfolge `P0` → `P1` → `P2` → `P3` aus `docs/backlog.md`. Nichts in Arbeit nehmen, was nicht im Backlog steht oder explizit beauftragt wurde.
-- **Analyse vor Plan**: bestehenden Code und Doku lesen, bevor geplant oder implementiert wird.
-- **Meilensteine statt Sprint-Dogma**: M0–M5 strukturieren die Arbeit; Reihenfolge darf begründet abweichen.
-- **ADRs**: jede wesentliche technische Entscheidung als ADR in `docs/adr/` (Template dort). Vorschläge über den aktuellen Scope hinaus als Backlog-Item mit Tag `[PROP]`.
-- **Klärungsbedarf**: Items mit Tag `[KLÄRUNG]` brauchen einen Entscheid des Autors — nicht eigenmächtig auflösen, sondern nachfragen.
+- **Backlog-driven**: order `P0` → `P1` → `P2` → `P3` from `docs/backlog.md`. Do not start anything that is neither in the backlog nor explicitly commissioned.
+- **Analysis before plan**: read the existing code and docs before planning or implementing.
+- **Milestones instead of sprint dogma**: M0–M9 structure the work; the order may deviate with a reason.
+- **ADRs**: every substantial technical decision becomes an ADR in `docs/adr/` (template is there). Proposals beyond the current scope go into the backlog tagged `[PROP]`.
+- **Open questions**: items tagged `[KLÄRUNG]` need a decision from the author — do not resolve them on your own, ask.
 
-## 3) Source of Truth
+## 3) Source of truth
 
-| Was | Wo |
+| What | Where |
 | --- | --- |
-| Konzept/Vision | `docs/konzept/AudioLex-Konzept.md` |
-| Haltung & Tonalität | `SOUL.md` |
-| UI/UX-Konzeption | `DESIGN.md` |
-| Szenario-Katalog (SDD, Quelle der UI-ACs) | `docs/szenarien.md` |
-| Architektur | `docs/architektur.md` |
-| Entscheidungen | `docs/adr/` |
-| Aufgaben & Prioritäten | `docs/backlog.md` |
-| Umsetzungsjournal | `docs/umsetzungslog.md` |
-| Claude-Kontext | `CLAUDE.md` |
+| Concept/vision | `docs/konzept/AudioLex-Konzept.md` (German) |
+| Stance & tone | `SOUL.md` |
+| UI/UX concept | `DESIGN.md` |
+| Scenario catalogue (SDD, source of the UI ACs) | `docs/scenarios.md` |
+| Architecture | `docs/architecture.md` |
+| Decisions | `docs/adr/` (German) |
+| Tasks & priorities | `docs/backlog.md` |
+| Implementation journal | `docs/implementation-log.md` |
+| Claude context | `CLAUDE.md` |
 
-## 4) Definition of Done
+## 4) Definition of done
 
-1. Build grün: `./gradlew build` (mindestens `:core:jvmTest` und `:composeApp:assembleDebug`).
-2. Neue Logik in `:core` hat Unit-Tests.
-3. Sichtbares/hörbares Verhalten am Desktop-Target verifiziert (`./gradlew :composeApp:run`); Audio- und Gerätethemen zusätzlich auf dem Testgerät (Galaxy A53, Android 16).
-4. Backlog-Item abgehakt mit kurzem `Hinweis:` zum Ergebnis.
-5. Eintrag in `docs/umsetzungslog.md` (neueste zuerst; Datum, fetter Titel, was + warum + wie verifiziert).
-6. **Version hochgezählt (je Batch, seit 2026-07-13):** `VERSION_NAME` in `composeApp/.../AppVersion.kt` eine Minor-Stufe (z. B. `0.5.0` → `0.6.0`), `VERSION_CODE` +1. Patch (`0.5.1`) bleibt Hotfixes vorbehalten. Diese Datei ist die Quelle für die **angezeigte** Version. Seit v0.33.6 stehen `versionCode`/`versionName` **zusätzlich als Literale** in `composeApp/build.gradle.kts` — F-Droids `checkupdates` liest sie dort per Regex und kann Gradle nicht auswerten, mit einer Variablen findet es keine Version und die automatische Update-Erkennung bleibt blind (gemessen gegen fdroidserver 2.4.5). **Beide Stellen hochzählen**; eine `check()`-Zusicherung im Build bricht sofort ab, wenn sie auseinanderlaufen, also kann die angezeigte nie von der gebauten Version abweichen. Die neue Version im Umsetzungslog-Eintrag und in der Commit-Message nennen, damit klar ist, welche Version ein Gerätetest prüft. **Bündeln (seit 2026-07-19):** Ein Batch darf mehrere zusammenhängende Items in **eine** Version/Commit bündeln — Richtschnur ist „eine Version je *kohärenter* Änderung", nicht zwingend eine je Item. Verwandtes (gleiches Subsystem, oder ein Schwung Gerätetest-Findings) läuft dann in einer Umsetzung; nur eigenständige Brocken (z. B. ein Audio-Feature vs. ein UI-Fix) bekommen eigene Versionen. **Auch kurze Fixes zählen hoch (Autor-Vorgabe 2026-08-07):** Wird nach dem Bump noch etwas geändert — ein Gerätetest-Fund, eine Korrektur am eigenen Werk —, geht die **Patch**-Stelle hoch (`0.26.0` → `0.26.1`), auch wenn es zwei Zeilen sind. Grund: Die angezeigte Version ist der einzige Anhalt dafür, welcher Stand gerade auf dem Gerät läuft; zwei verschiedene Builds unter derselben Nummer machen jeden Gerätetest unbeweisbar. Lieber eine Nummer zu viel als eine mehrdeutige.
-7. Commit mit prägnanter deutscher Message.
+1. Build green: `./gradlew build` (at minimum `:core:jvmTest` and `:composeApp:assembleDebug`).
+2. New logic in `:core` has unit tests.
+3. Visible/audible behaviour verified on the desktop target (`./gradlew :composeApp:run`); audio and device matters additionally on the test device (Galaxy A53, Android 16).
+4. Backlog item ticked off with a short `Hinweis:` line on the outcome.
+5. An entry in `docs/implementation-log.md` (newest first; date, bold title, what + why + how it was verified).
+6. **Version bumped (per batch, since 2026-07-13):** `VERSION_NAME` in `composeApp/.../AppVersion.kt` by one minor step (e.g. `0.5.0` → `0.6.0`), `VERSION_CODE` +1. The patch place (`0.5.1`) is reserved for hotfixes. That file is the source of the **displayed** version. Since v0.33.6 `versionCode`/`versionName` also exist **as literals** in `composeApp/build.gradle.kts` — F-Droid's `checkupdates` reads them there by regex and cannot evaluate Gradle; with a variable it finds no version and automatic update detection stays blind (measured against fdroidserver 2.4.5). **Bump both places**; a `check()` assertion in the build fails immediately if they drift apart, so the displayed version can never differ from the built one. Name the new version in the implementation-log entry and in the commit message, so it is clear which version a device test covers. **Bundling (since 2026-07-19):** one batch may bundle several related items into **one** version/commit — the guideline is "one version per *coherent* change", not necessarily one per item. Related work (same subsystem, or a batch of device-test findings) runs as one implementation; only independent chunks (an audio feature versus a UI fix) get their own versions. **Short fixes count too (author's rule 2026-08-07):** if anything changes after the bump — a device-test finding, a correction to one's own work — the **patch** place goes up (`0.26.0` → `0.26.1`), even for two lines. The reason: the displayed version is the only handle on which state is running on the device, and two different builds under one number make every device test unprovable. Better one number too many than one that is ambiguous.
+7. Commit with a concise English message.
 
-## 5) Konventionen
+## 5) Conventions
 
-- **Sprache**: Doku und Commits Deutsch — **eine Ausnahme:** `README.en.md` ist die englische Fassung der Wurzel-README (Autor-Vorgabe 2026-08-24). Sie ist **sinngemäß** zu halten, nicht wörtlich: Was nur im deutschen Zusammenhang Sinn ergibt, bleibt draußen, und Verweise auf die (deutsche) Doku werden als deutsch gekennzeichnet. Ändert sich `README.md` inhaltlich, zieht `README.en.md` mit; Zahlen und Lizenztabellen müssen übereinstimmen. Alle übrige Doku bleibt einsprachig deutsch. Code, Bezeichner und Code-Kommentare Englisch; Code, Bezeichner und Code-Kommentare Englisch; **UI-Texte Deutsch und Englisch** (seit ADR-0015, 2026-08-24). Beide Fassungen sind gleichrangig: der Textbestand ist ein getyptes Interface in `core/i18n` (`Strings` + `GermanStrings`/`EnglishStrings`), eine fehlende Übersetzung ist ein Compilerfehler. Neuer UI-Text heißt also: Interface erweitern, **beide** Kataloge füllen. **Ohne Ausnahme seit 2026-08-27** — der Dev-Kanaltest war eine, bis ein englischsprachiger Tester ihn bedienen sollte (ADR-0015 Nachtrag). Die **Korpus**-Sprache ist eine andere Frage als die UI-Sprache und hat ihre eigene Einstellung (ADR-0016): Bedienung und Trainingsmaterial werden getrennt gewählt.
-- **Texte, die andere lesen** (UI-Texte in **beiden** Sprachen, Commit-Messages, README, Store-Beschreibungen): **vor** dem Formulieren die Stil-Leitplanken heranziehen, nicht danach zum Prüfen. Kern: schreiben wie ein bestimmter, kompetenter Mensch mit knapper Zeit — konkret statt allgemein, keine Werbe- und Füllwörter, keine Absicherungsfloskeln, Satzlängen ungleichmäßig. Wo der `prose-anti-ki`-Skill verfügbar ist, ist er die ausführliche Fassung davon und wird geladen; wo nicht, gilt der Kern trotzdem. Gilt auch für delegierte Sessions. Nicht nötig für die Steuerdateien selbst (dieses Dokument, CLAUDE.md, SOUL.md, DESIGN.md, Configs) sowie für Backlog und Umsetzungslog: das sind interne Arbeitsdokumente, dort sind knappe Struktur und Wiederholung richtig.
-- **Namensraum**: `de.hexenwoche.audiolex`
-- **Kein Netzwerk-/Cloud-Code in Phase 1** — Datenhaltung strikt lokal.
-- **Keine neuen Gradle-Module ohne ADR**: Komponenten wachsen zuerst als Pakete in `:core` (srs, audio, corpus, session), Modul-Split erst bei echtem Bedarf.
-- **Audiodateien:** Was ausgeliefert wird, **gehört ins Repo** (Autor-Entscheid 2026-08-17 — F-Droid baut aus dem Quelltext, ein Buildserver ohne die WAVs liefert eine stumme App). Bedingung: Weitergabe erlaubt **und** Herkunft in der README des jeweiligen Ordners; ein Eintrag ohne Herkunftszeile ist ein Release-Blocker. Fremdlizenziertes bleibt draußen — Autor-Bibliothek `resources/sounds/` (gitignoriert). Damit ist die frühere Regel („nicht committen, Versionierungsstrategie offen", `[PROP]` Git-LFS) überholt.
-- **Korpus generisch halten**: nichts Hörverlust-spezifisches ins Datenmodell verdrahten (spätere Vokabeltrainer-Nutzung, Konzept 3.4).
+- **Language**: documentation and commits in **English** (author's decision 2026-08-27 — the testers and the people who look at this app closely are largely English-speaking). Everything was German before that; the documents listed in §3 were translated in one pass, and whatever is still German is marked as German wherever it is referenced. Still German for now: the ADRs in `docs/adr/`, the subject-matter concept under `docs/konzept/`, the root `README.md` (with `README.en.md` as its English counterpart) and `docs/fdroid-anmeldung.md`. Code, identifiers and code comments in English. **UI texts in German and English** (since ADR-0015, 2026-08-24). Both versions rank equally: the text catalogue is a typed interface in `core/i18n` (`Strings` + `GermanStrings`/`EnglishStrings`), and a missing translation is a compile error. New UI text therefore means: extend the interface, fill **both** catalogues. **No exceptions since 2026-08-27** — the dev channel test was one, until an English-speaking tester had to operate it (ADR-0015 addendum). The **corpus** language is a different question from the UI language and has its own setting (ADR-0016): how you read the app and what you train are chosen separately.
+- **Texts other people read** (UI texts in **both** languages, commit messages, README, store descriptions): consult the style guardrails **before** writing, not afterwards as a check. The core: write like a specific, competent person short on time — concrete instead of general, no marketing or filler words, no hedging formulas, uneven sentence lengths. Where the `prose-anti-ki` skill is available it is the long form of this and gets loaded; where it is not, the core still applies. This holds for delegated sessions too. Not needed for the control files themselves (this document, CLAUDE.md, SOUL.md, DESIGN.md, configs) nor for the backlog and the implementation log: those are internal working documents, where terse structure and repetition are right.
+- **Namespace**: `de.hexenwoche.audiolex`
+- **No network or cloud code in phase 1** — data storage strictly local.
+- **No new Gradle modules without an ADR**: components grow as packages inside `:core` (srs, audio, corpus, session) first; a module split only on real need.
+- **Audio files:** whatever ships **belongs in the repo** (author's decision 2026-08-17 — F-Droid builds from source, and a build server without the WAVs ships a mute app). The condition: redistribution permitted **and** the origin recorded in that folder's README; an entry without an origin line is a release blocker. Third-party licensed material stays out — the author's library `resources/sounds/` is gitignored. This supersedes the earlier rule ("do not commit, versioning strategy open", `[PROP]` Git LFS).
+- **Keep the corpus generic**: nothing hearing-loss specific wired into the data model (later use as a vocabulary trainer, concept 3.4).
 
-## 6) Modellzuteilung (Richtwert)
+## 6) Model allocation (a guideline)
 
-- **Opus-Klasse**: Architektur, mehrdeutige Designfragen, ADR-Entwürfe, Prozess-Reflexion, Backlog-Schärfung.
-- **Sonnet-Klasse**: klar spezifizierte Implementierung, Tests, Refactoring.
-- **Je offenem Backlog-Item als Tag vermerkt**: `[→Sonnet]`, `[→Opus]` oder `[→Opus→Sonnet]` (erst schärfen, dann umsetzen); Items ohne Tag brauchen den Autor. Entscheidend ist der Spezifikationsgrad, nicht die Item-Größe: ein Item ohne Akzeptanzkriterien und Nicht-Ziele ist nie Sonnet-reif — Sonnet-Sessions setzen nur `[→Sonnet]`-Items um und schärfen nicht selbst nach.
-- **Effizienz bei mehreren `[→Sonnet]`-Items:** eine zusammenhängende Kette in **einer** Agent-Session abarbeiten (Kontext einmal lesen statt je Item kalt neu), pro Commit nur die DoD-Mindest-Tasks bauen (`:core:jvmTest` + `:composeApp:assembleDebug`), den vollen `./gradlew build` einmal am Ende. Kein voller Rebuild + kalter Agent-Neustart je Kleinst-Item. (Hintergrund-Agenten sind in dieser Umgebung unzuverlässig durchgelaufen — synchron delegieren.)
+- **Opus class**: architecture, ambiguous design questions, ADR drafts, process reflection, sharpening the backlog.
+- **Sonnet class**: clearly specified implementation, tests, refactoring.
+- **Tagged per open backlog item**: `[→Sonnet]`, `[→Opus]` or `[→Opus→Sonnet]` (sharpen first, then implement); items without a tag need the author. What decides is the degree of specification, not the size of the item: an item without acceptance criteria and non-goals is never ready for Sonnet — Sonnet sessions only implement `[→Sonnet]` items and do not sharpen them themselves.
+- **Efficiency with several `[→Sonnet]` items:** work a coherent chain in **one** agent session (read the context once instead of cold per item), build only the DoD minimum per commit (`:core:jvmTest` + `:composeApp:assembleDebug`), and run the full `./gradlew build` once at the end. No full rebuild plus a cold agent restart per tiny item. (Background agents have run unreliably in this environment — delegate synchronously.)
 
-## 7) Umgebung
+## 7) Environment
 
-- Entwicklung unter **nativem Debian** (GNOME auf Wayland; früher stand hier WSL2 — Autor-Korrektur 2026-08-17), JDK 21, Android SDK unter `~/Android/Sdk` (Pfad in `local.properties`, nicht versioniert).
-- **Screenshots am Rechner** nur mit `gnome-screenshot -f <datei>.png`; `import`/`scrot`/`xwd` liefern unter Wayland nichts. Antippen lässt sich am Desktop nichts (kein `xdotool`/`ydotool`) — für einen echten Bedienpfad also aufs Gerät: `adb exec-out screencap -p > x.png`, navigieren per `adb shell input tap`. **Koordinaten dafür auslesen, nicht schätzen** — `adb shell uiautomator dump /sdcard/ui.xml` liefert jeden sichtbaren Text mit exakten `bounds`, aus Screenshots abgemessene Positionen stimmen nicht zuverlässig. Und **im Lern-/Prüfmodus gar nicht erst blind tippen**: Der Prüfmodus persistiert jede Bewertung sofort (Szenario S5), es gibt kein Rückgängig. Am 2026-08-24 sind so fünf Karten im echten Stapel des Autors bewertet worden, weil ein Tipp woanders landete als gedacht. Für Layout- und Textfragen ist der Desktop der richtige Ort.
-- **Einen bestimmten Screen am Desktop trotzdem belegen** (2026-08-24, ohne Eingabe-Injektion): den Startwert von `screen` in `App.kt` vorübergehend auf das Ziel setzen (`Screen.Kurzanleitung`, `Screen.Einstellungen`, …), `:composeApp:desktopJar` bauen, Screenshot, **zurücknehmen** und mit `git status` prüfen, dass nichts übrig bleibt. Ersetzt keinen Bedienpfad-Test — der Weg *zum* Screen bleibt ungeprüft —, belegt aber Layout und Texte, und findet abgeschnittene Ränder, bevor das Gerät verfügbar ist.
-- **UI-Sprache am Desktop erzwingen**, ohne die Systemsprache zu ändern: Gradles `run` forkt eine JVM mit `-Duser.language`/`-Duser.country` des Daemons. Kommandozeile des laufenden Prozesses abgreifen (`tr '\0' '\n' < /proc/<pid>/cmdline`), die beiden Schalter auf `en`/`US` umschreiben und direkt starten — derselbe Build, andere Sprache, ohne Gradle-Neustart. So ist die englische Fassung belegt worden (ADR-0015).
-- Schnelle Iteration über das **Desktop-Target**, nicht über den Emulator.
-- Gerätetest: Samsung Galaxy A53 (SM-A536B/DS, Android 16) via adb über WLAN oder USB (usbipd).
-- Deployment aufs Gerät über das `Makefile` im Repo-Root (`make pair` / `make deploy PORT=...`, Details `make help`); Standard-IP 192.168.178.24, bei DHCP-Drift `IP=...` überschreiben. **Kopplungsport, Code und Verbindungsport nennt der Autor je Sitzung neu** — sie sind nicht wiederverwendbar, also danach fragen statt raten. Für eigene `adb`-Aufrufe `export ANDROID_SERIAL=192.168.178.24:<Port>` setzen: `adb devices` listet zusätzlich mDNS-Einträge desselben Geräts, sonst „more than one device".
-- **App-Daten vom Gerät lesen** (Debug-Build ist `debuggable`, also ohne Root): `adb exec-out "run-as de.hexenwoche.audiolex cat databases/audiolex.db" > audiolex.db` — **und `audiolex.db-wal` unbedingt mitkopieren**, sonst liest man einen leeren Torso: Die Haupt-`.db` ist ~4 KB, alles Aktuelle steht im WAL. `adb exec-out` statt `adb shell` (keine Zeilenendenübersetzung bei Binärdaten). Genauso erreichbar: `files/eigene-aufnahmen/`. Damit lassen sich Migrationen und Datenzustände **belegen statt behaupten** — vorher/nachher ziehen und mit `sqlite3` vergleichen.
-- **Vor jedem zerstörenden Gerätetest alles ziehen, nicht nur das Naheliegende.** Der Sicherungs-Test (deinstallieren/neu installieren) hat am 2026-08-07 die Sitzungshistorie gelöscht, weil nur der Eigen-Korpus vorab kopiert wurde — die Datenbank wäre derselbe Handgriff gewesen (ADR-0013 Nachtrag). ASHA-/BT-Audio-Diagnose am Gerät: `adb logcat | grep bluetooth-asha` — Signatur `SendStart ... volume=0x80` = systemseitig stummer Hörgerät-Volume-State (kein App-Bug), `volume=0x0` = gesund (Beweiskette: Umsetzungslog 2026-07-18 Abend).
+- Development on **native Debian** (GNOME on Wayland; this used to say WSL2 — author's correction 2026-08-17), JDK 21, Android SDK under `~/Android/Sdk` (path in `local.properties`, not versioned).
+- **Screenshots on the machine** only with `gnome-screenshot -f <file>.png`; `import`/`scrot`/`xwd` return nothing under Wayland. Nothing can be tapped on the desktop (no `xdotool`/`ydotool`) — so for a real interaction path, go to the device: `adb exec-out screencap -p > x.png`, navigate with `adb shell input tap`. **Read the coordinates, do not estimate them** — `adb shell uiautomator dump /sdcard/ui.xml` gives every visible text with exact `bounds`; positions measured off a screenshot are not reliable. And **never tap blindly in learning or exam mode**: exam mode persists every rating immediately (scenario S5) and there is no undo. On 2026-08-24 five cards in the author's real deck were rated that way because a tap landed somewhere other than intended. For layout and text questions the desktop is the right place.
+- **Proving a particular screen on the desktop anyway** (2026-08-24, without input injection): temporarily set the initial value of `screen` in `App.kt` to the target (`Screen.Kurzanleitung`, `Screen.Einstellungen`, …), build `:composeApp:desktopJar`, take the screenshot, **revert it** and check with `git status` that nothing is left behind. This does not replace an interaction test — the path *to* the screen stays unverified — but it proves layout and texts, and it finds clipped edges before the device is available.
+- **Forcing the UI language on the desktop** without changing the system language: Gradle's `run` forks a JVM with the daemon's `-Duser.language`/`-Duser.country`. Grab the running process's command line (`tr '\0' '\n' < /proc/<pid>/cmdline`), rewrite those two switches to `en`/`US` and start it directly — same build, different language, without restarting Gradle. This is how the English version was proven (ADR-0015).
+- Fast iteration through the **desktop target**, not through the emulator.
+- Device test: Samsung Galaxy A53 (SM-A536B/DS, Android 16) via adb over Wi-Fi or USB (usbipd).
+- Deployment to the device through the `Makefile` in the repo root (`make pair` / `make deploy PORT=...`, details in `make help`); default IP 192.168.178.24, override with `IP=...` on DHCP drift. **The pairing port, the code and the connection port are new every session and come from the author** — they cannot be reused, so ask rather than guess. For your own `adb` calls set `export ANDROID_SERIAL=192.168.178.24:<port>`: `adb devices` also lists mDNS entries of the same device, otherwise you get "more than one device".
+- **Reading app data off the device** (the debug build is `debuggable`, so no root needed): `adb exec-out "run-as de.hexenwoche.audiolex cat databases/audiolex.db" > audiolex.db` — **and copy `audiolex.db-wal` along with it**, or you read an empty torso: the main `.db` is about 4 KB, everything current sits in the WAL. Use `adb exec-out` rather than `adb shell` (no line-ending translation on binary data). `files/eigene-aufnahmen/` is reachable the same way. This is how migrations and data states get **proven rather than claimed** — pull before and after, compare with `sqlite3`.
+- **Before any destructive device test, pull everything, not just the obvious part.** The backup test (uninstall/reinstall) deleted the session history on 2026-08-07 because only the own corpus had been copied beforehand — the database would have been the same gesture (ADR-0013 addendum). ASHA/Bluetooth audio diagnosis on the device: `adb logcat | grep bluetooth-asha` — the signature `SendStart ... volume=0x80` means a system-side muted hearing-aid volume state (not an app bug), `volume=0x0` means healthy (chain of evidence: implementation log, 2026-07-18, evening).
+- **`dumpsys audio` before blaming the app for a channel finding**: `mMasterMono`/`mMainBalance` show accessibility mono and balance, the `Spatial audio:` section shows whether a spatializer is active for the current route, and the per-playback `FormatInfo{isSpatialized=…, channelMask=…}` lines show what the app's own output actually did. A headset with a microphone produces crosstalk on the silenced channel all by itself — the mic picks up the ear that is playing (author's device test 2026-08-27).

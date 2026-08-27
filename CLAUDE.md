@@ -1,39 +1,39 @@
 # CLAUDE.md
 
-Projektkontext für Claude Code. Der verbindliche Arbeitsmodus (Backlog-Steuerung, Definition of Done, Konventionen, Source of Truth) steht in `AGENTS.md` — dort nachlesen, hier nicht dupliziert.
+Project context for Claude Code. The binding working mode (backlog control, definition of done, conventions, source of truth) lives in `AGENTS.md` — read it there, it is not duplicated here.
 
-## Was AudioLex ist
+## What AudioLex is
 
-Hörtrainings-App für den Autor selbst (ca. 80 % einseitiger Hörverlust, Hörgeräteträger). Das Problem ist neurologisch: Schall kommt an, wird aber nicht als Sprache decodiert. Training über zwei Modi: **Lernmodus** (Wort hören + Text sehen, baut die Assoziation auf) und **Prüfmodus** (Wort hören, verdeckte Karte, selbst bewerten → Spaced Repetition steuert Wiederholung).
+A hearing-training app for the author himself (roughly 80 % one-sided hearing loss, hearing-aid wearer). The problem is neurological: the sound arrives but is not decoded as speech. Training runs in two modes: **learning mode** (hear the word, see the text — this builds the association) and **exam mode** (hear the word, card stays covered, rate yourself → spaced repetition decides when it returns).
 
-## Architektur-Kurzfassung
+## Architecture in short
 
-- `:core` — KMP-Bibliothek (androidTarget + jvm), plattformfreie Logik in Paketen `srs`, `audio`, `corpus`, `session`, dazu `i18n` (UI-Textbestand, ADR-0015). Vollständig JVM-unit-testbar.
-- `:composeApp` — Compose-Multiplatform-UI (Android + Desktop). Desktop ist das Dev-Target (nativ Debian, GNOME/Wayland).
-- Audio: PCM-Mixing (Kanal-Pegel, Störgeräusch/SNR) in Common-Kotlin; nur die Ausgabe ist expect/actual (`AudioSink`: Android AudioTrack, Desktop javax.sound, iOS später AVAudioEngine).
-- Details: `docs/architektur.md` · Entscheidungen: `docs/adr/`
+- `:core` — KMP library (androidTarget + jvm), platform-free logic in the packages `srs`, `audio`, `corpus`, `session`, plus `i18n` (UI text catalogue, ADR-0015). Fully unit-testable on the JVM.
+- `:composeApp` — Compose Multiplatform UI (Android + desktop). Desktop is the dev target (native Debian, GNOME/Wayland).
+- Audio: PCM mixing (channel levels, background noise/SNR) in common Kotlin; only the output is expect/actual (`AudioSink`: Android AudioTrack, desktop javax.sound, iOS AVAudioEngine later).
+- Details: `docs/architecture.md` · decisions: `docs/adr/` (German)
 
-## Befehle
+## Commands
 
 ```bash
-./gradlew :core:jvmTest              # Kernlogik-Tests (schnellste Schleife)
-./gradlew :composeApp:run            # Desktop-App starten
-./gradlew :composeApp:assembleDebug  # Android-APK
+./gradlew :core:jvmTest              # core logic tests (fastest loop)
+./gradlew :composeApp:run            # start the desktop app
+./gradlew :composeApp:assembleDebug  # Android APK
 adb install -r composeApp/build/outputs/apk/debug/composeApp-debug.apk
 ```
 
-## Domänenwissen
+## Domain knowledge
 
-- **SRS-Skala (MVP, feste Intervalle, ADR-0005):** Sofort 1 min · Bald 10 min · Später 1 Tag · Gut 1 Woche · Perfekt 1 Monat. Implementiert in `FixedIntervalScheduler`; UI-Labels Deutsch, Code-Enum `ReviewRating` (AGAIN/SOON/LATER/GOOD/PERFECT).
-- **Referenz-Trainings-Setup: BT-Hörgerät, linkes Ohr** (ADR-0007) — Stereo wird dort mono summiert; maßgeblich sind Pegel und Verständlichkeit am trainierten Ohr. Kanaltrennung links/rechts/beide (`StereoGain`) bleibt als Option für Alternativ-Setups (Kabel-Kopfhörer), ist über BT wirkungslos — die UI darf sie dort nicht als wirksam zeigen.
-- **UI-Sprache Deutsch/Englisch (ADR-0015, seit v0.34.0):** Kein `strings.xml` — der Textbestand ist das getypte Interface `core/i18n/Strings.kt` mit `GermanStrings`/`EnglishStrings`; eine fehlende Übersetzung ist ein Compilerfehler. Screens lesen über `LocalStrings.current`. Neuer UI-Text = Interface erweitern + **beide** Kataloge füllen. Gewählte Sprache liegt in `AppSettings.uiLanguage`; Default `UiLanguage.SYSTEM` folgt der Gerätesprache (primärer Subtag, `de-AT` → Deutsch). Umschalter auf dem Startbildschirm, nicht in den Einstellungen. Keine Ausnahmen mehr: Der Kanaltest (`DevPlaybackScreen`) war bis v0.36.0 deutsch, spricht seit dem F-Droid-Testerbericht vom 2026-08-27 aber beide Sprachen (ADR-0015 Nachtrag) — erreichbar bleibt er nur über den langen Druck auf die Versionszeile.
-- **Korpus-Sprache (ADR-0016, seit v0.35.0) ist etwas anderes als die UI-Sprache.** `CorpusLanguage { DEUTSCH, ENGLISCH }` in `core/corpus`, Einstellung `AppSettings.corpusLanguage`, Auswahl unter „Trainingssprache" in den Einstellungen. Die Sprache ist eine **Einordnung durch den Erzeuger**, keine Inhaltsprüfung — `OwnEntry.language` wird beim Anlegen gewählt und sagt nur, wo der Eintrag erscheint. Abgeglichen über den primären Subtag (`primaryLanguageSubtag`, `de-AT` → Deutsch). Der Filter sitzt in `mergeCorpus` **vor** `kind` und `excludedSpeakers`, weil der Korpus über `allOrSeed` zu SRS-Karten wird — ein durchgerutschter Fremdsprach-Eintrag landet sonst im echten Stapel. Störgeräusche bleiben sprachfrei.
-- **Headset mit Mikrofon erzeugt Übersprechen** (Autor-Gerätetest 2026-08-27, erklärt den offenen Befund vom 2026-08-06): Das Mikrofon nimmt den spielenden Hörer auf, die andere Seite gibt ihn leise wieder — der gewählte Kanal ist deutlich lauter, aber der stumme ist nicht still. **Kein App-Fehler**: `perEarStereo`/`toStereoWithGain` legen dort exakt Null ab (unit-getestet). Für saubere Kanalprüfungen Kopfhörer **ohne** Mikrofon; der Kanaltest sagt das seit v0.36.2 selbst.
-- **Wortkorpus generisch**: `Word` getrennt von `AudioRecording` (mehrere Sprecher pro Wort) und von `ReviewCard` (SRS-Zustand). Nichts Hörverlust-spezifisches ins Modell verdrahten.
-- Störgeräusch-Overlay: Mischung über SNR (dB) — `noiseGainForSnr` im Mixer. Der Katalog hat zwei Hälften: gebündelt (`files/noise/`, versioniert) und die eigenen Geräusche des Nutzers (Aufnahme/WAV-Import, app-lokal). **Regel seit v0.33.0:** gebündelt werden nur Inhalte, deren Weitergabe erlaubt ist — praktisch eigene Aufnahmen; die drei zugekauften Loops sind weg (ADR-0014, ADR-0010 Nachträge). Leerer Katalog = sauberer Ton, kein Fehlerfall.
-- **Ausgelieferte Audiodateien liegen im Repo** (92 Korpus-WAVs: 68 deutsche TTS, 20 englische TTS, 4 Einsprachen; seit v0.33.0): F-Droid baut aus dem Quelltext. Herkunft und Weitergaberecht gehören in die README des jeweiligen Ordners — ein Eintrag ohne Herkunftszeile ist ein Release-Blocker. Der Weg zur Aufnahme bei F-Droid: `docs/fdroid-anmeldung.md`.
+- **SRS scale (MVP, fixed intervals, ADR-0005):** Again 1 min · Soon 10 min · Later 1 day · Good 1 week · Perfect 1 month. Implemented in `FixedIntervalScheduler`; the code enum is `ReviewRating` (AGAIN/SOON/LATER/GOOD/PERFECT), the UI labels come from the text catalogue in both languages.
+- **Reference training setup: Bluetooth hearing aid, left ear** (ADR-0007) — stereo is summed to mono there; what counts is the level and the intelligibility at the trained ear. Channel separation left/right/both (`StereoGain`) remains an option for alternative setups (wired headphones) and has no effect over Bluetooth — the UI must not show it as effective there.
+- **UI language German/English (ADR-0015, since v0.34.0):** no `strings.xml` — the text catalogue is the typed interface `core/i18n/Strings.kt` with `GermanStrings`/`EnglishStrings`; a missing translation is a compile error. Screens read through `LocalStrings.current`. New UI text = extend the interface + fill **both** catalogues. The chosen language lives in `AppSettings.uiLanguage`; the default `UiLanguage.SYSTEM` follows the device language (primary subtag, `de-AT` → German). The picker sits on the start screen, not in the settings. No exceptions any more: the channel test (`DevPlaybackScreen`) was German until v0.36.0 and speaks both languages since the F-Droid tester report of 2026-08-27 (ADR-0015 addendum) — it stays reachable only by a long press on the version line.
+- **The corpus language (ADR-0016, since v0.35.0) is a different thing from the UI language.** `CorpusLanguage { DEUTSCH, ENGLISCH }` in `core/corpus`, the setting is `AppSettings.corpusLanguage`, chosen under "Training language" in the settings. The language is a **classification by whoever created the entry**, not a check of its content — `OwnEntry.language` is picked when the entry is created and only says where the entry shows up. Matched on the primary subtag (`primaryLanguageSubtag`, `de-AT` → German). The filter sits in `mergeCorpus` **before** `kind` and `excludedSpeakers`, because the corpus turns into SRS cards through `allOrSeed` — an entry in the wrong language that slips through would otherwise land in the real deck. Background noises stay language-free.
+- **A headset with a microphone produces crosstalk** (author's device test 2026-08-27, which explains the finding left open on 2026-08-06): the mic picks up the ear that is playing and the other side reproduces it faintly — the selected channel is clearly louder, but the silenced one is not silent. **Not an app bug**: `perEarStereo`/`toStereoWithGain` put exact zeroes there (unit-tested). For clean channel checks use headphones **without** a microphone; the channel test says so itself since v0.36.2.
+- **Keep the word corpus generic**: `Word` is separate from `AudioRecording` (several speakers per word) and from `ReviewCard` (SRS state). Nothing hearing-loss specific gets wired into the model.
+- Background-noise overlay: mixed by SNR (dB) — `noiseGainForSnr` in the mixer. The catalogue has two halves: bundled (`files/noise/`, versioned) and the user's own sounds (recording/WAV import, app-local). **Rule since v0.33.0:** only content that may be redistributed gets bundled — in practice the author's own recordings; the three purchased loops are gone (ADR-0014, ADR-0010 addenda). An empty catalogue means clean speech, not an error.
+- **Shipped audio files live in the repo** (92 corpus WAVs: 68 German TTS, 20 English TTS, 4 human recordings; since v0.33.0): F-Droid builds from source. Origin and redistribution rights belong in that folder's README — an entry without an origin line is a release blocker. The path to inclusion in F-Droid: `docs/fdroid-anmeldung.md` (German).
 
-## Stand & offene Klärungen
+## Current state & open questions
 
-- Aktueller Stand: `docs/umsetzungslog.md` (oben) und `docs/backlog.md`.
-- `[KLÄRUNG]`-Items im Backlog brauchen einen Entscheid des Autors (z. B. Audioquelle TTS vs. eigene Aufnahmen vor M1).
+- Where things stand: `docs/implementation-log.md` (top) and `docs/backlog.md`.
+- `[KLÄRUNG]` items in the backlog need a decision from the author — do not resolve them alone.

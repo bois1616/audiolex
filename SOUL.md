@@ -1,40 +1,40 @@
-# SOUL — Seele des Projekts AudioLex
+# SOUL — the soul of the AudioLex project
 
-Dieses Dokument hält fest, wofür AudioLex steht und wie die App mit ihrem Nutzer spricht — unabhängig vom konkreten Feature. Es ergänzt `AGENTS.md` (Arbeitsmodus) und `docs/konzept/AudioLex-Konzept.md` (Fachkonzept); im Konfliktfall gilt das Konzept.
+This document records what AudioLex stands for and how the app talks to its user, independently of any particular feature. It complements `AGENTS.md` (working mode) and `docs/konzept/AudioLex-Konzept.md` (subject-matter concept, German); where the two conflict, the concept wins.
 
-## Was ist das hier?
+## What this is
 
-Eine Hörtrainings-App, die die Zuordnung *Klang → Wort → Bedeutung* wieder aufbaut. Das Problem ist neurologisch, nicht akustisch: Schall kommt über das Hörgerät an, wird aber vom Gehirn (noch) nicht als Sprache decodiert. AudioLex trainiert diese Decodierung — systematisch, wiederholt, graduell schwieriger.
+A hearing-training app that rebuilds the mapping *sound → word → meaning*. The problem is neurological, not acoustic: the sound arrives through the hearing aid, but the brain does not (yet) decode it as speech. AudioLex trains that decoding — systematically, repeatedly, gradually harder.
 
-## Wer der Nutzer ist
+## Who the user is
 
-Stephan selbst: ca. 80 % einseitiger Hörverlust, Hörgeräteträger. Er ist Autor, Auftraggeber und in Phase 1 der einzige Nutzer. Daraus folgt eine klare Rollenverteilung: **Der Nutzer ist die Autorität über sein eigenes Gehör.** Die App liefert Struktur, Wiederholung und Schwierigkeitssteuerung — sie beurteilt nicht, was er „eigentlich hören müsste".
+Stephan himself: roughly 80 % one-sided hearing loss, hearing-aid wearer. He is the author, the client, and in phase 1 the only user. That settles the roles: **the user is the authority on his own hearing.** The app supplies structure, repetition and difficulty control — it does not judge what he "ought to be able to hear".
 
-## Haltung — nicht verhandelbar
+## Stance — not negotiable
 
-**Trainingsgerät, kein Medizinprodukt.** Keine Heilversprechen, keine Diagnosen, kein Therapiesprech. Die App plant Wiederholungen von Erkennungsübungen — mehr behauptet sie nicht.
+**A training device, not a medical product.** No promises of cure, no diagnoses, no therapy-speak. The app schedules repetitions of recognition exercises; it claims nothing beyond that.
 
-**Selbstbewertung ohne Urteil.** Im Prüfmodus bewertet der Nutzer sich selbst. Die Skala (Sofort/Bald/Später/Gut/Perfekt) beschreibt, *wann das Wort wiederkommt* — nicht Erfolg oder Versagen. Es gibt kein „falsch", kein Rot, keine Fehlerquote als Anklage.
+**Self-rating without judgement.** In exam mode the user rates himself. The scale (Again/Soon/Later/Good/Perfect) describes *when the word comes back* — not success or failure. There is no "wrong", no red, no error rate held up as an accusation.
 
-**Geduld ist eingebaut.** Neurologischer Wiederaufbau dauert Monate. Deshalb: kein Streak-Druck, keine Gamification-Tricks, keine Schuldgefühle nach Pausen. Spaced Repetition *ist* die Geduld — die App muss sie nicht inszenieren.
+**Patience is built in.** Neurological rebuilding takes months. So: no streak pressure, no gamification tricks, no guilt after a break. Spaced repetition *is* the patience — the app does not have to stage it.
 
-**Privat heißt privat.** Hörleistung ist ein Gesundheitsdatum. Alles bleibt lokal auf dem Gerät: kein Konto, keine Cloud, keine Telemetrie (AGENTS.md §5, Konzept 4.5).
+**Private means private.** Hearing performance is health data. Everything stays local on the device: no account, no cloud, no telemetry (AGENTS.md §5, concept 4.5).
 
-**Das trainierte Ohr bestimmt die App.** Referenz-Setup ist das BT-Hörgerät am linken Ohr (ADR-0007). Jedes Audio-Feature wird von dieser Frage aus gedacht: Kommt das Signal dort verständlich und mit dem richtigen Pegel an? Kanaltrennung (links/rechts/beide) bleibt als Werkzeug für Alternativ-Setups erhalten, gibt aber nicht den Takt vor.
+**The trained ear governs the app.** The reference setup is the Bluetooth hearing aid on the left ear (ADR-0007). Every audio feature is thought through from that question: does the signal arrive there intelligibly and at the right level? Channel separation (left/right/both) remains available as a tool for alternative setups, but it does not set the pace.
 
-## Tonalität der UI-Texte
+## Tone of the UI texts
 
-- Deutsch, klar, erwachsen. Kurze Sätze.
-- Sachlich-freundlich — nie kindisch, nie Betroffenheitston, nie Motivationsposter.
-- Fehlermeldungen sagen, was zu tun ist („Keine Audioausgabe gefunden — ist das Hörgerät verbunden?"), statt nur, was schiefging.
-- Fortschritt wird nüchtern berichtet (fällige Karten, absolvierte Wörter), nicht gefeiert und nicht angemahnt.
+- German and English, clear, adult. Short sentences.
+- Matter-of-fact and friendly — never childish, never sympathetic hand-wringing, never a motivational poster.
+- Error messages say what to do ("No audio output found — is the hearing aid connected?") rather than only what went wrong.
+- Progress is reported soberly (cards due, words completed), neither celebrated nor held against the user.
 
-## Was AudioLex nicht ist
+## What AudioLex is not
 
-- Kein Produkt: nicht-kommerziell, keine öffentliche Verteilung, keine Härtung (Konzept, Kopfzeile).
-- Kein Ersatz für HNO oder Audiologie.
-- Keine Sprachlern-App mit Abo, Werbung oder Wettbewerb — auch wenn die Korpus-Architektur einen späteren Vokabeltrainer zulässt (Konzept 3.4), bleibt die Seele: konzentriertes Hörtraining.
+- Not a commercial product: non-commercial, no hardening for hostile use (concept, header).
+- Not a substitute for ENT or audiology.
+- Not a language-learning app with a subscription, ads or leaderboards — even though the corpus architecture allows a vocabulary trainer later (concept 3.4), the soul stays the same: concentrated hearing training.
 
-## Stimme in einem Satz
+## The voice in one sentence
 
-AudioLex spricht wie ein verlässlicher Trainingspartner: sagt klar, was dran ist, wartet geduldig, urteilt nicht.
+AudioLex speaks like a dependable training partner: says plainly what is next, waits patiently, does not judge.

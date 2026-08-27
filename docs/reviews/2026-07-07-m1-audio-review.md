@@ -1,7 +1,7 @@
 # Review M1 Audio-Grundgerüst (Opus-Klasse, 2026-07-07)
 
 Reviewer: Claude (Opus-Klasse), auf Wunsch des Autors nach Abschluss der Android-Sink-Verifikation.
-Grundlage: `docs/umsetzungslog.md`, `docs/backlog.md`, Commits `977ad83…67ea1e2`.
+Grundlage: `docs/implementation-log.md`, `docs/backlog.md`, Commits `977ad83…67ea1e2`.
 
 **Auftrag an die nächste Sitzung (Sonnet):** Punkte in dieser Reihenfolge abarbeiten, Ergebnis je Punkt im Backlog/Log dokumentieren. Befund 1 und 2 vor jeder weiteren Feature-Arbeit an Audio/StereoGain.
 

@@ -13,7 +13,7 @@ Wir verwenden den schlanken Satz:
 
 - `AGENTS.md` (verbindlicher Arbeitsmodus) + `CLAUDE.md` (Kontext, ohne Duplikate)
 - `docs/backlog.md` — P0–P3, Checkbox-Format mit `Hinweis:` bei Erledigung (wp_service-Stil)
-- `docs/umsetzungslog.md` — Journal, neueste zuerst
+- `docs/implementation-log.md` — Journal, neueste zuerst
 - `docs/adr/` — Entscheidungen
 - **Meilensteine M0–M5** statt Sprints; Reihenfolge darf begründet abweichen.
 

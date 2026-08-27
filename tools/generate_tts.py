@@ -24,7 +24,7 @@ TOOLS_DIR = Path(__file__).parent
 REPO_ROOT = TOOLS_DIR.parent
 # Corpus lives inside composeApp's Compose Resources, not a top-level dir:
 # it's read at runtime via Res.readBytes on every target (incl. Android,
-# which has no repo-relative filesystem access) -- see ADR-0003/architektur.md.
+# which has no repo-relative filesystem access) -- see ADR-0003/architecture.md.
 CORPUS_DIR = REPO_ROOT / "composeApp" / "src" / "commonMain" / "composeResources" / "files" / "corpus"
 WORDS_JSON = CORPUS_DIR / "words.json"
 RECORDINGS_JSON = CORPUS_DIR / "recordings.json"

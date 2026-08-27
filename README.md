@@ -79,8 +79,8 @@ Details: [tools/generate_tts.py](tools/generate_tts.py), [ADR-0006](docs/adr/000
 
 - Verbindlicher Arbeitsmodus: [AGENTS.md](AGENTS.md)
 - Konzept/Vision: [docs/konzept/AudioLex-Konzept.md](docs/konzept/AudioLex-Konzept.md)
-- Architektur: [docs/architektur.md](docs/architektur.md)
+- Architektur: [docs/architecture.md](docs/architecture.md)
 - Entscheidungen: [docs/adr/](docs/adr/)
 - Aufgaben: [docs/backlog.md](docs/backlog.md)
-- Umsetzungsjournal: [docs/umsetzungslog.md](docs/umsetzungslog.md)
+- Umsetzungsjournal: [docs/implementation-log.md](docs/implementation-log.md)
 - Weg zur F-Droid-Aufnahme: [docs/fdroid-anmeldung.md](docs/fdroid-anmeldung.md)

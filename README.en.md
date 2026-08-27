@@ -81,8 +81,8 @@ The documentation is written in German, including the architecture decision reco
 
 - Binding working mode: [AGENTS.md](AGENTS.md)
 - Concept and vision: [docs/konzept/AudioLex-Konzept.md](docs/konzept/AudioLex-Konzept.md)
-- Architecture: [docs/architektur.md](docs/architektur.md)
+- Architecture: [docs/architecture.md](docs/architecture.md)
 - Decisions: [docs/adr/](docs/adr/)
 - Backlog: [docs/backlog.md](docs/backlog.md)
-- Implementation journal: [docs/umsetzungslog.md](docs/umsetzungslog.md)
+- Implementation journal: [docs/implementation-log.md](docs/implementation-log.md)
 - Route to F-Droid inclusion: [docs/fdroid-anmeldung.md](docs/fdroid-anmeldung.md)
