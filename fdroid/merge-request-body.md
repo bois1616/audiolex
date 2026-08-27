@@ -24,7 +24,7 @@ come apart: after one-sided hearing loss the sound arrives, but it is no longer
 reliably decoded as speech. Two modes — one shows the word while playing it, the
 other keeps it covered and lets you rate yourself; a fixed-interval spaced
 repetition scheduler decides when a word returns. Optional background noise at a
-settable signal-to-noise ratio. German UI, offline only, no internet permission.
+settable signal-to-noise ratio. Bilingual German/English interface, switchable on the start screen; the training corpus has its own language setting. Offline only, no internet permission.
 
 I am the author, and this is my first submission to F-Droid. A few things I
 checked before opening this, in case it saves a round trip:

@@ -6,7 +6,7 @@ Learning mode — a word is played with its text visible. This builds the link b
 
 Exam mode — the word is played, the card stays covered. You rate yourself. That rating decides when the word comes back: after a minute, after ten, after a day, a week or a month.
 
-72 German words and sentences are included: 68 from free speech synthesis, four spoken by real voices. Your own recordings can be added: speak a word or sentence, write it down, train it. Several speakers can be kept apart and switched on or off individually — a familiar voice is a different exercise from a stranger's.
+92 words and sentences are included: 72 in German — 68 from free speech synthesis, four spoken by real voices — and 20 in English. Which language you train is a setting of its own, separate from the language of the interface. Your own recordings can be added: speak a word or sentence, write it down, train it. Several speakers can be kept apart and switched on or off individually — a familiar voice is a different exercise from a stranger's.
 
 For harder practice, put a background noise under the speech and set the distance between the two in decibels. Three levels do it in one tap: easy without noise, hard with a clear speech advantage, advanced with the noise above the speech. One noise is included, recorded inside a bus. Your own can be recorded or imported as WAV files.
 
@@ -16,4 +16,4 @@ What AudioLex does not do: it requests no internet permission, has no account, n
 
 AudioLex is a practice tool, not a medical product. It replaces neither an audiologist's advice nor an ENT examination.
 
-The app was built for one person with exactly this problem. It shows: the interface is German, it is plain, and it does not explain itself.
+The app was built for one person with exactly this problem. It shows: it is plain, and it does not explain itself — the short guide inside is where it tries. The interface speaks German or English, switchable on the start screen.

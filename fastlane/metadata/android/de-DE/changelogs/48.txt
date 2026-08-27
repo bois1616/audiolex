@@ -1,0 +1,5 @@
+Der Kanaltest ist überarbeitet: Er spielt drei Wörter je Ohr statt einem — ein Einzelwort ist zu kurz, um sicher zu sagen, aus welcher Richtung es kam —, folgt der Sprachwahl und zeigt an, welches Ausgabegerät die App erkannt hat.
+
+Neu ist auch der Hinweis, warum der stummgeschaltete Kanal mit einem Headset mit Mikrofon trotzdem leise mitspricht: Das Mikrofon nimmt den spielenden Hörer auf. Die App sendet dort nichts.
+
+Die Beschreibung im Store war an zwei Stellen veraltet (Oberfläche, Umfang des Korpus) und stimmt wieder.

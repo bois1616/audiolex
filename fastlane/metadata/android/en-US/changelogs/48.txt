@@ -1,0 +1,5 @@
+The channel test was reworked: three words per ear instead of one — a single word is too short to tell which direction it came from — it follows the language picker, and it shows which output device the app detected.
+
+It also explains why the silenced channel is still faintly audible with a headset that has a microphone: the mic picks up the ear that is playing. The app sends nothing there.
+
+Two things in the store description were out of date (interface, size of the corpus) and are correct again.
