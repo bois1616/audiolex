@@ -1,0 +1,3 @@
+Der Kanaltest zeigt jetzt an, was die Erkennung sieht: welches Ausgabe-Setup sie annimmt und welche Gerätetypen das Telefon dafür meldet.
+
+Hintergrund: Ob die Kanalwahl in den Einstellungen überhaupt wirkt, hängt daran, ob die App dein Headset als Stereo-Paar einordnet. Ging das schief, war bisher nur der gesperrte Regler zu sehen, nicht der Grund.

@@ -19,8 +19,8 @@ import de.hexenwoche.audiolex.core.audio.OutputSetup
  * Android detection (Backlog M4 "Kopfhörer-Bogen Batch A" AC2/AC3,
  * ADR-0011 point 2/3/4): reads the current output devices once on entry and
  * again on every hot-plug event via `AudioManager.registerAudioDeviceCallback`,
- * so [de.hexenwoche.audiolex.EinstellungenScreen] reflects an inserted/removed
- * headphone live without the user leaving and re-entering the screen. The
+ * so [de.hexenwoche.audiolex.EinstellungenScreen] and the channel test
+ * reflect an inserted/removed headphone live without the user leaving and re-entering the screen. The
  * callback is unregistered in the `DisposableEffect` cleanup so no callback
  * outlives the screen (the point the A53 sight-check explicitly probes).
  *
@@ -29,15 +29,15 @@ import de.hexenwoche.audiolex.core.audio.OutputSetup
  * instead.
  */
 @Composable
-actual fun rememberOutputSetup(): OutputSetup {
+actual fun rememberOutputDiagnosis(): OutputDiagnosis {
     val context = LocalContext.current
-    var setup by remember { mutableStateOf(OutputSetup.HOERGERAET) }
+    var diagnosis by remember { mutableStateOf(OutputDiagnosis(OutputSetup.HOERGERAET, emptyList())) }
 
     DisposableEffect(context) {
         val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
         fun refresh() {
-            setup = currentOutputSetup(audioManager)
+            diagnosis = currentOutputDiagnosis(audioManager)
         }
         refresh()
 
@@ -52,7 +52,7 @@ actual fun rememberOutputSetup(): OutputSetup {
         }
     }
 
-    return setup
+    return diagnosis
 }
 
 /**
@@ -90,19 +90,69 @@ private val MEDIA_SPEECH_ATTRIBUTES: AudioAttributes = AudioAttributes.Builder()
  * appearing/disappearing. Re-routing without a device change (picking
  * another output in the system's media switcher) is not observed.
  */
-private fun currentOutputSetup(audioManager: AudioManager): OutputSetup {
+private fun currentOutputDiagnosis(audioManager: AudioManager): OutputDiagnosis {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         val routed = audioManager.getAudioDevicesForAttributes(MEDIA_SPEECH_ATTRIBUTES)
         if (routed.isNotEmpty()) {
             val stereoRouted = routed.any { classifyOutputDeviceType(it.type) == OutputSetup.STEREO_KOPFHOERER }
-            return if (stereoRouted) OutputSetup.STEREO_KOPFHOERER else OutputSetup.HOERGERAET
+            return OutputDiagnosis(
+                setup = if (stereoRouted) OutputSetup.STEREO_KOPFHOERER else OutputSetup.HOERGERAET,
+                routedDevices = routed.map { describeOutputDeviceType(it.type) },
+            )
         }
     }
-    return resolveOutputSetup(audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS).asList())
+    // Fallback path: the enumerated devices are what the decision is made
+    // from here, so they are also what gets reported.
+    val devices = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS).asList()
+    return OutputDiagnosis(
+        setup = resolveOutputSetup(devices),
+        routedDevices = devices.map { describeOutputDeviceType(it.type) },
+    )
 }
 
 /**
- * Fallback for API 29-32, where [currentOutputSetup] cannot ask about routing.
+ * "USB_HEADSET (22)" for `AudioDeviceInfo.TYPE_USB_HEADSET`, and a bare
+ * "TYPE 11" for anything this list doesn't name yet.
+ *
+ * Why the raw number travels along: it is the one part that cannot be
+ * misread on its way through a bug report. The named types are the ones a
+ * phone can plausibly route media to -- the ones actually worth telling
+ * apart when someone says the channel selection does nothing. This is
+ * diagnosis text, deliberately untranslated (the constant names are
+ * Android's, and a German rendering of `TYPE_USB_DEVICE` would help nobody).
+ *
+ * The BLE constants (API 31/33) stay referenced by number rather than by
+ * symbol, same reason as in [classifyOutputDeviceType]: naming them would
+ * need an SDK guard for a label.
+ */
+internal fun describeOutputDeviceType(type: Int): String {
+    val name = when (type) {
+        AudioDeviceInfo.TYPE_WIRED_HEADPHONES -> "WIRED_HEADPHONES"
+        AudioDeviceInfo.TYPE_WIRED_HEADSET -> "WIRED_HEADSET"
+        AudioDeviceInfo.TYPE_USB_HEADSET -> "USB_HEADSET"
+        AudioDeviceInfo.TYPE_USB_DEVICE -> "USB_DEVICE"
+        AudioDeviceInfo.TYPE_USB_ACCESSORY -> "USB_ACCESSORY"
+        AudioDeviceInfo.TYPE_BLUETOOTH_A2DP -> "BLUETOOTH_A2DP"
+        AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> "BLUETOOTH_SCO"
+        AudioDeviceInfo.TYPE_HEARING_AID -> "HEARING_AID"
+        AudioDeviceInfo.TYPE_BUILTIN_SPEAKER -> "BUILTIN_SPEAKER"
+        AudioDeviceInfo.TYPE_BUILTIN_SPEAKER_SAFE -> "BUILTIN_SPEAKER_SAFE"
+        AudioDeviceInfo.TYPE_BUILTIN_EARPIECE -> "BUILTIN_EARPIECE"
+        AudioDeviceInfo.TYPE_LINE_ANALOG -> "LINE_ANALOG"
+        AudioDeviceInfo.TYPE_AUX_LINE -> "AUX_LINE"
+        AudioDeviceInfo.TYPE_DOCK -> "DOCK"
+        AudioDeviceInfo.TYPE_HDMI -> "HDMI"
+        26 -> "BLE_HEADSET"
+        27 -> "BLE_SPEAKER"
+        30 -> "BLE_BROADCAST"
+        else -> return "TYPE $type"
+    }
+    return "$name ($type)"
+}
+
+/**
+ * Fallback for API 29-32, where [currentOutputDiagnosis] cannot ask about
+ * routing.
  * Combines every currently reported output device into the single
  * governing [OutputSetup]. Taking "the first" reported device doesn't work:
  * Android practically always reports the built-in speaker alongside any

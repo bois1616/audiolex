@@ -1,5 +1,17 @@
 # Umsetzungs-Log (Neueste Einträge zuerst)
 
+## 2026-08-27 (Claude: **Die Erkennung sagt jetzt, was sie sieht — v0.36.1**)
+
+- **Was:** Nachtrag zur Version desselben Tages, ausgelöst durch chivalrys zweite Rückmeldung: „I tested the app on an older phone with 3.5mm jack. The issue just disappeared." Der Kanaltest zeigt jetzt eine Zeile mit dem erkannten Ausgabe-Setup **und** den gemeldeten Gerätetypen im Klartext. Version 0.36.0 → **0.36.1**, versionCode 45 → 46 (Patch-Stelle, weil es ein Testerbefund nach dem Bump ist, AGENTS.md DoD §6), Changelog `46.txt` zweisprachig.
+
+- **Warum das und nicht gleich der Fix:** Die neue Rückmeldung schiebt die Erkennungs-Hypothese nach vorn — 3,5-mm-Klinke meldet `TYPE_WIRED_HEADSET`, steht in der Tabelle; USB-C meldet je nach Deskriptor `TYPE_USB_HEADSET` (22, in der Tabelle) **oder** `TYPE_USB_DEVICE` (11, nicht in der Tabelle). Das erklärt zwanglos, warum es an chivalrys USB-C-Headset scheitert und am USB-C-Headset des Autors nicht. Nur: Welchen Typ **sein** Telefon meldet, ist von hier aus nicht zu erraten, und er hat zwei Variablen zugleich getauscht (Telefon *und* Anschlussart) — ein älteres Telefon hat womöglich auch keinen Spatializer. `TYPE_USB_DEVICE` einfach in die Tabelle zu schreiben wäre also ein Fix auf Verdacht, der obendrein ADR-0011s Zweifelsregel aufweicht. Ein Screenshot der neuen Zeile beendet die Raterei.
+
+- **Die Zeile ist so gebaut, dass sie einen Fehlerbericht überlebt:** „Ausgabe: Stereo-Kopfhörer erkannt · USB_HEADSET (22)" — Name **und** Konstante, unübersetzt in beiden Sprachfassungen, weil die Namen Androids sind. Dazu bei erkanntem Hörgerät eine zweite Zeile: Die Kanalwahl in den Einstellungen ist dann ohne Wirkung, **dieser Test spielt trotzdem getrennt**. Das Paar ist die eigentliche Diagnose: Trennt der Test sauber, während oben „Hörgerät erkannt" steht, ist der Audiopfad in Ordnung und die Einordnung falsch. Angezeigt wird das nur im Kanaltest — in den Einstellungen ist das Urteil die richtige Menge, hier ist es ein Beweisstück.
+
+- **Eine Abfrage, nicht zwei:** `rememberOutputSetup` ist zu `rememberOutputDiagnosis` erweitert und liefert Setup plus Gerätetypen; `rememberOutputSetup()` bleibt als dünne Ableitung. Damit können die angezeigten Typen und die Entscheidung, nach der die Trainings-Screens pannen, nicht auseinanderlaufen — eine zweite Abfrage wäre eine zweite Meinung.
+
+- **Wie verifiziert:** `./gradlew build` grün, `:core:jvmTest` 261 Fälle / 0 Fehler (der Reflexions-Sweep `StringsCompletenessTest` deckt die zwei neuen Katalogeinträge automatisch mit ab). Am Desktop per Screenshot belegt, dort ehrlich „keine Geräte gemeldet" (ADR-0011 Punkt 6, keine Erkennung am Dev-Target). v0.36.1 ist auf dem A53 installiert. **Offen bleibt dasselbe wie am Vormittag:** die Hörprobe am Gerät — das Telefon war den ganzen Testlauf über gesperrt, damit steht auch der Screenshot der Zeile mit einem echten Gerätetyp aus.
+
 ## 2026-08-27 (Claude: **Kanaltest zweisprachig, drei Wörter je Ohr — v0.36.0**)
 
 - **Was:** Auftrag des Autors, ausgelöst durch den F-Droid-Tester chivalry: Der Kanaltest spricht jetzt beide Sprachen und spielt drei Wörter je Ohr statt einem; der Mikrofon-Rohtest ist von diesem Screen verschwunden. Dazu eine Ursachenanalyse zur gemeldeten wirkungslosen Kanalwahl — ohne Codeeingriff, weil die Ursache außerhalb der eigenen Hardware liegt. Version 0.35.0 → **0.36.0**, versionCode 44 → 45 (beide Stellen), Changelog `45.txt` in beiden Sprachen.

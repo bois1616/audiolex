@@ -17,6 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
+import de.hexenwoche.audiolex.core.audio.OutputSetup
 import de.hexenwoche.audiolex.core.audio.PcmBuffer
 import de.hexenwoche.audiolex.core.audio.StereoGain
 import de.hexenwoche.audiolex.core.audio.WavFile
@@ -104,6 +105,28 @@ fun DevPlaybackScreen(ownCorpusRepository: OwnCorpusRepository, corpusLanguage: 
 
     Text(strings.channelTestTitle, style = MaterialTheme.typography.titleMedium)
     Text(strings.channelTestExplainer, style = MaterialTheme.typography.bodyMedium)
+
+    // What the detection actually sees, device types included (chivalry,
+    // 2026-08-27). The settings screen shows only the verdict, which is the
+    // right amount there; here it is a bug report waiting to be screenshotted,
+    // so the raw types come along. The test below pans regardless of this
+    // line -- that independence is what makes the pair of them diagnostic:
+    // separation here plus "Hörgerät erkannt" above means the audio path is
+    // fine and the *classification* is wrong.
+    val diagnosis = rememberOutputDiagnosis()
+    Text(
+        strings.channelTestOutput(diagnosis.setup, diagnosis.routedDevices),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    if (diagnosis.setup != OutputSetup.STEREO_KOPFHOERER) {
+        Text(
+            strings.channelTestSettingInactive,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+
     Text(status, style = MaterialTheme.typography.bodyMedium)
 
     val currentCorpus = corpus

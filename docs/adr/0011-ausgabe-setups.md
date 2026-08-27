@@ -15,6 +15,14 @@
 >
 > **Offene Grenze:** Der auslösende Callback feuert nur beim Auftauchen/Verschwinden von Geräten. Eine Umleitung ohne Gerätewechsel (Ausgabe-Umschalter des Systems) wird nicht bemerkt.
 
+> **Nachtrag 2026-08-27 (Testerbericht): Die Erkennung sagt jetzt, was sie gesehen hat.**
+>
+> Unter „Konsequenzen" steht als bewusst eingegangenes Risiko: „Die Automatik kann falsch liegen, und für den Nutzer ist das schwer zu durchschauen (gesperrte Regler ohne ersichtlichen Grund)." Genau dieser Fall ist am 2026-08-27 eingetreten — der F-Droid-Tester chivalry meldet eine wirkungslose Kanalwahl an einem USB-C-Headset an einem neueren Telefon, während dieselbe App an einem älteren Telefon mit 3,5-mm-Klinke tut, was sie soll. Der Autor kann es an seinem USB-C-Headset am A53 nicht nachstellen.
+>
+> Das ist genau die Lücke, die die Tabelle oben offenlässt: Ein USB-C-Headset meldet sich je nach Deskriptor als `TYPE_USB_HEADSET` (22, in der Tabelle) **oder** als `TYPE_USB_DEVICE` (11, fällt in den `else`-Zweig und damit auf Hörgerät). Welchen Typ ein fremdes Telefon meldet, ist von hier aus nicht zu erraten.
+>
+> **Ergänzung, keine Änderung der Regel:** `rememberOutputSetup` ist zu `rememberOutputDiagnosis` erweitert und liefert neben dem Setup die gemeldeten Gerätetypen im Klartext samt Konstante (`USB_HEADSET (22)`). Angezeigt wird das **nur im Kanaltest** — er ist das Instrument, und die Zeile ist eine Diagnose, keine Einstellung. Steht dort „Hörgerät erkannt", während der Test darunter sauber trennt, ist der Audiopfad in Ordnung und die **Einordnung** falsch. Die Erkennungstabelle selbst bleibt vorerst unangetastet: Erst der gemeldete Typ, dann die Korrektur. Die in „Alternativen" genannte manuelle Überstimmung bleibt der Nachzug, falls die Tabelle grundsätzlich nicht ausreicht.
+
 ## Kontext
 
 ADR-0007 hat 2026-07-08 das **BT-Hörgerät am linken Ohr** als Referenz-Trainings-Setup festgelegt und Kanaltrennung damit vom Kernfeature zur „Setup-Option für Alternativ-Hardware" herabgestuft. Der Grund war zwingend: über den ASHA-/BT-Pfad erreicht das Signal nur ein Hörgerät, das Stereo zu Mono summiert — Panning ist dort nicht wahrnehmbar, und eine UI, die Kanalwahl als wirksam anbietet, würde lügen.

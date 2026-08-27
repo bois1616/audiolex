@@ -414,6 +414,14 @@ internal object GermanStrings : Strings {
         "Für den Kanaltest fehlen Wörter: Er braucht sechs mit Aufnahme in der eingestellten " +
             "Trainingssprache."
 
+    override val channelTestSettingInactive =
+        "Die Kanalwahl in den Einstellungen ist damit ohne Wirkung — dieser Test spielt trotzdem getrennt."
+
+    override fun channelTestOutput(setup: OutputSetup, devices: List<String>): String {
+        val reported = if (devices.isEmpty()) "keine Geräte gemeldet" else devices.joinToString(", ")
+        return "Ausgabe: ${outputSetupDetected(setup)} · $reported"
+    }
+
     override fun channelTestLeftEar(words: List<String>) = "Links: ${words.joinToString(" · ")}"
 
     override fun channelTestRightEar(words: List<String>) = "Rechts: ${words.joinToString(" · ")}"

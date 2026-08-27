@@ -283,6 +283,17 @@ interface Strings {
     val channelTestReady: String
     val channelTestTooFewWords: String
 
+    val channelTestSettingInactive: String
+
+    /**
+     * The detection's own answer, verbatim: which setup it decided on and
+     * which device types it read that from ("Ausgabe: Stereo-Kopfhörer
+     * erkannt · USB_HEADSET (22)"). The type names stay in Android's
+     * spelling in both languages -- they exist to survive a bug report, not
+     * to read well.
+     */
+    fun channelTestOutput(setup: OutputSetup, devices: List<String>): String
+
     fun channelTestLeftEar(words: List<String>): String
     fun channelTestRightEar(words: List<String>): String
     fun channelTestPlaying(channels: String): String

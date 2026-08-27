@@ -11,4 +11,5 @@ import de.hexenwoche.audiolex.core.audio.OutputSetup
  * verification platform (device tests run on the Galaxy A53).
  */
 @Composable
-actual fun rememberOutputSetup(): OutputSetup = OutputSetup.STEREO_KOPFHOERER
+actual fun rememberOutputDiagnosis(): OutputDiagnosis =
+    OutputDiagnosis(OutputSetup.STEREO_KOPFHOERER, routedDevices = emptyList())

@@ -1,0 +1,3 @@
+The channel test now shows what the detection sees: which output setup it assumes, and which device types your phone reports for it.
+
+Background: whether the channel selection in the settings does anything at all depends on the app classifying your headset as a stereo pair. When that went wrong, all you could see was a greyed-out option, not the reason.
