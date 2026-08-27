@@ -1,5 +1,19 @@
 # Implementation log (newest entries first)
 
+## 2026-08-27 (Claude: **The documentation speaks English**)
+
+- **What:** the author's commission — "the testers and the people who look at this app closely are largely English-speaking". Translated: AGENTS.md, CLAUDE.md, SOUL.md, DESIGN.md, `docs/architecture.md` (was `architektur.md`), `docs/scenarios.md` (was `szenarien.md`), the complete backlog, and the implementation log from the F-Droid submission on. File names included; every path reference across the repo follows. No code change, therefore no version step.
+
+- **The rule changed with it** (AGENTS.md §5): documentation and commit messages in English. Still German for now, and marked as such wherever they are referenced: the ADRs, the subject-matter concept, the root `README.md` (with `README.en.md` as its counterpart) and `docs/fdroid-anmeldung.md`.
+
+- **Where the effort went, measured before deciding:** the six control and concept documents come to about 4,700 words together; the backlog is 38,800 and the log 36,900. So the two working documents are 90 % of the job. The backlog was translated in full — it is the living document, and its 29 open items are what a contributor reads to see what is known and planned. For the log, the author chose the cut: everything from 2026-08-17 (the F-Droid submission) on, which is the stretch that carries context for someone outside; the older history stays German behind a marker that says so. Structure checked rather than assumed: the backlog has the same 12 sections, 132 items and 29 open ones as before.
+
+- **Three statements were corrected rather than translated as they stood**, because a freshly translated document that carries a known falsehood is worse than a German one: `architecture.md` still said the corpus audio was not versioned (wrong since ADR-0014), DESIGN.md still said the corpus is German (wrong since ADR-0016), and several backlog notes have since been overtaken by later work — those carry a bracketed pointer now instead of leaving the reader to find out.
+
+- **Kept as they are:** the tags `[KLÄRUNG]` and `[PROP]` (identifiers the control files explain, not prose), the German `Screen`/class names in code references, and quoted German the author or a tester actually said.
+
+- **How it was verified:** `./gradlew build` green, `:core:jvmTest` 261 cases / 0 failures — a docs batch cannot break the build, but the renames touched paths that code comments and `tools/generate_tts.py` refer to, so it was worth running. A grep over the repo finds no reference to the three old file names any more.
+
 ## 2026-08-27 (Claude: **The store description is accurate again — v0.36.3**)
 
 - **What:** two sentences in `fastlane/.../full_description.txt` were out of date, in both languages: "it is in German" (wrong since v0.34.0) and "72 words and sentences in German" (since v0.35.0 there are 92, 20 of them English). Both corrected, plus a sentence that keeps the training language and the interface language apart. Version 0.36.2 → **0.36.3**, versionCode 47 → 48, changelog `48.txt` in both languages.
