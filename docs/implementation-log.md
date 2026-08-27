@@ -1,5 +1,17 @@
 # Implementation log (newest entries first)
 
+## 2026-08-27 (Claude: **The ADRs speak English too**)
+
+- **What:** all 17 records under `docs/adr/` translated, file names included — `0002-schlanke-governance.md` → `0002-lean-governance.md` and so on for the fourteen with German slugs. Every path reference across the repo follows; the "(German)" markers on the ADR references in AGENTS.md and CLAUDE.md are gone. No code change, therefore no version step.
+
+- **Why they were worth it after the six documents:** the ADRs are what someone reads who wants to know *why* something is built the way it is — and they are referenced constantly from the backlog, the architecture and the code comments. 14,300 words, so a fifth of the backlog; the return per word is higher, because an ADR is read on purpose rather than skimmed.
+
+- **Everything substantive stays as it was**, addenda included — including the places where a decision was later corrected (ADR-0010's noise loops twice over, ADR-0012's Room table, ADR-0013's decision 6 that was half wrong, ADR-0014's asset route). Those corrections are the point of the record; smoothing them out in translation would have removed exactly what makes it useful.
+
+- **Two additions, both marked as such:** ADR-0001 and ADR-0003 argue with WSL2, which the author corrected to native Debian on 2026-08-17 — a bracketed note says so, the reasoning is untouched. Beyond that, nothing was rewritten.
+
+- **How it was verified:** `./gradlew build` green. A grep finds no reference to the fourteen old file names any more, and no German section heading in `docs/adr/`.
+
 ## 2026-08-27 (Claude: **The documentation speaks English**)
 
 - **What:** the author's commission — "the testers and the people who look at this app closely are largely English-speaking". Translated: AGENTS.md, CLAUDE.md, SOUL.md, DESIGN.md, `docs/architecture.md` (was `architektur.md`), `docs/scenarios.md` (was `szenarien.md`), the complete backlog, and the implementation log from the F-Droid submission on. File names included; every path reference across the repo follows. No code change, therefore no version step.

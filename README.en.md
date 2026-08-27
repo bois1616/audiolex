@@ -19,8 +19,8 @@ AudioLex is a practice tool, not a medical product. It replaces neither an audio
 - **Training levels** — Easy, Hard and Advanced as one-tap presets for the noise pair.
 - **Channel choice** — left, right, both, effective with stereo headphones. A Bluetooth hearing aid sums stereo to mono; the app detects that and shows the choice as ineffective there.
 - **Backup** — your recordings, your noises and your session history as a ZIP in your documents, at the press of a button.
-- **German or English interface** — switchable right on the start screen; without a choice of your own it follows the device language. A quick guide sits next to it and follows the same setting ([ADR-0015](docs/adr/0015-ui-lokalisierung.md), German).
-- **Training language, kept separate** — what you practise is chosen in the settings. Training German while reading the app in English is a legitimate combination. Your own recordings get a language when you create them; it says where the entry shows up, not what is spoken in it ([ADR-0016](docs/adr/0016-korpus-sprache.md), German).
+- **German or English interface** — switchable right on the start screen; without a choice of your own it follows the device language. A quick guide sits next to it and follows the same setting ([ADR-0015](docs/adr/0015-ui-localisation.md), German).
+- **Training language, kept separate** — what you practise is chosen in the settings. Training German while reading the app in English is a legitimate combination. Your own recordings get a language when you create them; it says where the entry shows up, not what is spoken in it ([ADR-0016](docs/adr/0016-corpus-language.md), German).
 
 Bundled are 72 German words and sentences — 68 from free speech synthesis, four spoken by real voices — plus 20 English examples and one background noise recorded inside a bus.
 
@@ -28,14 +28,14 @@ Bundled are 72 German words and sentences — 68 from free speech synthesis, fou
 
 The **code** is under Apache-2.0, see [LICENSE](LICENSE).
 
-The **content** (audio files, corpus texts) sits explicitly outside the code licence and carries its own provenance, as decided in [ADR-0014](docs/adr/0014-veroeffentlichung-lizenz.md) (German). Whatever ships has to be redistributable:
+The **content** (audio files, corpus texts) sits explicitly outside the code licence and carries its own provenance, as decided in [ADR-0014](docs/adr/0014-publication-licence.md) (German). Whatever ships has to be redistributable:
 
 | Content | Origin | Redistribution |
 | --- | --- | --- |
 | 68 synthetic recordings (`voiceId: thorsten`) | Generated locally with [Piper](https://github.com/rhasspy/piper), voice `de_DE-thorsten-medium` — model MIT, dataset [Thorsten-Voice](https://github.com/thorstenMueller/Thorsten-Voice) CC0 | CC0-1.0 |
 | 20 synthetic recordings (`voiceId: ljspeech`) | Generated locally with Piper, voice `en_US-ljspeech-high` — model MIT, dataset [LJ Speech](https://keithito.com/LJ-Speech-Dataset/) public domain | CC0-1.0 |
 | 4 demo recordings (`voiceId: stephan`, `grete`) | Recorded by the author and a second speaker inside the app | CC0-1.0; the second speaker's consent is on file with the author (2026-08-17) |
-| German sentence entries (`satz-*`) | Freely paraphrased after Douglas Adams, "The Hitchhiker's Guide to the Galaxy", ch. 1 — no verbatim quotes ([ADR-0009](docs/adr/0009-satz-korpus-modell.md), German) | own text |
+| German sentence entries (`satz-*`) | Freely paraphrased after Douglas Adams, "The Hitchhiker's Guide to the Galaxy", ch. 1 — no verbatim quotes ([ADR-0009](docs/adr/0009-sentence-corpus-model.md), German) | own text |
 | English entries (`en-*`, `satz-en-*`) | Freely composed, neither translations nor based on a source | own text |
 | Bundled background noise (`files/noise/bus.wav`) | The author's own recording, bus interior | CC0-1.0 |
 
@@ -73,7 +73,7 @@ uv run python -m piper.download_voices --download-dir voices \
 uv run generate_tts.py        # renders only what is missing; --force redoes everything
 ```
 
-Details: [tools/generate_tts.py](tools/generate_tts.py), [ADR-0006](docs/adr/0006-audioquelle-tts.md) (German).
+Details: [tools/generate_tts.py](tools/generate_tts.py), [ADR-0006](docs/adr/0006-audio-source-tts.md) (German).
 
 ## Repository map
 

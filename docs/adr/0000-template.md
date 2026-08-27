@@ -1,20 +1,20 @@
-# ADR-NNNN: Titel
+# ADR-NNNN: Title
 
-- **Status:** vorgeschlagen | akzeptiert | abgelöst durch ADR-XXXX
-- **Datum:** JJJJ-MM-TT
+- **Status:** proposed | accepted | superseded by ADR-XXXX
+- **Date:** YYYY-MM-DD
 
-## Kontext
+## Context
 
-Welches Problem oder welche Kraft erzwingt eine Entscheidung? Nur Fakten, keine Lösung.
+Which problem or which force is compelling a decision? Facts only, no solution.
 
-## Entscheidung
+## Decision
 
-Was wurde entschieden — aktiv formuliert („Wir verwenden …").
+What was decided — stated actively ("We use …").
 
-## Alternativen
+## Alternatives
 
-Ernsthaft erwogene Optionen und warum sie verworfen wurden.
+Options seriously considered, and why they were rejected.
 
-## Konsequenzen
+## Consequences
 
-Was wird dadurch leichter, was schwerer? Auch bewusst eingegangene Schulden benennen.
+What becomes easier, what becomes harder? Name debt taken on deliberately too.

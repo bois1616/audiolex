@@ -11,7 +11,7 @@ A hearing-training app for the author himself (roughly 80 % one-sided hearing lo
 - `:core` — KMP library (androidTarget + jvm), platform-free logic in the packages `srs`, `audio`, `corpus`, `session`, plus `i18n` (UI text catalogue, ADR-0015). Fully unit-testable on the JVM.
 - `:composeApp` — Compose Multiplatform UI (Android + desktop). Desktop is the dev target (native Debian, GNOME/Wayland).
 - Audio: PCM mixing (channel levels, background noise/SNR) in common Kotlin; only the output is expect/actual (`AudioSink`: Android AudioTrack, desktop javax.sound, iOS AVAudioEngine later).
-- Details: `docs/architecture.md` · decisions: `docs/adr/` (German)
+- Details: `docs/architecture.md` · decisions: `docs/adr/`
 
 ## Commands
 
