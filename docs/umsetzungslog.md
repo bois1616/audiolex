@@ -1,5 +1,17 @@
 # Umsetzungs-Log (Neueste Einträge zuerst)
 
+## 2026-08-27 (Claude: **Alles gepusht, MR 46059 auf 0.36.2**)
+
+- **Was:** Die vier Commits des Tages und ein annotiertes Tag `v0.36.2` auf GitHub (`bois1616/audiolex`, dort baut F-Droid), danach die Rezeptur im fdroiddata-Fork auf GitLab gehoben — MR 46059 zeigt jetzt auf `4130c22e`. Kein Codeeingriff, also kein Versionsschritt.
+
+- **Vorher gebaut wie F-Droids Server:** `git archive` des zu pinnenden Commits in ein leeres Verzeichnis, **ohne `local.properties`**, `ANDROID_HOME` aus der Umgebung, `:composeApp:assembleRelease` — grün, 31 MB. Im APK gegengezählt: 93 WAVs (72 unter `raw/de-DE/`, 20 unter `raw/en-US/`, dazu `bus.wav`), `words.json` und `recordings.json` beide drin. `aapt2 dump badging` bestätigt `versionCode='47' versionName='0.36.2'` — die gebaute Version ist die, die die Rezeptur behauptet.
+
+- **Build-Eintrag ersetzt, nicht ergänzt** (wie am 2026-08-24): Der MR ist offen, nichts ist im Katalog, 0.35.0 wurde nie ausgeliefert. Ein zusätzlicher Eintrag hieße, dass F-Droid eine Zwischenversion ohne Nutzen mitbaut — und die Testschlange ist laut linsui lang. Ebenso getaggt wird nur, was auch ausgeliefert wird: 0.36.0 und 0.36.1 haben binnen einer Stunde ihren Nachfolger bekommen und bleiben ohne Tag, genau wie 0.34.0 im August.
+
+- **Auflage weiter eingehalten:** `commit:` trägt den vollen 40-Zeichen-Hash (`2c231555…`), nicht das Tag. Vor dem Push geprüft: Hash 40-stellig hexadezimal, `versionName`/`versionCode` deckungsgleich mit `CurrentVersion`/`CurrentVersionCode`, YAML parsebar (`fdroid lint` gibt es auf diesem Rechner nicht). Nach dem Push gegengeprüft, dass der gepinnte Commit tatsächlich auf GitHub liegt und Vorfahr von `master` ist. Nebenbei aufgeräumt: Die Kopie unter `fdroid/metadata/` stand noch auf 0.33.6 und lief damit der Fassung im Fork hinterher — genau die Drift, gegen die sie existiert.
+
+- **Was der Autor selbst tun muss** (ein GitLab-Token gibt es hier nicht): die Antwort an chivalry, und die MR-Beschreibung — sie behauptet weiterhin „German language interface". Seit v0.34.0 ist die App zweisprachig, seit heute auch der Kanaltest.
+
 ## 2026-08-27 (Claude: **Übersprechen aufgeklärt: das Mikrofon des Headsets — v0.36.2**)
 
 - **Was:** Der Autor hat mit v0.36.1 am A53 getestet und zwei Dinge mitgebracht. Erstens: Bei verbundenem Hörgerät und danach eingestecktem Headset bekommt das Headset die Priorität — genau dafür fragt die Erkennung seit dem 2026-08-06 nach dem Routing statt nach den verbundenen Geräten, der Fall ist damit ein zweites Mal bestätigt (ADR-0011 Nachtrag). Zweitens, und das ist der eigentliche Fund: **„Wenn ich ein Headset mit Mic habe, bekomme ich einen Übersprecheffekt. Der gewählte Kanal ist dann zwar deutlich lauter, aber der andere ‚spricht' ins Mic, was man hört."** Version 0.36.1 → **0.36.2**, versionCode 46 → 47, Changelog `47.txt` zweisprachig.
