@@ -11,14 +11,14 @@ RepoType: git
 Repo: https://github.com/bois1616/audiolex.git
 
 Builds:
-  - versionName: 0.36.2
-    versionCode: 47
-    commit: 2c2315556cf87341c32b1a1d8f5db55c6939dad5
+  - versionName: 0.36.3
+    versionCode: 48
+    commit: af4a375f290e2e9f257603e1f47316d31fc07d8b
     subdir: composeApp
     gradle:
       - yes
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 0.36.2
-CurrentVersionCode: 47
+CurrentVersion: 0.36.3
+CurrentVersionCode: 48
