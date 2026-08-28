@@ -141,6 +141,7 @@ interface Strings {
     val sectionOutput: String
     val sectionChannels: String
     val channelsIneffectiveHint: String
+    val channelsMicrophoneHint: String
     val noSpeaker: String
 
     fun profileLabel(profile: SettingsProfile): String

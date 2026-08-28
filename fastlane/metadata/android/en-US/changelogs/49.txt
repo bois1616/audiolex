@@ -1,0 +1,3 @@
+When you pick "Left only" or "Right only" and a headset with a microphone is connected, the settings now say why the silenced side is still faintly audible: the microphone picks up the ear that is playing.
+
+The app sends nothing there. Headphones without a microphone separate cleanly, a 3.5 mm jack included.

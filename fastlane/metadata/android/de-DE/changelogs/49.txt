@@ -1,0 +1,3 @@
+Wenn du „Nur links" oder „Nur rechts" wählst und ein Headset mit Mikrofon angeschlossen ist, sagen die Einstellungen jetzt, warum die stummgeschaltete Seite trotzdem leise mitspricht: Das Mikrofon nimmt den spielenden Hörer auf.
+
+Die App sendet dort nichts. Kopfhörer ohne Mikrofon trennen sauber, auch die mit 3,5-mm-Klinke.

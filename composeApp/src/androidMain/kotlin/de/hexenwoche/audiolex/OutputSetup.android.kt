@@ -31,7 +31,9 @@ import de.hexenwoche.audiolex.core.audio.OutputSetup
 @Composable
 actual fun rememberOutputDiagnosis(): OutputDiagnosis {
     val context = LocalContext.current
-    var diagnosis by remember { mutableStateOf(OutputDiagnosis(OutputSetup.HOERGERAET, emptyList())) }
+    var diagnosis by remember {
+        mutableStateOf(OutputDiagnosis(OutputSetup.HOERGERAET, emptyList(), headsetHasMicrophone = false))
+    }
 
     DisposableEffect(context) {
         val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
@@ -98,6 +100,7 @@ private fun currentOutputDiagnosis(audioManager: AudioManager): OutputDiagnosis 
             return OutputDiagnosis(
                 setup = if (stereoRouted) OutputSetup.STEREO_KOPFHOERER else OutputSetup.HOERGERAET,
                 routedDevices = routed.map { describeOutputDeviceType(it.type) },
+                headsetHasMicrophone = routed.any { impliesMicrophone(it.type) },
             )
         }
     }
@@ -107,7 +110,34 @@ private fun currentOutputDiagnosis(audioManager: AudioManager): OutputDiagnosis 
     return OutputDiagnosis(
         setup = resolveOutputSetup(devices),
         routedDevices = devices.map { describeOutputDeviceType(it.type) },
+        headsetHasMicrophone = devices.any { impliesMicrophone(it.type) },
     )
+}
+
+/**
+ * Whether an output device type means "there is a microphone on this thing".
+ *
+ * Android draws the line in the names and we take it at its word: a
+ * *headset* carries a microphone, *headphones* do not (`TYPE_WIRED_HEADSET`
+ * vs. `TYPE_WIRED_HEADPHONES` is exactly that distinction, and
+ * `TYPE_USB_HEADSET` is documented as "a USB audio device in headset mode").
+ * That is an inference from a type name, not a measurement of the hardware —
+ * but it is the same signal a user reads off their own cable, and it costs
+ * no extra query.
+ *
+ * Why the app cares (chivalry's finding 2026-08-27, the author's device test
+ * the same day): a headset microphone picks up the ear that is playing and
+ * the other side reproduces it faintly, so a hard-panned channel is never
+ * quite silent. Not an app bug — but the one thing that makes the channel
+ * selection look broken, so the settings say it where the choice is made.
+ */
+private fun impliesMicrophone(type: Int): Boolean = when (type) {
+    AudioDeviceInfo.TYPE_WIRED_HEADSET,
+    AudioDeviceInfo.TYPE_USB_HEADSET,
+    AudioDeviceInfo.TYPE_BLUETOOTH_SCO,
+    -> true
+
+    else -> false
 }
 
 /**

@@ -148,6 +148,10 @@ internal object GermanStrings : Strings {
     override val channelsIneffectiveHint =
         "Ohne Wirkung am Hörgerät: Es summiert Stereo automatisch zu Mono. " +
             "Verfügbar mit Stereo-Kopfhörern."
+    override val channelsMicrophoneHint =
+        "Dein Headset hat ein Mikrofon. Es nimmt den spielenden Hörer auf, deshalb ist die " +
+            "stummgeschaltete Seite nie ganz still. Kopfhörer ohne Mikrofon trennen sauber — " +
+            "auch die mit 3,5-mm-Klinke."
     override val noSpeaker = "Ohne Sprecher"
 
     override fun profileLabel(profile: SettingsProfile) = when (profile) {

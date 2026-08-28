@@ -11,5 +11,10 @@ import de.hexenwoche.audiolex.core.audio.OutputSetup
  * verification platform (device tests run on the Galaxy A53).
  */
 @Composable
-actual fun rememberOutputDiagnosis(): OutputDiagnosis =
-    OutputDiagnosis(OutputSetup.STEREO_KOPFHOERER, routedDevices = emptyList())
+actual fun rememberOutputDiagnosis(): OutputDiagnosis = OutputDiagnosis(
+    setup = OutputSetup.STEREO_KOPFHOERER,
+    routedDevices = emptyList(),
+    // Nothing is detected here, so nothing is claimed: `false` means "no
+    // microphone headset known", not "there is none".
+    headsetHasMicrophone = false,
+)

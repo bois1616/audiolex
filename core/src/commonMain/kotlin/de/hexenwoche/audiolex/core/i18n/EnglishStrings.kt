@@ -155,6 +155,10 @@ internal object EnglishStrings : Strings {
     override val channelsIneffectiveHint =
         "No effect on a hearing aid: it sums stereo to mono by itself. " +
             "Available with stereo headphones."
+    override val channelsMicrophoneHint =
+        "Your headset has a microphone. It picks up the ear that is playing, so the silenced " +
+            "side is never quite silent. Headphones without a microphone separate cleanly — " +
+            "a 3.5 mm jack included."
     override val noSpeaker = "No speaker"
 
     override fun profileLabel(profile: SettingsProfile) = when (profile) {

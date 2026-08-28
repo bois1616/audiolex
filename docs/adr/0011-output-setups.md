@@ -23,6 +23,14 @@
 >
 > **An addition, not a change to the rule:** `rememberOutputSetup` was extended into `rememberOutputDiagnosis` and, besides the setup, returns the reported device types in plain text including the constant (`USB_HEADSET (22)`). It is shown **only in the channel test** — that is the instrument, and the line is a diagnosis, not a setting. If it says "hearing aid detected" while the test below separates cleanly, the audio path is fine and the **classification** is wrong. The detection table itself stays untouched for now: first the reported type, then the correction. The manual override named under "alternatives" stays the follow-up should the table fundamentally not suffice.
 
+> **Addendum 2026-08-28 (the answer): the detection was right, and the diagnosis line proved it in one round.**
+>
+> The tester's reply came back as `Output: Stereo headphones detected · USB_HEADSET (22)` — a type the table above classifies correctly, with the channel selection active the whole time. What he heard came from his headset's microphone: with only the right earpiece in his ear and the left one dangling, the left channel plays into the open air next to the mic, the mic picks it up, and the right side reproduces it. With both earpieces in place the direction is audible after all.
+>
+> So the rule in this ADR needed no correction, and the addition from the day before earned its keep: one line in the app, one screenshot from a stranger's phone, and a suspicion that had two live hypotheses was settled without a single speculative code change. The detection table stays as it is; the gap it leaves for `TYPE_USB_DEVICE` is real but currently affects nobody we know of (backlog M9, P3).
+>
+> What the app does carry away is not a change to the detection but a sentence in the settings: where a channel ≠ both is chosen and the routed output type implies a microphone, it says so. That flag comes from the same routed types this ADR already queries — no second opinion, per the addendum above.
+
 ## Context
 
 On 2026-07-08 ADR-0007 fixed the **Bluetooth hearing aid on the left ear** as the reference training setup and thereby downgraded channel separation from a core feature to a "setup option for alternative hardware". The reason was compelling: over the ASHA/Bluetooth path the signal only reaches a hearing aid that sums stereo to mono — panning is not perceptible there, and a UI that offers a channel selection as effective would be lying.

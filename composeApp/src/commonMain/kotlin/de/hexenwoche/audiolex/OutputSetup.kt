@@ -19,8 +19,21 @@ import de.hexenwoche.audiolex.core.audio.OutputSetup
  * Entries are human-readable and carry the numeric constant
  * ("USB_HEADSET (22)"), so a screenshot from a stranger's phone is enough to
  * settle it. An empty list means the platform answered nothing.
+ *
+ * [headsetHasMicrophone] is what that screenshot turned out to be about
+ * (chivalry's answer, 2026-08-27): his headset is classified correctly as
+ * `USB_HEADSET (22)`, the channel selection was active all along, and the
+ * "both ears" he heard came from the headset's own microphone picking up the
+ * ear that plays. The flag is derived from the very same routed types --
+ * Android says "headset" where a microphone is part of the device and
+ * "headphones" where it is not -- so it costs no second query and cannot
+ * disagree with the line above it.
  */
-data class OutputDiagnosis(val setup: OutputSetup, val routedDevices: List<String>)
+data class OutputDiagnosis(
+    val setup: OutputSetup,
+    val routedDevices: List<String>,
+    val headsetHasMicrophone: Boolean,
+)
 
 /**
  * Observable source for the currently active [OutputSetup] (Backlog M4

@@ -71,8 +71,8 @@ android {
         // impossible: the build fails before it can produce an APK whose
         // version differs from what AppVersion.kt shows on the StartScreen.
         // Bump both places; the build tells you if you forgot one.
-        versionCode = 48
-        versionName = "0.36.3"
+        versionCode = 49
+        versionName = "0.37.0"
         check(versionCode == appVersionCode && versionName == appVersionName) {
             "Version drift: build.gradle.kts says $versionName ($versionCode), " +
                 "AppVersion.kt says $appVersionName ($appVersionCode). " +

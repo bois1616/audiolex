@@ -415,7 +415,8 @@ fun EinstellungenScreen(
             // not offering anything to tap. Live-updates via
             // rememberOutputSetup()'s own device-callback registration
             // (ADR-0011 point 4) -- no extra state needed here.
-            val outputSetup = rememberOutputSetup()
+            val diagnosis = rememberOutputDiagnosis()
+            val outputSetup = diagnosis.setup
             Text(
                 strings.outputSetupDetected(outputSetup),
                 style = MaterialTheme.typography.bodyLarge,
@@ -450,6 +451,21 @@ fun EinstellungenScreen(
                 // Stereo zu Mono, ADR-0007/ADR-0011), nicht ein Problem.
                 Text(
                     strings.channelsIneffectiveHint,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else if (channelMode != ChannelMode.BEIDE && diagnosis.headsetHasMicrophone) {
+                // Chivalrys Vorschlag, wörtlich: "maybe it is better to
+                // remind users of using old-school 3.5mm jack and USB-C
+                // headset without a mic button" (2026-08-27). Der Kanaltest
+                // sagt es seit v0.36.2, aber dort landet nur, wer den langen
+                // Druck kennt -- entschieden wird die Kanalwahl hier.
+                //
+                // Bedingt statt immer: Bei "Beide" gibt es kein Übersprechen
+                // zu erklären, und ohne Mikrofon am Ausgabegerät wäre der
+                // Satz schlicht unwahr. Die App sagt nur, was sie sieht.
+                Text(
+                    strings.channelsMicrophoneHint,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
