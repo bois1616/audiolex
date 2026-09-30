@@ -1,0 +1,3 @@
+Die Beschreibung im Store nennt jetzt einen weiteren Nutzen: Weil der Lernmodus ein Wort hören und gleichzeitig lesen lässt, eignet er sich auch zum Üben der Rechtschreibung.
+
+An der App selbst ändert sich nichts.

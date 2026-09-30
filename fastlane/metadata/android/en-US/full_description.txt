@@ -6,6 +6,8 @@ Learning mode — a word is played with its text visible. This builds the link b
 
 Exam mode — the word is played, the card stays covered. You rate yourself. That rating decides when the word comes back: after a minute, after ten, after a day, a week or a month.
 
+Hearing and reading at the same time also helps with spelling: in learning mode you hear a word and see how it is written. That works for the bundled words and for your own recordings alike.
+
 92 words and sentences are included: 72 in German — 68 from free speech synthesis, four spoken by real voices — and 20 in English. Which language you train is a setting of its own, separate from the language of the interface. Your own recordings can be added: speak a word or sentence, write it down, train it. Several speakers can be kept apart and switched on or off individually — a familiar voice is a different exercise from a stranger's.
 
 For harder practice, put a background noise under the speech and set the distance between the two in decibels. Three levels do it in one tap: easy without noise, hard with a clear speech advantage, advanced with the noise above the speech. One noise is included, recorded inside a bus. Your own can be recorded or imported as WAV files.

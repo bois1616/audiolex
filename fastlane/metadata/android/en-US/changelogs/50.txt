@@ -1,0 +1,3 @@
+The store description now mentions another use: because learning mode lets you hear a word and read it at the same time, it also works for spelling practice.
+
+Nothing changes in the app itself.

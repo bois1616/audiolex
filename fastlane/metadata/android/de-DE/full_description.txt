@@ -6,6 +6,8 @@ Lernmodus — ein Wort wird gespielt, der Text steht dabei. Das baut die Verbind
 
 Prüfmodus — das Wort wird gespielt, die Karte bleibt verdeckt. Man entscheidet selbst, wie gut es saß. Aus dieser Bewertung ergibt sich, wann das Wort wiederkommt: nach einer Minute, nach zehn, nach einem Tag, einer Woche oder einem Monat.
 
+Das gleichzeitige Hören und Lesen hilft auch bei der Rechtschreibung: Im Lernmodus hört man ein Wort und sieht dabei, wie es geschrieben wird. Das gilt für die mitgelieferten Wörter wie für eigene Aufnahmen.
+
 Mitgeliefert sind 92 Wörter und Sätze: 72 auf Deutsch — 68 aus einer freien Sprachsynthese, vier von echten Stimmen eingesprochen — und 20 auf Englisch. Was trainiert wird, ist eine eigene Einstellung und hängt nicht an der Sprache der Oberfläche. Eigene Aufnahmen kommen dazu: Wörter oder Sätze einsprechen, verschriftlichen, trainieren. Mehrere Sprecher lassen sich getrennt halten und einzeln zu- oder abschalten — eine vertraute Stimme ist eine andere Übung als eine fremde.
 
 Wer schwerer üben will, legt ein Störgeräusch unter die Sprache und stellt den Abstand zwischen beiden in Dezibel ein. Drei Trainingsstufen setzen das mit einem Tipp: Einfach ohne Geräusch, Schwierig mit deutlichem Sprachvorsprung, Fortgeschritten mit dem Geräusch über der Sprache. Ein Geräusch ist dabei — aufgenommen in einem Bus. Eigene lassen sich aufnehmen oder als WAV-Datei importieren.

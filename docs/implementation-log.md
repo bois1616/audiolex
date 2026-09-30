@@ -1,5 +1,13 @@
 # Implementation log (newest entries first)
 
+## 2026-09-30 (Claude: **The store description names spelling as a use — v0.37.1**)
+
+- **What:** the author asked for one addition to the F-Droid description, in both languages: hearing a word and seeing it written at the same time also works for improving spelling. It sits as a paragraph right after the two modes, because it is a property of learning mode. Version 0.37.0 → **0.37.1**, versionCode 49 → 50, changelog `50.txt` in both languages ("nothing changes in the app itself").
+- **Why the patch place:** same reasoning as v0.36.3 — F-Droid reads the fastlane texts from the pinned commit, so a changed description under an old number would be two shipped contents under one version.
+- **The language question the author raised, answered without a change:** he saw the description in German and wanted it in English. Both exist (`de-DE` and `en-US`); f-droid.org and the client pick by locale — `/en/packages/de.hexenwoche.audiolex/` shows the English text, `/de/` the German one, both checked on 2026-09-30 with 0.37.0 live. **Author's decision:** the German texts stay for German settings, and both languages stay equivalent (now a convention in AGENTS.md §5). Checked: 11 paragraphs each, same order, same numbers, changelogs present for the same versions in both.
+- **Limits counted:** long description 3035 (German) and 2715 (English) of 4000 characters, changelog 214 and 194 of 500.
+- **How it was verified:** `./gradlew build` green, `:core:jvmTest` 261 cases / 0 failures; no code change beyond the two version literals, and the `check()` assertion keeps them identical.
+
 ## 2026-08-28 (Claude: **The tester's answer settles it — and the settings say it now, v0.37.0**)
 
 - **What:** chivalry answered the three questions, and the answer closes the channel report that has been open since 2026-08-25. His suggestion — "maybe it is better to remind users of using old-school 3.5mm jack and USB-C headset without a mic button" — is implemented where the channel gets chosen. Version 0.36.3 → **0.37.0**, versionCode 48 → 49, changelog `49.txt` in both languages.
